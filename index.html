@@ -564,14 +564,11 @@ function mostrarModalGanador(charlaIdx) {
   const m = document.getElementById('triviaModalGanador');
   document.getElementById('modalCharlaGanador').textContent =
     'Ganaste en la trivia de la charla: "' + CHARLAS_LABELS[charlaIdx] + '"';
-  // Lista de 100 tickets únicos pregenerados
-  const TICKETS = [2143,4423,8258,8036,7609,7086,2457,1970,5329,4630,6848,6047,7240,6002,5321,1758,6799,7718,9396,4836,4727,3292,8502,5043,4103,2138,6998,8391,3245,4390,9301,7691,6265,8200,8193,9505,7160,5156,9723,1581,7519,1040,9114,2582,9741,6754,9316,7641,4648,4950,6460,8892,3699,8954,1510,5519,5962,2598,4149,7550,5145,1105,8181,5493,4218,4048,2851,7809,7011,8498,7889,1015,6383,5478,9902,6011,4413,1637,7199,6524,4481,2360,2000,5946,7868,8579,3758,3661,2800,5802,7671,7574,7342,5970,4692,5368,8830,6985,1675,5983];
-  const idx = parseInt(localStorage.getItem('geiper_ticket_idx') || '0');
-  const ticket = TICKETS[idx % TICKETS.length];
-  localStorage.setItem('geiper_ticket_idx', idx + 1);
+  const ticket = String(Math.floor(1000 + Math.random() * 9000));
   document.getElementById('ticketNumero').textContent = ticket;
   m.style.display = 'flex';
 }
+  
 window.cerrarModal = function() {
   document.getElementById('triviaModalGanador').style.display = 'none';
 };
