@@ -290,134 +290,134 @@
 
 /* ─── Banco de preguntas ─────────────────────────────────────────────── */
 const BANCO = [
-  /* CHARLA 0: GeoAI y la evolución del análisis geoespacial */
+  /* CHARLA 0: GeoAI y la evolución del análisis geoespacial — Sebastián Forero */
   {
     charla: 0,
     preguntas: [
       {
-        texto: "¿Qué significa el acrónimo GeoAI?",
-        opciones: ["Geografía Aumentada con Inteligencia", "Integración de Inteligencia Artificial con análisis geoespacial", "Sistema de información geográfico automatizado", "Georreferenciación asistida por inteligencia"],
+        texto: "Según la charla, ¿cuál fue el resultado del modelo CNN entrenado con datos del IGAC para predecir avalúos catastrales rurales?",
+        opciones: ["R² de 0.75 en 200.000 predios", "R² de 0.89 en 115.000 predios de 42 municipios", "R² de 0.95 en 50.000 predios de Bogotá", "R² de 0.80 en 300.000 predios nacionales"],
         correcta: 1
       },
       {
-        texto: "¿Cuál de las siguientes técnicas de aprendizaje profundo se usa comúnmente en clasificación de imágenes satelitales?",
-        opciones: ["Árbol de decisión", "Regresión lineal", "Red Neuronal Convolucional (CNN)", "K-medias"],
+        texto: "¿Cuánto tardaba el proceso manual de avalúo catastral versus el modelo GeoAI presentado en la charla?",
+        opciones: ["1 día vs. 1 hora", "3 semanas vs. 14 minutos", "6 meses vs. 1 día", "2 horas vs. 5 minutos"],
+        correcta: 1
+      },
+      {
+        texto: "¿Qué estructura de indexación espacial usó el modelo de valoración de suelo presentado en la charla?",
+        opciones: ["Grilla regular cuadrada", "Polígonos de Voronoi", "Hexágonos H3", "Cuadrículas UTM"],
         correcta: 2
       },
       {
-        texto: "¿Qué plataforma de Google permite procesar imágenes satelitales a escala global en la nube?",
-        opciones: ["Google Maps API", "Google Earth Engine", "Google Cloud Vision", "BigQuery GIS"],
-        correcta: 1
-      },
-      {
-        texto: "¿Qué satélite de la ESA provee imágenes multiespectrales gratuitas con resolución de 10m?",
-        opciones: ["Landsat 8", "SPOT-6", "Sentinel-2", "PlanetScope"],
+        texto: "Según la charla, ¿qué porcentaje del catastro multipropósito en Colombia aún está pendiente de actualización a febrero 2026?",
+        opciones: ["20%", "40%", "60%", "80%"],
         correcta: 2
       },
       {
-        texto: "¿Cuál es la principal ventaja del GeoAI frente a los métodos tradicionales de teledetección?",
-        opciones: ["Mayor resolución espacial del sensor", "Capacidad de aprender patrones complejos automáticamente", "Menor costo de los satélites", "Procesamiento exclusivamente offline"],
+        texto: "¿Cuál es la proyección del mercado de inteligencia geoespacial para 2030 mencionada en la charla?",
+        opciones: ["$12.5 billones USD", "$62.8 billones USD", "$38.2 billones USD", "$95.1 billones USD"],
         correcta: 1
       },
       {
-        texto: "¿Qué arquitectura de red neuronal se usa comúnmente para segmentación semántica de imágenes satelitales?",
-        opciones: ["ResNet", "U-Net", "BERT", "GAN"],
+        texto: "En el flujo GeoAI presentado, ¿cuál es el rol del profesional catastral?",
+        opciones: ["Digitalizar planos manualmente", "Revisar ortofotos predio por predio", "Auditar casos complejos y aprobar decisiones del modelo", "Cruzar geometrías con bases jurídicas"],
+        correcta: 2
+      },
+      {
+        texto: "¿Qué tecnología usó el agente presentado en la charla para responder preguntas sobre municipios del Catatumbo en lenguaje natural?",
+        opciones: ["Google Earth Engine con scripts Python", "Un LLM conectado como agente a datos espaciales del IGAC", "Un dashboard en PowerBI con filtros automáticos", "Una consulta SQL manual en PostGIS"],
         correcta: 1
       },
       {
-        texto: "¿Cuál es el índice espectral más utilizado para detectar vegetación en imágenes satelitales?",
-        opciones: ["NDWI", "NDVI", "SAVI", "EVI"],
+        texto: "Según la charla, ¿qué etapa histórica del análisis geoespacial corresponde al uso de CNNs como U-Net y Random Forest?",
+        opciones: ["Cartografía Digital (1990–2005)", "Web GIS & Cloud (2005–2015)", "ML Espacial (2015–2018)", "Data Analytics (2018–2023)"],
+        correcta: 2
+      },
+      {
+        texto: "¿Qué multiplica el salario de un profesional catastral que combina su dominio técnico con GeoAI, según la fuente citada en la charla?",
+        opciones: ["1.5×", "2×", "3.5×", "5×"],
+        correcta: 2
+      },
+      {
+        texto: "Según la charla, ¿cuál es la ventaja competitiva del Ing. Catastral frente a otros perfiles de IA?",
+        opciones: ["Saber más lenguajes de programación", "Tener dominio catastral: normativa colombiana, IGAC, predios rurales y territorio", "Manejar más herramientas de visualización", "Tener más experiencia en procesamiento en la nube"],
         correcta: 1
       },
       {
-        texto: "En teledetección, ¿qué significa resolución temporal?",
-        opciones: ["La nitidez de los colores en la imagen", "La frecuencia con que un satélite revisita la misma área", "El número de bandas espectrales disponibles", "El tamaño mínimo de objeto detectable"],
-        correcta: 1
+        texto: "¿Cuál de estas NO es una capacidad mencionada en la charla para el perfil Catastral + GeoAI?",
+        opciones: ["Entrenar modelos predictivos", "Orquestar agentes y LLMs espaciales", "Diseñar satélites de observación", "Validar inferencia con criterio de campo"],
+        correcta: 2
       },
       {
-        texto: "¿Cuál de estos es un modelo de lenguaje visual (VLM) aplicado a imágenes geoespaciales?",
-        opciones: ["GPT-4V aplicado a imágenes de satélite", "QGIS con plugin de IA", "Google Maps Directions API", "PostGIS con extensión raster"],
-        correcta: 0
-      },
-      {
-        texto: "¿Qué técnica de IA permite generar datos sintéticos de entrenamiento para mejorar modelos de detección de objetos en imágenes satelitales?",
-        opciones: ["Transfer learning", "Data augmentation", "K-fold cross validation", "Random Forest"],
-        correcta: 1
-      },
-      {
-        texto: "¿Cuál es la resolución espacial del satélite Sentinel-1 (radar SAR) en modo IW?",
-        opciones: ["5 metros", "10 metros", "20 metros", "30 metros"],
-        correcta: 1
-      },
-      {
-        texto: "¿Qué librería de Python es ampliamente usada para manipular datos ráster en análisis geoespacial?",
-        opciones: ["Pandas", "Rasterio", "Scrapy", "TensorFlow"],
+        texto: "¿Qué frase del ponente resume el diferencial del profesional geoespacial moderno según la charla?",
+        opciones: ["'El futuro es la automatización total sin intervención humana'", "'La curiosidad intelectual sostenida es una ventaja competitiva'", "'El GIS tradicional sigue siendo suficiente para el catastro'", "'Los modelos de IA reemplazan completamente al catastral'"],
         correcta: 1
       }
     ]
   },
-  /* CHARLA 1: Territorios inteligentes - Digital Twins y GeoAI */
+  /* CHARLA 1: Territorios inteligentes: Digital Twins y GeoAI para la Gestión de Riesgos */
   {
     charla: 1,
     preguntas: [
       {
-        texto: "¿Qué es un Digital Twin (Gemelo Digital) en el contexto territorial?",
-        opciones: ["Una copia impresa del plano catastral", "Una réplica digital dinámica de un territorio real que se actualiza en tiempo real", "Un mapa bidimensional de alta resolución", "Un sistema de archivo de documentos catastrales"],
+        texto: "¿Qué es un Digital Twin (Gemelo Digital) en el contexto de un territorio?",
+        opciones: ["Una copia impresa del plano catastral actualizado", "Una réplica digital dinámica de un territorio real que se actualiza con datos en tiempo real", "Un mapa 2D de alta resolución generado con drones", "Un sistema de archivo de documentos catastrales en la nube"],
         correcta: 1
       },
       {
-        texto: "¿Cuál es la principal fuente de datos para construir un Digital Twin urbano?",
-        opciones: ["Encuestas telefónicas", "Fotografías aéreas analógicas", "Datos IoT, sensores, imágenes satelitales y modelos 3D", "Registros notariales"],
-        correcta: 2
-      },
-      {
-        texto: "¿Qué norma internacional regula la representación de datos catastrales en Colombia?",
-        opciones: ["ISO 19100", "LADM_COL", "OGC WFS", "INSPIRE Directive"],
+        texto: "¿Cuál es la principal ventaja de usar un Digital Twin para la gestión de riesgos territoriales?",
+        opciones: ["Reduce el costo de impresión de mapas", "Permite simular escenarios de amenaza antes de que ocurran en la realidad", "Reemplaza la necesidad de hacer trabajo de campo", "Automatiza el cobro del impuesto predial"],
         correcta: 1
       },
       {
-        texto: "En territorios inteligentes, ¿qué rol cumple el GeoAI en la gestión de riesgos?",
-        opciones: ["Generar informes PDF automáticos", "Predecir y modelar amenazas espaciales como inundaciones o deslizamientos", "Administrar bases de datos de propietarios", "Calcular impuestos prediales"],
+        texto: "¿Qué tipo de datos alimenta principalmente un Digital Twin territorial para gestión de riesgos?",
+        opciones: ["Solo fotografías aéreas históricas", "Sensores IoT, imágenes satelitales, modelos 3D y datos en tiempo real", "Únicamente registros notariales y escrituras", "Encuestas sociales y datos del DANE"],
         correcta: 1
       },
       {
-        texto: "¿Cuál es el estándar abierto más usado para intercambiar datos geoespaciales en la web?",
-        opciones: ["Shapefile (.shp)", "GeoJSON / WFS / WMS (OGC)", "AutoCAD DWG", "Microsoft Excel con coordenadas"],
+        texto: "¿Qué tecnología permite capturar nubes de puntos 3D del terreno para construir modelos de riesgo precisos?",
+        opciones: ["GPS diferencial", "LiDAR (Light Detection and Ranging)", "Radar meteorológico convencional", "Cámaras pancromáticas de baja altitud"],
         correcta: 1
       },
       {
-        texto: "¿Qué significa el concepto de 'ciudad inteligente' (smart city) desde la perspectiva geodésica?",
-        opciones: ["Una ciudad con muchos semáforos automáticos", "Un territorio que integra datos geoespaciales en tiempo real para mejorar la gestión urbana", "Una ciudad con alta conectividad a internet", "Un municipio con catastro actualizado"],
+        texto: "En gestión de riesgos con GeoAI, ¿qué tipo de amenaza puede modelarse y predecirse con imágenes satelitales multitemporales?",
+        opciones: ["Únicamente sismos y terremotos", "Inundaciones, deslizamientos y cambios de cobertura del suelo", "Solo incendios forestales en zonas urbanas", "Exclusivamente erupciones volcánicas"],
         correcta: 1
       },
       {
-        texto: "¿Qué tecnología permite capturar nubes de puntos 3D para construir modelos de ciudades?",
-        opciones: ["Radar meteorológico", "LiDAR (Light Detection and Ranging)", "GPS diferencial", "Imágenes pancromáticas"],
+        texto: "¿Cuál es el rol del GeoAI dentro de un sistema de Digital Twin para gestión de riesgos?",
+        opciones: ["Generar informes PDF de forma automática", "Detectar patrones, predecir amenazas y generar alertas accionables sin supervisión constante", "Administrar bases de datos de propietarios de predios", "Calcular impuestos prediales según zonas de riesgo"],
         correcta: 1
       },
       {
-        texto: "¿Cuál es el estándar ISO para la gestión de calidad de datos geoespaciales?",
-        opciones: ["ISO 9001", "ISO 19157", "ISO 14001", "ISO 27001"],
+        texto: "¿Qué estándar del OGC se usa para representar modelos 3D de ciudades en Digital Twins urbanos?",
+        opciones: ["Shapefile (.shp)", "CityGML", "AutoCAD DWG", "GeoTIFF"],
         correcta: 1
       },
       {
-        texto: "En un Digital Twin territorial, ¿qué representa el concepto de 'interoperabilidad'?",
-        opciones: ["La capacidad de distintos sistemas y datos de comunicarse entre sí", "La velocidad de actualización del modelo 3D", "El número de sensores IoT instalados", "La precisión del GPS utilizado"],
+        texto: "En un territorio inteligente, ¿qué significa 'interoperabilidad' entre sistemas de gestión de riesgos?",
+        opciones: ["Que todos los sistemas usen el mismo proveedor de software", "Que distintos sistemas y fuentes de datos puedan comunicarse e integrarse entre sí", "Que el sistema funcione sin conexión a internet", "Que solo los expertos puedan acceder a los datos"],
+        correcta: 1
+      },
+      {
+        texto: "¿Qué norma colombiana estructura los datos territoriales y catastrales que alimentan un Digital Twin nacional?",
+        opciones: ["ISO 9001", "LADM_COL", "INSPIRE Directive", "OGC WFS 3.0"],
+        correcta: 1
+      },
+      {
+        texto: "¿Cuál es la diferencia entre una amenaza y un riesgo en el contexto de gestión territorial?",
+        opciones: ["Son sinónimos, ambos significan lo mismo en SIG", "La amenaza es el fenómeno potencial; el riesgo combina amenaza, exposición y vulnerabilidad", "El riesgo es solo natural; la amenaza puede ser antrópica", "La amenaza se mide en hectáreas; el riesgo en personas"],
+        correcta: 1
+      },
+      {
+        texto: "¿Qué capacidad añade un agente LLM integrado a un Digital Twin para gestión de riesgos?",
+        opciones: ["Permite consultar datos territoriales complejos en lenguaje natural sin necesidad de saber SQL", "Reemplaza los sensores IoT en campo", "Genera automáticamente los planes de ordenamiento territorial", "Elimina la necesidad de actualizar el catastro"],
         correcta: 0
       },
       {
-        texto: "¿Qué formato 3D de datos urbanos es promovido por el OGC para modelado de ciudades?",
-        opciones: ["AutoCAD DWG", "CityGML", "Revit RVT", "SketchUp SKP"],
-        correcta: 1
-      },
-      {
-        texto: "¿Cuál es la diferencia principal entre catastro 2D y catastro 3D?",
-        opciones: ["El 3D usa más colores", "El 3D registra el volumen y altura de las construcciones además de la planta", "El 2D es más preciso", "No hay diferencia práctica entre ellos"],
-        correcta: 1
-      },
-      {
-        texto: "¿Qué institución colombiana es la autoridad catastral nacional?",
-        opciones: ["DANE", "IGAC (Instituto Geográfico Agustín Codazzi)", "Superintendencia de Notariado y Registro", "Ministerio de Hacienda"],
+        texto: "¿Por qué es estratégico para Colombia combinar Digital Twins con GeoAI en zonas como el Pacífico o la Amazonía?",
+        opciones: ["Porque son zonas con catastro 100% actualizado y fácil acceso", "Porque son territorios con alta vulnerabilidad, baja cobertura catastral y difícil acceso físico donde la IA puede suplir la ausencia de datos", "Porque estas zonas no tienen amenazas naturales significativas", "Porque el costo de implementación es menor que en ciudades"],
         correcta: 1
       }
     ]
