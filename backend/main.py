@@ -18,7 +18,7 @@ except ImportError:
 
 app = FastAPI(title="GEIPER AI Cloud Backend")
 
-# Permitir CORS para que tu web en GitHub Pages pueda conectarse a este servidor
+# Permitir CORS para que GitHub Pages pueda conectarse a este servidor
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"], 
@@ -31,13 +31,13 @@ vectorstore = None
 cloud_llm = None
 
 def get_llm():
-    # El Token seguro debe estar guardado en las configuraciones (Secrets) de tu cuenta en Hugging Face
+    # El Token seguro debe estar guardado en las configuraciones (Secrets) de la cuenta en Hugging Face
     api_token = os.environ.get("HF_TOKEN")
     if not api_token:
         print("ADVERTENCIA: No se encontró el HF_TOKEN en las variables de entorno.")
         return None
     
-    # Nos conectamos a un modelo muy veloz y 100% open source (Mistral)
+    # Conección a Mistral 100% open source
     try:
         llm = HuggingFaceEndpoint(
             repo_id="mistralai/Mistral-7B-Instruct-v0.2",
