@@ -1,0 +1,153 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Asistentes IA – Semillero GEIPER</title>
+  <link rel="icon" type="image/png" href="../assets/images/Logo_GEIPER.png">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+  <link rel="stylesheet" href="../css/styles.css">
+  <link rel="stylesheet" href="../css/chatbots.css">
+</head>
+<body>
+
+<!-- ── HEADER ────────────────────────────────── -->
+<header>
+  <nav>
+    <a href="../index.html" class="nav-brand"><img src="../assets/images/Logo_GEIPER.png" alt="GEIPER" class="nav-logo-img"><span>GEIPER</span></a>
+    <button class="nav-hamburger" id="navHamburger" aria-label="Abrir menú" aria-expanded="false">
+      <span></span><span></span><span></span>
+    </button>
+    <div class="nav-links" id="navLinks">
+      <a href="../index.html">Inicio</a>
+      <a href="../index.html#quienes">Quiénes somos</a>
+      <a href="lineas.html">Líneas de investigación</a>
+      <a href="integrantes.html">Integrantes</a>
+      <a href="repositorios.html">Repositorios</a>
+      <a href="eventos.html">Eventos</a>
+      <a href="chatbots.html" class="active">Asistentes IA</a>
+      <a href="../index.html#contacto">Contacto</a>
+    </div>
+  </nav>
+</header>
+
+<!-- ── CHAT INTERFACE ────────────────────────────── -->
+<div class="chat-container">
+  
+  <!-- Sidebar -->
+  <aside class="chat-sidebar">
+    <div class="sidebar-header">
+      <h2>Asistentes IA</h2>
+      <p>Selecciona tu modelo experto</p>
+    </div>
+    
+    <div class="bot-list" id="botSelector">
+      <button class="bot-option active" data-bot="tematico">
+        <i class="fa-solid fa-book-open-reader"></i>
+        <div class="bot-info">
+          <h3>Asistente Temático</h3>
+          <p>Consulta sobre documentos base y la web.</p>
+        </div>
+      </button>
+      
+      <button class="bot-option" data-bot="investigacion">
+        <i class="fa-solid fa-magnifying-glass-chart"></i>
+        <div class="bot-info">
+          <h3>Asistente de Investigación</h3>
+          <p>Estructuras y proyectos de la universidad.</p>
+        </div>
+      </button>
+    </div>
+    
+    <div class="sidebar-footer">
+      <i class="fa-solid fa-server"></i> <span id="serverStatus">Verificando Backend...</span>
+    </div>
+  </aside>
+
+  <!-- Main Chat Area -->
+  <main class="chat-main">
+    <div class="chat-header">
+      <h2 id="currentBotTitle"><i class="fa-solid fa-book-open-reader"></i> Asistente Temático</h2>
+      <button class="clear-chat-btn" id="clearChatBtn" title="Limpiar conversación">
+        <i class="fa-solid fa-trash-can"></i>
+      </button>
+    </div>
+    
+    <div class="chat-messages" id="chatMessages">
+      <!-- Mensaje de bienvenida inyectado por JS -->
+    </div>
+
+    <div class="chat-input-area">
+      <form id="chatForm">
+        <input type="text" id="chatInput" placeholder="Escribe tu pregunta aquí..." autocomplete="off" required>
+        <button type="submit" class="send-btn" id="sendBtn" aria-label="Enviar">
+          <i class="fa-solid fa-paper-plane"></i>
+        </button>
+      </form>
+      <div class="disclaimer">
+        Las respuestas generadas por IA pueden no ser 100% exactas y requieren validación humana.<br>
+        Implementado conforme a los principios de <strong>ISO/IEC 25010</strong>.
+      </div>
+    </div>
+  </main>
+</div>
+
+<script src="../js/chatbots.js"></script>
+
+<script>
+/* ── Hamburger script from other pages ── */
+(function () {
+  const header = document.querySelector('header');
+  const btn    = document.getElementById('navHamburger');
+  const links  = document.getElementById('navLinks');
+  if (!btn || !links) return;
+
+  function checkFit() {
+    header.classList.remove('mobile-nav');
+    links.classList.remove('open');
+    btn.classList.remove('open');
+    btn.setAttribute('aria-expanded', 'false');
+
+    links.style.cssText = 'display:flex;flex-direction:row;position:static;width:auto;visibility:hidden;';
+    btn.style.display = 'none';
+
+    const navEl   = document.querySelector('nav');
+    const brandEl = navEl.querySelector('.nav-brand');
+    const gap     = 40;
+    const fits    = brandEl.offsetWidth + gap + links.scrollWidth <= navEl.offsetWidth;
+
+    links.style.cssText = '';
+    btn.style.display   = '';
+
+    if (!fits) header.classList.add('mobile-nav');
+  }
+
+  btn.addEventListener('click', function () {
+    const isOpen = links.classList.toggle('open');
+    btn.classList.toggle('open', isOpen);
+    btn.setAttribute('aria-expanded', isOpen);
+  });
+
+  links.querySelectorAll('a').forEach(function (a) {
+    a.addEventListener('click', function () {
+      links.classList.remove('open');
+      btn.classList.remove('open');
+      btn.setAttribute('aria-expanded', 'false');
+    });
+  });
+
+  document.addEventListener('click', function (e) {
+    if (!btn.contains(e.target) && !links.contains(e.target)) {
+      links.classList.remove('open');
+      btn.classList.remove('open');
+      btn.setAttribute('aria-expanded', 'false');
+    }
+  });
+
+  checkFit();
+  window.addEventListener('resize', checkFit);
+})();
+</script>
+
+</body>
+</html>

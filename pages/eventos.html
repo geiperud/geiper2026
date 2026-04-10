@@ -24,6 +24,7 @@
       <a href="integrantes.html">Integrantes</a>
       <a href="repositorios.html">Repositorios</a>
       <a href="eventos.html" class="active">Eventos</a>
+      <a href="chatbots.html">Asistentes IA</a>
       <a href="../index.html#contacto">Contacto</a>
     </div>
   </nav>
@@ -58,6 +59,20 @@
       <span class="btn" style="margin-top:8px;background:var(--azul-claro);">Ver actividades →</span>
     </a>
 
+  </div>
+</section>
+
+<!-- ── FEED RSS EVENTOS ──────────────────────── -->
+<section id="rss-feed-section" style="background-color: var(--gris-muy-claro); padding: 60px 20px;">
+  <div style="max-width: 1000px; margin: auto;">
+    <h2 class="section-title">Novedades & Convocatorias</h2>
+    <p style="text-align: center; color: var(--gris); margin-bottom: 40px; margin-top:-10px;">
+      Feed automático de noticias, congresos y oportunidades académicas.
+    </p>
+    
+    <div id="rssFeedContainer" class="feed-grid">
+      <!-- Las tarjetas se inyectarán aquí vía JS -->
+    </div>
   </div>
 </section>
 
@@ -157,5 +172,6 @@
   window.addEventListener('resize', checkFit);
 })();
 </script>
+<script src="../js/eventos_rss.js"></script>
 </body>
 </html>
