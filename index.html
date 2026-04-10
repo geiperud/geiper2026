@@ -24,6 +24,7 @@
       <a href="pages/integrantes.html">Integrantes</a>
       <a href="pages/repositorios.html">Repositorios</a>
       <a href="pages/eventos.html">Eventos</a>
+      <a href="pages/chatbots.html">Asistentes IA</a>
       <a href="#contacto">Contacto</a>
     </div>
   </nav>
@@ -39,7 +40,10 @@
     <p>Grupo Especializado en Investigación en Percepción Remota y Sistemas de Información Geográfica de la Universidad Distrital Francisco José de Caldas.</p>
     <p>Perteneciente al grupo de investigación NIDE.</p>
     <p>Grupo de investigación avalado por MinCiencias calificación A.</p>
-    <a href="#quienes" class="btn">Conocer más</a>
+    <div style="display:flex;gap:15px;flex-wrap:wrap;">
+      <a href="#quienes" class="btn">Conocer más</a>
+      <a href="#contacto-form" class="btn btn-outline">Contáctanos</a>
+    </div>
   </div>
 </section>
 
@@ -188,6 +192,89 @@
   </div>
 </section>
 
+<!-- ── CONTACTO Y PREGUNTAS FRECUENTES (FAQ) ──────────────── -->
+<section class="support-split-section" id="contacto-form" style="background: var(--fondo-alt); padding: 80px;">
+  <div class="support-split-container" style="max-width: 1200px; margin: 0 auto; display: grid; grid-template-columns: 1fr 1fr; gap: 60px; align-items: start;">
+    
+    <!-- LADO IZQUIERDO: FORMULARIO -->
+    <div class="contact-container" style="background: white; padding: 40px; border-radius: 16px; box-shadow: 0 10px 30px rgba(11,46,107,0.08); max-width: 100%; margin: 0;">
+      <h2 style="text-align: center; font-family: 'Playfair Display', serif; color: var(--azul-oscuro); margin-bottom: 10px; font-size: 28px;">Escríbenos directamente</h2>
+      <p class="subtitle" style="text-align: center; color: var(--gris); font-size: 14px; margin-bottom: 30px;">¿Tienes alguna inquietud? Llena el formulario y el equipo te responderá en breve.</p>
+      
+      <form action="https://formspree.io/f/YOUR_FORMSPREE_ID" method="POST">
+        <div class="form-group">
+          <label for="name">Tu Nombre Completo</label>
+          <input type="text" id="name" name="name" class="form-input" placeholder="Ej: Laura Díaz" required>
+        </div>
+        
+        <div class="form-group">
+          <label for="email">Tu Correo Electrónico</label>
+          <input type="email" id="email" name="email" class="form-input" placeholder="ejemplo@udistrital.edu.co" required>
+        </div>
+        
+        <div class="form-group">
+          <label for="subject">Asunto</label>
+          <input type="text" id="subject" name="subject" class="form-input" placeholder="Inscripciones / Duda Académica" required>
+        </div>
+        
+        <div class="form-group">
+          <label for="message">Tu Mensaje</label>
+          <textarea id="message" name="message" class="form-input" placeholder="Escribe aquí tu duda..." required></textarea>
+        </div>
+        
+        <button type="submit" class="submit-btn"><i class="fa-regular fa-paper-plane" style="margin-right:8px;"></i>Enviar Mensaje</button>
+      </form>
+    </div>
+
+    <!-- LADO DERECHO: FAQ -->
+    <div class="faq-container">
+      <h2 style="font-family: 'Playfair Display', serif; color: var(--azul-oscuro); margin-bottom: 30px; font-size: 28px;">Preguntas Frecuentes</h2>
+      
+      <div class="faq-item">
+        <button class="faq-question">
+          ¿Cuáles son los requisitos para inscribirme en GEIPER?
+          <i class="fa-solid fa-plus"></i>
+        </button>
+        <div class="faq-answer">
+          <p>Los requisitos varían dependiendo de la convocatoria semestral de la Facultad. Usualmente debes estar cursando como mínimo tercer semestre y tener interés demostrable en cartografía o satélites.</p>
+        </div>
+      </div>
+
+      <div class="faq-item">
+        <button class="faq-question">
+          ¿Es necesario saber programar previamente en Python o QGIS?
+          <i class="fa-solid fa-plus"></i>
+        </button>
+        <div class="faq-answer">
+          <p>No es estrictamente obligatorio para ingresar al semillero, ya que realizamos capacitaciones formativas internas. Sin embargo, tener nociones básicas te permitirá avanzar rápidamente.</p>
+        </div>
+      </div>
+
+      <div class="faq-item">
+        <button class="faq-question">
+          ¿Qué disponibilidad de tiempo exige el semillero?
+          <i class="fa-solid fa-plus"></i>
+        </button>
+        <div class="faq-answer">
+          <p>Requerimos una asistencia a las reuniones presenciales quincenales, así como un compromiso autónomo para avanzar en los desarrollos e investigaciones asignadas.</p>
+        </div>
+      </div>
+
+      <div class="faq-item">
+        <button class="faq-question">
+          ¿Los egresados de la Distrital pueden participar?
+          <i class="fa-solid fa-plus"></i>
+        </button>
+        <div class="faq-answer">
+          <p>¡Por supuesto! GEIPER mantiene sus puertas abiertas para egresados que deseen continuar su vínculo académico aportando al desarrollo y publicación junto al laboratorio NIDE.</p>
+        </div>
+      </div>
+      
+    </div>
+    
+  </div>
+</section>
+
 <!-- ── FOOTER ─────────────────────────────────── -->
 <footer id="contacto">
   <div class="footer-container">
@@ -315,6 +402,24 @@
   checkFit();
   window.addEventListener('resize', checkFit);
 })();
+
+/* ── Lógica del Acordeón FAQ ── */
+document.querySelectorAll('.faq-question').forEach(button => {
+  button.addEventListener('click', () => {
+    const faqItem = button.parentElement;
+    const isActive = faqItem.classList.contains('active');
+    
+    // Cerrar todos
+    document.querySelectorAll('.faq-item').forEach(item => {
+      item.classList.remove('active');
+    });
+    
+    // Abrir el clickeado si no estaba activo
+    if (!isActive) {
+      faqItem.classList.add('active');
+    }
+  });
+});
 </script>
 </body>
 </html>

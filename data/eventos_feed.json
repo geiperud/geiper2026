@@ -1,0 +1,29 @@
+[
+  {
+    "id": 1,
+    "title": "Convocatoria MinCiencias Jóvenes Investigadores",
+    "date": "2026-05-15",
+    "type": "Convocatoria",
+    "description": "Apertura de la convocatoria nacional para cofinanciar a jóvenes investigadores e innovadores. ¡Presenta tu proyecto del semillero!",
+    "link": "https://minciencias.gov.co",
+    "tags": ["Nacional", "Investigación", "MinCiencias"]
+  },
+  {
+    "id": 2,
+    "title": "Simposio Internacional en Percepción Remota (IGARSS)",
+    "date": "2026-07-20",
+    "type": "Congreso",
+    "description": "Se abren inscripciones para asistir al simposio internacional IEEE Geoscience and Remote Sensing Symposium.",
+    "link": "https://www.igarss2026.org",
+    "tags": ["Internacional", "IEEE", "Congreso"]
+  },
+  {
+    "id": 3,
+    "title": "Taller Interno de Drones y Ortomosaicos",
+    "date": "2026-04-20",
+    "type": "Taller",
+    "description": "Sesión práctica en el laboratorio de la facultad sobre el procesamiento de imágenes capturadas por UAVs.",
+    "link": "#",
+    "tags": ["Interno", "Semillero", "Práctico"]
+  }
+]
