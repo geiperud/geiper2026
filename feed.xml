@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<rss xmlns:atom="http://www.w3.org/2005/Atom" version="2.0">
+  <channel>
+    <title>GEIPER – Eventos y Convocatorias</title>
+    <link>https://geiperud.github.io/geiper2026</link>
+    <description>Feed RSS del semillero de investigación GEIPER – eventos, convocatorias y talleres.</description>
+    <language>es-co</language>
+    <lastBuildDate>Thu, 16 Apr 2026 23:19:21 +0000</lastBuildDate>
+    <atom:link href="https://geiperud.github.io/geiper2026/feed.xml" rel="self" type="application/rss+xml" />
+    <item>
+      <title>Convocatoria MinCiencias Jóvenes Investigadores</title>
+      <link>https://minciencias.gov.co</link>
+      <description>[Convocatoria] Apertura de la convocatoria nacional para cofinanciar a jóvenes investigadores e innovadores. ¡Presenta tu proyecto del semillero! Etiquetas: Nacional, Investigación, MinCiencias</description>
+      <pubDate>Fri, 15 May 2026 00:00:00 +0000</pubDate>
+      <guid isPermaLink="false">https://geiperud.github.io/geiper2026#evento-1</guid>
+      <category>Convocatoria</category>
+    </item>
+    <item>
+      <title>Simposio Internacional en Percepción Remota (IGARSS)</title>
+      <link>https://www.igarss2026.org</link>
+      <description>[Congreso] Se abren inscripciones para asistir al simposio internacional IEEE Geoscience and Remote Sensing Symposium. Etiquetas: Internacional, IEEE, Congreso</description>
+      <pubDate>Mon, 20 Jul 2026 00:00:00 +0000</pubDate>
+      <guid isPermaLink="false">https://geiperud.github.io/geiper2026#evento-2</guid>
+      <category>Congreso</category>
+    </item>
+    <item>
+      <title>Taller Interno de Drones y Ortomosaicos</title>
+      <link>https://geiperud.github.io/geiper2026</link>
+      <description>[Taller] Sesión práctica en el laboratorio de la facultad sobre el procesamiento de imágenes capturadas por UAVs. Etiquetas: Interno, Semillero, Práctico</description>
+      <pubDate>Mon, 20 Apr 2026 00:00:00 +0000</pubDate>
+      <guid isPermaLink="false">https://geiperud.github.io/geiper2026#evento-3</guid>
+      <category>Taller</category>
+    </item>
+  </channel>
+</rss>
