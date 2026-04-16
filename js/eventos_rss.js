@@ -5,11 +5,80 @@
 
 document.addEventListener('DOMContentLoaded', () => {
   const rssContainer = document.getElementById('rssFeedContainer');
-  if(!rssContainer) return;
+  if (!rssContainer) return;
 
-  const url = '../data/eventos_feed.json'; // Ruta al archivo JSON
+  const url = '../data/eventos_feed.json';
 
-  // Función asíncrona para buscar y pintar los eventos
+  function sanitizeUrl(rawUrl) {
+    try {
+      const parsed = new URL(rawUrl);
+      if (parsed.protocol === 'http:' || parsed.protocol === 'https:') {
+        return parsed.href;
+      }
+    } catch (_) {}
+    return '#';
+  }
+
+  function formatDate(dateStr) {
+    const options = { year: 'numeric', month: 'long', day: 'numeric' };
+    return new Date(dateStr).toLocaleDateString('es-ES', options);
+  }
+
+  function buildCard(evento) {
+    const card = document.createElement('div');
+    card.className = 'event-feed-card';
+
+    // Fecha
+    const dateDiv = document.createElement('div');
+    dateDiv.className = 'event-feed-date';
+    const calIcon = document.createElement('i');
+    calIcon.className = 'fa-regular fa-calendar';
+    dateDiv.appendChild(calIcon);
+    dateDiv.appendChild(document.createTextNode(' ' + formatDate(evento.date)));
+    card.appendChild(dateDiv);
+
+    // Tipo
+    const typeDiv = document.createElement('div');
+    const safeType = String(evento.type).toLowerCase().trim();
+    typeDiv.className = `event-feed-type type-${safeType}`;
+    typeDiv.textContent = evento.type;
+    card.appendChild(typeDiv);
+
+    // Título
+    const h3 = document.createElement('h3');
+    h3.className = 'event-feed-title';
+    h3.textContent = evento.title;
+    card.appendChild(h3);
+
+    // Descripción
+    const p = document.createElement('p');
+    p.className = 'event-feed-desc';
+    p.textContent = evento.description;
+    card.appendChild(p);
+
+    // Tags
+    const tagsDiv = document.createElement('div');
+    tagsDiv.className = 'event-feed-tags';
+    evento.tags.forEach(tag => {
+      const span = document.createElement('span');
+      span.className = 'event-tag';
+      span.textContent = tag;
+      tagsDiv.appendChild(span);
+    });
+    card.appendChild(tagsDiv);
+
+    // Enlace
+    const a = document.createElement('a');
+    a.href = sanitizeUrl(evento.link);
+    a.className = 'btn event-feed-btn';
+    a.target = '_blank';
+    a.rel = 'noopener noreferrer';
+    a.textContent = 'Saber más →';
+    card.appendChild(a);
+
+    return card;
+  }
+
   async function loadEvents() {
     try {
       const response = await fetch(url);
@@ -17,57 +86,25 @@ document.addEventListener('DOMContentLoaded', () => {
         throw new Error('Error al cargar la fuente de eventos.');
       }
       const data = await response.json();
-      
+
       if (data.length === 0) {
-        rssContainer.innerHTML = '<p>No hay eventos próximos en este momento.</p>';
+        const msg = document.createElement('p');
+        msg.textContent = 'No hay eventos próximos en este momento.';
+        rssContainer.appendChild(msg);
         return;
       }
 
-      // Ordenar por fecha (más próximos primero)
-      // Opcional: data.sort((a,b) => new Date(a.date) - new Date(b.date));
-
-      let contentHTML = '';
-      
       data.forEach(evento => {
-        // Generar etiquetas (tags)
-        let tagsHTML = '';
-        evento.tags.forEach(tag => {
-          tagsHTML += `<span class="event-tag">${tag}</span>`;
-        });
-
-        // Crear tarjeta (card)
-        contentHTML += `
-          <div class="event-feed-card">
-            <div class="event-feed-date">
-              <i class="fa-regular fa-calendar"></i> ${formatDate(evento.date)}
-            </div>
-            <div class="event-feed-type type-${evento.type.toLowerCase().trim()}">
-              ${evento.type}
-            </div>
-            <h3 class="event-feed-title">${evento.title}</h3>
-            <p class="event-feed-desc">${evento.description}</p>
-            <div class="event-feed-tags">
-              ${tagsHTML}
-            </div>
-            <a href="${evento.link}" class="btn event-feed-btn" target="_blank">Saber más →</a>
-          </div>
-        `;
+        rssContainer.appendChild(buildCard(evento));
       });
-      
-      rssContainer.innerHTML = contentHTML;
 
     } catch (error) {
       console.error(error);
-      rssContainer.innerHTML = '<p style="color: #64748b;">No se pudieron cargar los eventos en este momento.</p>';
+      const msg = document.createElement('p');
+      msg.style.color = '#64748b';
+      msg.textContent = 'No se pudieron cargar los eventos en este momento.';
+      rssContainer.appendChild(msg);
     }
-  }
-
-  // Función auxiliar para formatear la fecha
-  function formatDate(dateStr) {
-    const options = { year: 'numeric', month: 'long', day: 'numeric' };
-    const d = new Date(dateStr);
-    // Agregamos un ajuste de timezone rápido si es necesario, o directamente formato.
-    return d.toLocaleDateString('es-ES', options);
   }
 
   loadEvents();

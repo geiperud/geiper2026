@@ -15,8 +15,8 @@ document.addEventListener('DOMContentLoaded', () => {
   const serverStatus = document.getElementById('serverStatus');
 
   let currentMode = 'tematico'; // modos válidos: 'tematico', 'investigacion'
-  // El endpoint asume que el backend correrá en localhost:8000
-  const API_ENDPOINT = 'http://localhost:8000/chat'; 
+  const API_BASE = window.GEIPER_API_URL || 'http://localhost:8000';
+  const API_ENDPOINT = API_BASE + '/chat';
 
   // Configuración de los bots (Saludo inicial y títulos)
   const botsConfig = {
@@ -37,13 +37,11 @@ document.addEventListener('DOMContentLoaded', () => {
   // ── Eventos ──
   botOptions.forEach(opt => {
     opt.addEventListener('click', () => {
-      // Remover clase activa
       botOptions.forEach(b => b.classList.remove('active'));
-      // Añadir clase activa al clickeado
       opt.classList.add('active');
-      
+
       const newMode = opt.dataset.bot;
-      if(newMode !== currentMode) {
+      if (newMode !== currentMode) {
         currentMode = newMode;
         resetChat();
       }
@@ -57,11 +55,9 @@ document.addEventListener('DOMContentLoaded', () => {
     const prompt = chatInput.value.trim();
     if (!prompt) return;
 
-    // Añadir mensaje usuario
     addMessage(prompt, 'user');
     chatInput.value = '';
-    
-    // Preparar UI para respuesta
+
     setLoadingState(true);
     const typingId = addTypingIndicator();
 
@@ -79,39 +75,49 @@ document.addEventListener('DOMContentLoaded', () => {
   });
 
   // ── Funciones de UI ──
-  
+
   function resetChat() {
     chatMessages.innerHTML = '';
     currentBotTitle.innerHTML = botsConfig[currentMode].title;
-    addMessage(botsConfig[currentMode].greeting, 'bot');
+    addMessage(botsConfig[currentMode].greeting, 'bot', true);
   }
 
-  function addMessage(text, sender) {
+  function addMessage(text, sender, isHtml = false) {
     const msgDiv = document.createElement('div');
     msgDiv.className = `message ${sender}-message`;
-    
-    let avatarHTML = '';
-    if(sender === 'bot') {
-      avatarHTML = `<div class="message-avatar"><img src="../assets/images/Logo_GEIPER.png" alt="Bot"></div>`;
+
+    if (sender === 'bot') {
+      const avatar = document.createElement('div');
+      avatar.className = 'message-avatar';
+      const img = document.createElement('img');
+      img.src = '../assets/images/Logo_GEIPER.png';
+      img.alt = 'Bot';
+      avatar.appendChild(img);
+      msgDiv.appendChild(avatar);
     }
 
-    // Convertir saltos de línea simples o markdown básico (Opcional: usar marked.js en un futuro)
-    const formattedText = text.replace(/\n/g, '<br>');
+    const contentDiv = document.createElement('div');
+    contentDiv.className = 'message-content';
+    const p = document.createElement('p');
 
-    msgDiv.innerHTML = `
-      ${avatarHTML}
-      <div class="message-content">
-        <p>${formattedText}</p>
-      </div>
-    `;
-    
+    if (isHtml) {
+      p.innerHTML = text;
+    } else {
+      text.split('\n').forEach((line, i) => {
+        if (i > 0) p.appendChild(document.createElement('br'));
+        p.appendChild(document.createTextNode(line));
+      });
+    }
+
+    contentDiv.appendChild(p);
+    msgDiv.appendChild(contentDiv);
     chatMessages.appendChild(msgDiv);
     scrollBottom();
   }
 
   function addErrorMessage() {
     const msgDiv = document.createElement('div');
-    msgDiv.className = `message bot-message`;
+    msgDiv.className = 'message bot-message';
     msgDiv.innerHTML = `
       <div class="message-avatar" style="background:#fee2e2;color:#ef4444;"><i class="fa-solid fa-triangle-exclamation"></i></div>
       <div class="message-content" style="background:#fee2e2; border:1px solid #fca5a5;">
@@ -125,7 +131,7 @@ document.addEventListener('DOMContentLoaded', () => {
   function addTypingIndicator() {
     const id = 'typing-' + Date.now();
     const msgDiv = document.createElement('div');
-    msgDiv.className = `message bot-message`;
+    msgDiv.className = 'message bot-message';
     msgDiv.id = id;
     msgDiv.innerHTML = `
       <div class="message-avatar"><img src="../assets/images/Logo_GEIPER.png" alt="Bot"></div>
@@ -144,7 +150,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
   function removeElement(id) {
     const el = document.getElementById(id);
-    if(el) el.remove();
+    if (el) el.remove();
   }
 
   function scrollBottom() {
@@ -160,15 +166,15 @@ document.addEventListener('DOMContentLoaded', () => {
 
   async function checkServerConnection() {
     try {
-      const res = await fetch('http://localhost:8000/status');
-      if(res.ok) {
+      const res = await fetch(API_BASE + '/status');
+      if (res.ok) {
         serverStatus.textContent = "Servidor en línea";
         serverStatus.style.color = "#10b981";
       } else {
         throw new Error("bad-status");
       }
-    } catch(e) {
-      serverStatus.textContent = "Servidor desconectado";
+    } catch (e) {
+      serverStatus.textContent = "Servicio no disponible";
       serverStatus.style.color = "#ef4444";
     }
   }
@@ -176,10 +182,8 @@ document.addEventListener('DOMContentLoaded', () => {
   async function fetchFromBackend(query, mode) {
     const res = await fetch(API_ENDPOINT, {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json'
-      },
-      body: JSON.stringify({ query: query, mode: mode })
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ query, mode })
     });
 
     if (!res.ok) {
