@@ -216,7 +216,7 @@
       <h2 style="text-align: center; font-family: 'Playfair Display', serif; color: var(--azul-oscuro); margin-bottom: 10px; font-size: 28px;">Escríbenos directamente</h2>
       <p class="subtitle" style="text-align: center; color: var(--gris); font-size: 14px; margin-bottom: 30px;">¿Tienes alguna inquietud? Llena el formulario y el equipo te responderá en breve.</p>
       
-      <form action="https://formspree.io/f/xojydppj" method="POST">
+      <form id="contactForm">
         <div class="form-group">
           <label for="name">Tu Nombre Completo</label>
           <input type="text" id="name" name="name" class="form-input" placeholder="Ej: Laura Díaz" required>
@@ -434,6 +434,36 @@ document.querySelectorAll('.faq-question').forEach(button => {
       faqItem.classList.add('active');
     }
   });
+});
+</script>
+
+<script>
+document.getElementById('contactForm').addEventListener('submit', async function(e) {
+  e.preventDefault();
+  const form = e.target;
+  const submitBtn = form.querySelector('button[type="submit"]');
+  const originalText = submitBtn.innerHTML;
+
+  submitBtn.disabled = true;
+  submitBtn.innerHTML = '<i class="fa-solid fa-spinner fa-spin" style="margin-right:8px;"></i>Enviando...';
+
+  try {
+    const res = await fetch('https://formspree.io/f/xojydppj', {
+      method: 'POST',
+      headers: { 'Accept': 'application/json' },
+      body: new FormData(form)
+    });
+
+    if (!res.ok) throw new Error('error');
+
+    alert('¡Mensaje enviado! Nos pondremos en contacto contigo pronto.');
+    form.reset();
+  } catch (_) {
+    alert('Ocurrió un error al enviar el mensaje. Por favor intenta de nuevo.');
+  } finally {
+    submitBtn.disabled = false;
+    submitBtn.innerHTML = originalText;
+  }
 });
 </script>
 </body>
