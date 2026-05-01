@@ -9,14 +9,13 @@ logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(mess
 logger = logging.getLogger(__name__)
 
 try:
-    from langchain_huggingface import HuggingFaceEndpoint
+    from langchain_huggingface import HuggingFaceEndpoint, HuggingFaceEmbeddings
     from langchain_community.document_loaders import PyPDFDirectoryLoader
-    from langchain.text_splitter import RecursiveCharacterTextSplitter
+    from langchain_text_splitters import RecursiveCharacterTextSplitter
     from langchain_community.vectorstores import Chroma
     from langchain_core.prompts import ChatPromptTemplate
     from langchain.chains import create_retrieval_chain
     from langchain.chains.combine_documents import create_stuff_documents_chain
-    from langchain_community.embeddings.fastembed import FastEmbedEmbeddings
     HAS_LANGCHAIN = True
 except ImportError:
     HAS_LANGCHAIN = False
@@ -40,7 +39,8 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-DATA_DIR = "data"
+DOCS_DIR = "documentos"
+CHROMA_DIR = "chroma_db"
 vectorstore = None
 cloud_llm = None
 
@@ -71,23 +71,32 @@ def init_rag():
 
     cloud_llm = get_llm()
 
-    if not os.path.exists(DATA_DIR):
-        os.makedirs(DATA_DIR)
-        logger.info(f"Directorio '{DATA_DIR}' creado vacío.")
+    # Cargar desde chroma_db/ pre-generado (indexar.py lo crea localmente)
+    if os.path.exists(CHROMA_DIR):
+        logger.info("Cargando BD vectorial desde chroma_db/ ...")
+        embeddings = HuggingFaceEmbeddings(model_name="all-MiniLM-L6-v2")
+        vectorstore = Chroma(persist_directory=CHROMA_DIR, embedding_function=embeddings)
+        logger.info("BD Vectorial cargada desde disco.")
         return
 
-    loader = PyPDFDirectoryLoader(DATA_DIR)
+    # Fallback: indexar en vivo desde documentos/ (solo si no existe chroma_db/)
+    if not os.path.exists(DOCS_DIR):
+        os.makedirs(DOCS_DIR)
+        logger.info(f"Directorio '{DOCS_DIR}/' creado vacío. Agrega PDFs y corre indexar.py.")
+        return
+
+    loader = PyPDFDirectoryLoader(DOCS_DIR)
     docs = loader.load()
 
     if len(docs) == 0:
-        logger.info("No hay documentos PDF. RAG no se activará.")
+        logger.info("No hay PDFs en documentos/. RAG no se activará.")
         return
 
-    logger.info(f"Procesando PDFs para RAG. {len(docs)} páginas...")
+    logger.info(f"Indexando PDFs en vivo ({len(docs)} páginas). Para evitar esto, corre indexar.py primero.")
     text_splitter = RecursiveCharacterTextSplitter(chunk_size=1000, chunk_overlap=200)
     splits = text_splitter.split_documents(docs)
 
-    embeddings = FastEmbedEmbeddings()
+    embeddings = HuggingFaceEmbeddings(model_name="all-MiniLM-L6-v2")
     vectorstore = Chroma.from_documents(documents=splits, embedding=embeddings)
     logger.info("BD Vectorial lista.")
 
