@@ -9,7 +9,8 @@ logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(mess
 logger = logging.getLogger(__name__)
 
 try:
-    from langchain_huggingface import HuggingFaceEndpoint, HuggingFaceEmbeddings
+    from langchain_huggingface import HuggingFaceEndpoint
+    from langchain_community.embeddings import HuggingFaceInferenceAPIEmbeddings
     from langchain_community.document_loaders import PyPDFDirectoryLoader
     from langchain_text_splitters import RecursiveCharacterTextSplitter
     from langchain_community.vectorstores import Chroma
@@ -74,7 +75,7 @@ def init_rag():
     # Cargar desde chroma_db/ pre-generado (indexar.py lo crea localmente)
     if os.path.exists(CHROMA_DIR):
         logger.info("Cargando BD vectorial desde chroma_db/ ...")
-        embeddings = HuggingFaceEmbeddings(model_name="all-MiniLM-L6-v2")
+        embeddings = HuggingFaceInferenceAPIEmbeddings(api_key=os.environ.get("HF_TOKEN", ""), model_name="sentence-transformers/all-MiniLM-L6-v2")
         vectorstore = Chroma(persist_directory=CHROMA_DIR, embedding_function=embeddings)
         logger.info("BD Vectorial cargada desde disco.")
         return
@@ -96,7 +97,7 @@ def init_rag():
     text_splitter = RecursiveCharacterTextSplitter(chunk_size=1000, chunk_overlap=200)
     splits = text_splitter.split_documents(docs)
 
-    embeddings = HuggingFaceEmbeddings(model_name="all-MiniLM-L6-v2")
+    embeddings = HuggingFaceInferenceAPIEmbeddings(api_key=os.environ.get("HF_TOKEN", ""), model_name="sentence-transformers/all-MiniLM-L6-v2")
     vectorstore = Chroma.from_documents(documents=splits, embedding=embeddings)
     logger.info("BD Vectorial lista.")
 
