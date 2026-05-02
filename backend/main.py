@@ -37,7 +37,7 @@ app.add_middleware(
 )
 
 CHROMA_DIR = "chroma_db"
-HF_API_URL = "https://api-inference.huggingface.co/models/mistralai/Mistral-7B-Instruct-v0.3/v1/chat/completions"
+HF_API_URL = "https://api-inference.huggingface.co/v1/chat/completions"
 vectorstore = None
 api_token = None
 
