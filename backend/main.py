@@ -51,14 +51,14 @@ vectorstore = None
 cloud_llm = None
 
 def get_llm():
-    api_token = os.environ.get("HF_TOKEN")
+    api_token = os.environ.get("HUGGINGFACEHUB_API_TOKEN") or os.environ.get("HF_TOKEN")
     if not api_token:
-        logger.warning("No se encontró el HF_TOKEN en las variables de entorno.")
+        logger.warning("No se encontró HUGGINGFACEHUB_API_TOKEN ni HF_TOKEN.")
         return None
 
     try:
         llm = HuggingFaceEndpoint(
-            repo_id="mistralai/Mistral-7B-Instruct-v0.2",
+            repo_id="HuggingFaceH4/zephyr-7b-beta",
             task="text-generation",
             huggingfacehub_api_token=api_token,
             temperature=0.3,
@@ -80,7 +80,7 @@ def init_rag():
     # Cargar desde chroma_db/ pre-generado (indexar.py lo crea localmente)
     if os.path.exists(CHROMA_DIR):
         logger.info("Cargando BD vectorial desde chroma_db/ ...")
-        embeddings = HuggingFaceInferenceAPIEmbeddings(api_key=os.environ.get("HF_TOKEN", ""), model_name="sentence-transformers/all-MiniLM-L6-v2")
+        embeddings = HuggingFaceInferenceAPIEmbeddings(api_key=os.environ.get("HUGGINGFACEHUB_API_TOKEN", ""), model_name="sentence-transformers/all-MiniLM-L6-v2")
         vectorstore = Chroma(persist_directory=CHROMA_DIR, embedding_function=embeddings)
         logger.info("BD Vectorial cargada desde disco.")
         return
@@ -102,7 +102,7 @@ def init_rag():
     text_splitter = RecursiveCharacterTextSplitter(chunk_size=1000, chunk_overlap=200)
     splits = text_splitter.split_documents(docs)
 
-    embeddings = HuggingFaceInferenceAPIEmbeddings(api_key=os.environ.get("HF_TOKEN", ""), model_name="sentence-transformers/all-MiniLM-L6-v2")
+    embeddings = HuggingFaceInferenceAPIEmbeddings(api_key=os.environ.get("HUGGINGFACEHUB_API_TOKEN", ""), model_name="sentence-transformers/all-MiniLM-L6-v2")
     vectorstore = Chroma.from_documents(documents=splits, embedding=embeddings)
     logger.info("BD Vectorial lista.")
 
