@@ -55,8 +55,9 @@ def init_services():
 
     try:
         hf_client = InferenceClient(
-            model="HuggingFaceH4/zephyr-7b-beta",
-            token=api_token
+            model="mistralai/Mistral-7B-Instruct-v0.3",
+            token=api_token,
+            provider="hf-inference"
         )
         logger.info("Cliente HuggingFace listo.")
     except Exception as e:
@@ -113,13 +114,13 @@ def chat(request: ChatRequest):
         else:
             raise HTTPException(status_code=400, detail="Modo inválido.")
 
-        result = hf_client.text_generation(
-            prompt,
-            max_new_tokens=500,
-            temperature=0.3,
-            return_full_text=False
-        )
-        return {"response": result}
+        messages = [
+            {"role": "system", "content": "Eres un asistente del grupo de investigación GEIPER. Responde siempre en español de forma clara y profesional."},
+            {"role": "user", "content": prompt}
+        ]
+        result = hf_client.chat_completion(messages=messages, max_tokens=500, temperature=0.3)
+        respuesta = result.choices[0].message.content
+        return {"response": respuesta}
 
     except Exception as e:
         logger.error(f"Error API: {e}")
