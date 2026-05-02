@@ -285,6 +285,7 @@ section { padding: 100px 80px; }
 }
 .badge-estudiante  { background: #E1F5EE; color: #0F6E56; }
 .badge-profesional { background: #E6F1FB; color: #185FA5; }
+.badge-lider       { background: #FFF3CD; color: #856404; }
 .card-int.hidden   { display: none; }
 
 /* ── REPOSITORIOS ─────────────────────────────── */
