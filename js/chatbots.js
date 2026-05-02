@@ -15,7 +15,11 @@ document.addEventListener('DOMContentLoaded', () => {
   const serverStatus = document.getElementById('serverStatus');
 
   let currentMode = 'tematico'; // modos válidos: 'tematico', 'investigacion'
-  const API_BASE = window.GEIPER_API_URL || 'http://localhost:8000';
+  // URL del backend: usa variable global, o detecta producción vs local
+  const API_BASE = window.GEIPER_API_URL ||
+                   (window.location.hostname === 'geiperud.github.io'
+                     ? 'https://geiper-backend.onrender.com'
+                     : 'http://localhost:8000');
   const API_ENDPOINT = API_BASE + '/chat';
 
   // Configuración de los bots (Saludo inicial y títulos)
