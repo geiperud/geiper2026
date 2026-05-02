@@ -3,7 +3,6 @@ import time
 import logging
 import traceback
 import requests
-import google.generativeai as genai
 from fastapi import FastAPI, HTTPException, Request, Response
 from fastapi.middleware.cors import CORSMiddleware
 from starlette.middleware.base import BaseHTTPMiddleware
@@ -38,29 +37,29 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-CHROMA_DIR = "chroma_db"
-vectorstore = None
-gemini_model = None
-api_token = None
+CHROMA_DIR   = "chroma_db"
+GEMINI_MODEL = "gemini-2.0-flash"
+EMBED_MODEL  = "gemini-embedding-001"
+GEMINI_URL   = f"https://generativelanguage.googleapis.com/v1beta/models/{GEMINI_MODEL}:generateContent"
+EMBED_URL    = f"https://generativelanguage.googleapis.com/v1beta/models/{EMBED_MODEL}:embedContent"
 
-# ── Embeddings via REST (sin SDK, sin conflictos de versiones) ───────────────
+vectorstore = None
+api_token   = None
+
+# ── Embeddings via REST ──────────────────────────────────────────────────────
 class GoogleEmbeddingsREST(Embeddings):
     def __init__(self, api_key):
-        self.api_key  = api_key
-        self.model    = "gemini-embedding-001"
-        self.base_url = (
-            f"https://generativelanguage.googleapis.com/v1beta/models/"
-            f"{self.model}:embedContent?key={self.api_key}"
-        )
+        self.api_key = api_key
+        self.url     = EMBED_URL + f"?key={api_key}"
 
     def _embed_one(self, text):
         payload = {
-            "model": f"models/{self.model}",
+            "model": f"models/{EMBED_MODEL}",
             "content": {"parts": [{"text": text}]}
         }
         for intento in range(3):
             try:
-                resp = requests.post(self.base_url, json=payload, timeout=30)
+                resp = requests.post(self.url, json=payload, timeout=30)
                 resp.raise_for_status()
                 return resp.json()["embedding"]["values"]
             except Exception as e:
@@ -70,18 +69,38 @@ class GoogleEmbeddingsREST(Embeddings):
                     raise e
 
     def embed_documents(self, texts):
-        embeddings = []
+        result = []
         for text in texts:
-            embeddings.append(self._embed_one(text))
+            result.append(self._embed_one(text))
             time.sleep(0.05)
-        return embeddings
+        return result
 
     def embed_query(self, text):
         return self._embed_one(text)
 
 
+# ── LLM via REST ─────────────────────────────────────────────────────────────
+def gemini_generate(prompt, api_key):
+    url = GEMINI_URL + f"?key={api_key}"
+    payload = {
+        "systemInstruction": {
+            "parts": [{"text": "Eres un asistente del grupo de investigacion GEIPER. Responde SIEMPRE en español, sin excepcion."}]
+        },
+        "contents": [
+            {"role": "user", "parts": [{"text": prompt}]}
+        ],
+        "generationConfig": {
+            "maxOutputTokens": 500,
+            "temperature": 0.3
+        }
+    }
+    resp = requests.post(url, json=payload, timeout=60)
+    resp.raise_for_status()
+    return resp.json()["candidates"][0]["content"]["parts"][0]["text"]
+
+
 def init_services():
-    global vectorstore, gemini_model, api_token
+    global vectorstore, api_token
 
     api_token = os.environ.get("GOOGLE_API_KEY", "")
     if not api_token:
@@ -90,23 +109,6 @@ def init_services():
 
     logger.info("Google API Key encontrada.")
 
-    # Configurar Gemini LLM
-    try:
-        genai.configure(api_key=api_token)
-        gemini_model = genai.GenerativeModel(
-            model_name="gemini-2.0-flash",
-            generation_config=genai.GenerationConfig(
-                max_output_tokens=500,
-                temperature=0.3,
-            ),
-            system_instruction="Eres un asistente del grupo de investigacion GEIPER. Responde SIEMPRE en español, sin excepcion."
-        )
-        logger.info("Modelo Gemini 1.5 Flash listo.")
-    except Exception as e:
-        logger.error(f"Error configurando Gemini: {e}")
-        return
-
-    # Cargar ChromaDB con embeddings REST
     if not HAS_DEPS:
         logger.warning("Faltan dependencias de LangChain/ChromaDB.")
         return
@@ -118,7 +120,7 @@ def init_services():
                 persist_directory=CHROMA_DIR,
                 embedding_function=embeddings
             )
-            logger.info("BD Vectorial cargada con Google Embeddings REST.")
+            logger.info("BD Vectorial cargada.")
         except Exception as e:
             logger.error(f"Error cargando ChromaDB: {e}")
 
@@ -132,18 +134,18 @@ class ChatRequest(BaseModel):
 
 @app.get("/status")
 def status():
-    return {"status": "ok", "cloud_ready": bool(api_token and gemini_model)}
+    return {"status": "ok", "cloud_ready": bool(api_token)}
 
 @app.post("/chat")
 def chat(request: ChatRequest):
-    if not api_token or not gemini_model:
+    if not api_token:
         raise HTTPException(status_code=500, detail="Sin configuracion de Google API.")
 
     try:
         if request.mode == "investigacion":
             user_prompt = (
                 f"Eres el Asistente de Investigacion del grupo GEIPER. "
-                f"Responde en español de forma profesional y detallada.\n\n"
+                f"Responde en español de forma profesional.\n\n"
                 f"Pregunta: {request.query}"
             )
         else:
@@ -154,31 +156,30 @@ def chat(request: ChatRequest):
                     contexto = "\n\n".join([d.page_content for d in docs])
                     logger.info(f"RAG: {len(docs)} fragmentos encontrados.")
                 except Exception as e:
-                    logger.warning(f"RAG fallo, respondiendo sin contexto: {e}")
+                    logger.warning(f"RAG fallo: {e}")
 
             if contexto:
                 user_prompt = (
                     f"Eres el Asistente Tematico del semillero GEIPER. "
-                    f"Usa el siguiente contexto de los documentos del grupo para responder en español.\n\n"
+                    f"Usa el siguiente contexto de los documentos para responder en español.\n\n"
                     f"Contexto:\n{contexto}\n\n"
                     f"Pregunta: {request.query}"
                 )
             else:
                 user_prompt = (
                     f"Eres el Asistente Tematico del semillero GEIPER. "
-                    f"Responde en español sobre el grupo GEIPER y sus temas de investigacion.\n\n"
+                    f"Responde en español sobre el grupo GEIPER.\n\n"
                     f"Pregunta: {request.query}"
                 )
 
-        logger.info(f"Enviando prompt a Gemini (modo: {request.mode})")
-        response = gemini_model.generate_content(user_prompt)
-        respuesta = response.text
+        logger.info(f"Enviando a Gemini (modo: {request.mode})")
+        respuesta = gemini_generate(user_prompt, api_token)
         logger.info("Respuesta recibida de Gemini.")
         return {"response": respuesta}
 
     except HTTPException:
         raise
     except Exception as e:
-        logger.error(f"Error API: {e}")
+        logger.error(f"Error: {e}")
         logger.error(traceback.format_exc())
         raise HTTPException(status_code=500, detail="Servicio temporalmente no disponible.")
