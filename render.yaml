@@ -1,0 +1,17 @@
+services:
+  - type: web
+    name: geiper-ai-backend
+    env: python
+    region: oregon
+    plan: free
+    buildCommand: pip install -r backend/requirements.txt
+    startCommand: cd backend && uvicorn main:app --host 0.0.0.0 --port $PORT
+    envVars:
+      - key: PYTHON_VERSION
+        value: 3.11.0
+      - key: HF_TOKEN
+        sync: false
+    disk:
+      name: chroma-data
+      mountPath: /backend/chroma_db
+      sizeGB: 1
