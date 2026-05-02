@@ -8,23 +8,14 @@ from pydantic import BaseModel, Field
 logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(message)s")
 logger = logging.getLogger(__name__)
 
-# Render asigna el puerto vía variable de entorno
-PORT = int(os.environ.get("PORT", 8000))
-logger.info(f"Configurado para escuchar en puerto {PORT}")
-
 try:
-    from langchain_huggingface import HuggingFaceEndpoint
+    from huggingface_hub import InferenceClient
     from langchain_community.embeddings import HuggingFaceInferenceAPIEmbeddings
-    from langchain_community.document_loaders import PyPDFDirectoryLoader
-    from langchain_text_splitters import RecursiveCharacterTextSplitter
     from langchain_chroma import Chroma
-    from langchain_core.prompts import ChatPromptTemplate
-    from langchain_classic.chains import create_retrieval_chain
-    from langchain_classic.chains.combine_documents import create_stuff_documents_chain
-    HAS_LANGCHAIN = True
+    HAS_DEPS = True
 except ImportError as e:
-    logger.error(f"ImportError al cargar LangChain: {e}")
-    HAS_LANGCHAIN = False
+    logger.error(f"ImportError: {e}")
+    HAS_DEPS = False
 
 app = FastAPI(title="GEIPER AI Cloud Backend")
 
@@ -45,70 +36,47 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-DOCS_DIR = "documentos"
 CHROMA_DIR = "chroma_db"
+DOCS_DIR = "documentos"
 vectorstore = None
-cloud_llm = None
+hf_client = None
 
-def get_llm():
-    api_token = os.environ.get("HUGGINGFACEHUB_API_TOKEN") or os.environ.get("HF_TOKEN")
+def init_services():
+    global vectorstore, hf_client
+
+    if not HAS_DEPS:
+        logger.warning("Faltan dependencias.")
+        return
+
+    api_token = os.environ.get("HUGGINGFACEHUB_API_TOKEN", "")
     if not api_token:
-        logger.warning("No se encontró HUGGINGFACEHUB_API_TOKEN ni HF_TOKEN.")
-        return None
+        logger.warning("No se encontró HUGGINGFACEHUB_API_TOKEN.")
+        return
 
     try:
-        llm = HuggingFaceEndpoint(
-            repo_id="HuggingFaceH4/zephyr-7b-beta",
-            task="text-generation",
-            huggingfacehub_api_token=api_token,
-            temperature=0.3,
-            max_new_tokens=500
+        hf_client = InferenceClient(
+            model="HuggingFaceH4/zephyr-7b-beta",
+            token=api_token
         )
-        return llm
+        logger.info("Cliente HuggingFace listo.")
     except Exception as e:
-        logger.error(f"Error cargando LLM de Hugging Face: {e}")
-        return None
-
-def init_rag():
-    global vectorstore, cloud_llm
-    if not HAS_LANGCHAIN:
-        logger.warning("Faltan dependencias. Verifica requirements.txt")
+        logger.error(f"Error creando cliente HF: {e}")
         return
 
-    cloud_llm = get_llm()
-
-    # Cargar desde chroma_db/ pre-generado (indexar.py lo crea localmente)
     if os.path.exists(CHROMA_DIR):
-        logger.info("Cargando BD vectorial desde chroma_db/ ...")
-        embeddings = HuggingFaceInferenceAPIEmbeddings(api_key=os.environ.get("HUGGINGFACEHUB_API_TOKEN", ""), model_name="sentence-transformers/all-MiniLM-L6-v2")
-        vectorstore = Chroma(persist_directory=CHROMA_DIR, embedding_function=embeddings)
-        logger.info("BD Vectorial cargada desde disco.")
-        return
-
-    # Fallback: indexar en vivo desde documentos/ (solo si no existe chroma_db/)
-    if not os.path.exists(DOCS_DIR):
-        os.makedirs(DOCS_DIR)
-        logger.info(f"Directorio '{DOCS_DIR}/' creado vacío. Agrega PDFs y corre indexar.py.")
-        return
-
-    loader = PyPDFDirectoryLoader(DOCS_DIR)
-    docs = loader.load()
-
-    if len(docs) == 0:
-        logger.info("No hay PDFs en documentos/. RAG no se activará.")
-        return
-
-    logger.info(f"Indexando PDFs en vivo ({len(docs)} páginas). Para evitar esto, corre indexar.py primero.")
-    text_splitter = RecursiveCharacterTextSplitter(chunk_size=1000, chunk_overlap=200)
-    splits = text_splitter.split_documents(docs)
-
-    embeddings = HuggingFaceInferenceAPIEmbeddings(api_key=os.environ.get("HUGGINGFACEHUB_API_TOKEN", ""), model_name="sentence-transformers/all-MiniLM-L6-v2")
-    vectorstore = Chroma.from_documents(documents=splits, embedding=embeddings)
-    logger.info("BD Vectorial lista.")
+        try:
+            embeddings = HuggingFaceInferenceAPIEmbeddings(
+                api_key=api_token,
+                model_name="sentence-transformers/all-MiniLM-L6-v2"
+            )
+            vectorstore = Chroma(persist_directory=CHROMA_DIR, embedding_function=embeddings)
+            logger.info("BD Vectorial cargada desde disco.")
+        except Exception as e:
+            logger.error(f"Error cargando ChromaDB: {e}")
 
 @app.on_event("startup")
 def on_startup():
-    init_rag()
+    init_services()
 
 class ChatRequest(BaseModel):
     query: str = Field(min_length=1, max_length=2000)
@@ -116,45 +84,42 @@ class ChatRequest(BaseModel):
 
 @app.get("/status")
 def status():
-    return {"status": "ok", "cloud_ready": cloud_llm is not None}
+    return {"status": "ok", "cloud_ready": hf_client is not None}
 
 @app.post("/chat")
 def chat(request: ChatRequest):
-    if cloud_llm is None:
-        raise HTTPException(status_code=500, detail="Backend Python sin token a HuggingFace.")
+    if hf_client is None:
+        raise HTTPException(status_code=500, detail="Backend sin conexión a HuggingFace.")
 
     try:
         if request.mode == "investigacion":
-            prompt = ChatPromptTemplate.from_template(
-                "Eres el Asistente de Investigación estricto del grupo GEIPER. "
-                "Responde en español de forma profesional a esta consulta: {input}"
+            prompt = (
+                f"Eres el Asistente de Investigación del grupo GEIPER. "
+                f"Responde en español de forma profesional.\n\n"
+                f"Pregunta: {request.query}\nRespuesta:"
             )
-            chain = prompt | cloud_llm
-            response = chain.invoke({"input": request.query})
-            return {"response": response}
-
         elif request.mode == "tematico":
+            contexto = ""
             if vectorstore is not None:
-                retriever = vectorstore.as_retriever()
-                system_prompt = (
-                    "Eres el Asistente Temático. Usa el texto recuperado de nuestros documentos para responder.\n\n"
-                    "Contexto: {context}\n\nResponde amablemente en español:"
-                )
-                prompt = ChatPromptTemplate.from_messages([
-                    ("system", system_prompt),
-                    ("human", "{input}")
-                ])
-                qa_chain = create_stuff_documents_chain(cloud_llm, prompt)
-                rag_chain = create_retrieval_chain(retriever, qa_chain)
-                result = rag_chain.invoke({"input": request.query})
-                return {"response": result["answer"]}
-            else:
-                prompt = ChatPromptTemplate.from_template("Responde amablemente en español: {input}")
-                chain = prompt | cloud_llm
-                response = chain.invoke({"input": request.query})
-                return {"response": response}
+                docs = vectorstore.similarity_search(request.query, k=3)
+                contexto = "\n\n".join([d.page_content for d in docs])
+
+            prompt = (
+                f"Eres el Asistente Temático del semillero GEIPER. "
+                f"Usa el contexto para responder amablemente en español.\n\n"
+                f"Contexto:\n{contexto}\n\n"
+                f"Pregunta: {request.query}\nRespuesta:"
+            )
         else:
             raise HTTPException(status_code=400, detail="Modo inválido.")
+
+        result = hf_client.text_generation(
+            prompt,
+            max_new_tokens=500,
+            temperature=0.3,
+            return_full_text=False
+        )
+        return {"response": result}
 
     except Exception as e:
         logger.error(f"Error API: {e}")
