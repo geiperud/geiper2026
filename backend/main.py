@@ -94,9 +94,16 @@ def gemini_generate(prompt, api_key):
             "temperature": 0.3
         }
     }
-    resp = requests.post(url, json=payload, timeout=60)
+    for intento in range(3):
+        resp = requests.post(url, json=payload, timeout=60)
+        if resp.status_code == 429:
+            espera = 10 * (intento + 1)
+            logger.warning(f"Rate limit (429), esperando {espera}s antes de reintentar...")
+            time.sleep(espera)
+            continue
+        resp.raise_for_status()
+        return resp.json()["candidates"][0]["content"]["parts"][0]["text"]
     resp.raise_for_status()
-    return resp.json()["candidates"][0]["content"]["parts"][0]["text"]
 
 
 def init_services():
