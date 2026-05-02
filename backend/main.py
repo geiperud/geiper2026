@@ -37,7 +37,7 @@ app.add_middleware(
 )
 
 CHROMA_DIR = "chroma_db"
-HF_API_URL = "https://api-inference.huggingface.co/models/mistralai/Mistral-7B-Instruct-v0.3"
+HF_API_URL = "https://api-inference.huggingface.co/models/mistralai/Mistral-7B-Instruct-v0.3/v1/chat/completions"
 vectorstore = None
 api_token = None
 
@@ -107,15 +107,19 @@ def chat(request: ChatRequest):
                 f"Contexto:\n{contexto}\n\nPregunta: {request.query}"
             )
 
-        # Llamada directa a HuggingFace API
-        headers = {"Authorization": f"Bearer {api_token}"}
+        # Llamada directa a HuggingFace API (formato OpenAI /v1/chat/completions)
+        headers = {
+            "Authorization": f"Bearer {api_token}",
+            "Content-Type": "application/json"
+        }
         payload = {
-            "inputs": user_prompt,
-            "parameters": {
-                "max_new_tokens": 500,
-                "temperature": 0.3,
-                "return_full_text": False
-            }
+            "model": "mistralai/Mistral-7B-Instruct-v0.3",
+            "messages": [
+                {"role": "system", "content": "Eres un asistente del grupo GEIPER. Responde siempre en español."},
+                {"role": "user", "content": user_prompt}
+            ],
+            "max_tokens": 500,
+            "temperature": 0.3
         }
 
         response = requests.post(HF_API_URL, headers=headers, json=payload, timeout=60)
@@ -124,14 +128,8 @@ def chat(request: ChatRequest):
 
         response.raise_for_status()
         data = response.json()
-
-        if isinstance(data, list) and len(data) > 0:
-            return {"response": data[0].get("generated_text", str(data))}
-        elif isinstance(data, dict) and "error" in data:
-            logger.error(f"HF error: {data['error']}")
-            raise HTTPException(status_code=503, detail=f"Modelo no disponible: {data['error']}")
-        else:
-            return {"response": str(data)}
+        respuesta = data["choices"][0]["message"]["content"]
+        return {"response": respuesta}
 
     except HTTPException:
         raise
