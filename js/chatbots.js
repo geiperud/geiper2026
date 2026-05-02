@@ -18,7 +18,7 @@ document.addEventListener('DOMContentLoaded', () => {
   // URL del backend: usa variable global, o detecta producción vs local
   const API_BASE = window.GEIPER_API_URL ||
                    (window.location.hostname === 'geiperud.github.io'
-                     ? 'https://geiper-backend.onrender.com'
+                     ? 'https://geiper2026.onrender.com'
                      : 'http://localhost:8000');
   const API_ENDPOINT = API_BASE + '/chat';
 
