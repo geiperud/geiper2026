@@ -94,8 +94,13 @@ def chat(request: ChatRequest):
         else:
             contexto = ""
             if vectorstore is not None:
-                docs = vectorstore.similarity_search(request.query, k=3)
-                contexto = "\n\n".join([d.page_content for d in docs])
+                try:
+                    docs = vectorstore.similarity_search(request.query, k=3)
+                    contexto = "\n\n".join([d.page_content for d in docs])
+                    logger.info(f"RAG: {len(docs)} fragmentos encontrados.")
+                except Exception as e:
+                    logger.warning(f"RAG falló, respondiendo sin contexto: {e}")
+                    contexto = ""
             user_prompt = (
                 f"Eres el Asistente Temático del semillero GEIPER. "
                 f"Usa el contexto para responder en español.\n\n"
