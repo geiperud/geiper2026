@@ -6,7 +6,7 @@ langchain-community==0.0.38
 langchain-core==0.1.52
 langchain-text-splitters==0.0.1
 langchain-huggingface==0.0.3
-langchain-chroma==0.1.2
+langchain-chroma==0.2.2
 chromadb>=1.0.0
 pypdf==3.17.4
 huggingface-hub==0.23.4
