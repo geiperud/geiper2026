@@ -37,16 +37,17 @@ app.add_middleware(
 )
 
 CHROMA_DIR = "chroma_db"
-HF_API_URL = "https://api-inference.huggingface.co/v1/chat/completions"
+HF_API_URL = "https://router.huggingface.co/v1/chat/completions"
+HF_MODEL   = "mistralai/Mistral-7B-Instruct-v0.2:featherless-ai"
 vectorstore = None
 api_token = None
 
 def init_services():
     global vectorstore, api_token
 
-    api_token = os.environ.get("HUGGINGFACEHUB_API_TOKEN", "")
+    api_token = os.environ.get("HF_TOKEN", "") or os.environ.get("HUGGINGFACEHUB_API_TOKEN", "")
     if not api_token:
-        logger.warning("No se encontró HUGGINGFACEHUB_API_TOKEN.")
+        logger.warning("No se encontró HF_TOKEN.")
         return
 
     logger.info("Token HuggingFace encontrado.")
@@ -113,7 +114,7 @@ def chat(request: ChatRequest):
             "Content-Type": "application/json"
         }
         payload = {
-            "model": "mistralai/Mistral-7B-Instruct-v0.3",
+            "model": HF_MODEL,
             "messages": [
                 {"role": "system", "content": "Eres un asistente del grupo GEIPER. Responde siempre en español."},
                 {"role": "user", "content": user_prompt}
