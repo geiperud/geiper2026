@@ -1,6 +1,8 @@
 import os
+import time
 import logging
 import traceback
+import requests
 import google.generativeai as genai
 from fastapi import FastAPI, HTTPException, Request, Response
 from fastapi.middleware.cors import CORSMiddleware
@@ -11,8 +13,8 @@ logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(mess
 logger = logging.getLogger(__name__)
 
 try:
-    from langchain_google_genai import GoogleGenerativeAIEmbeddings
     from langchain_chroma import Chroma
+    from langchain_core.embeddings import Embeddings
     HAS_DEPS = True
 except ImportError as e:
     logger.error(f"ImportError: {e}")
@@ -41,6 +43,43 @@ vectorstore = None
 gemini_model = None
 api_token = None
 
+# ── Embeddings via REST (sin SDK, sin conflictos de versiones) ───────────────
+class GoogleEmbeddingsREST(Embeddings):
+    def __init__(self, api_key):
+        self.api_key  = api_key
+        self.model    = "gemini-embedding-001"
+        self.base_url = (
+            f"https://generativelanguage.googleapis.com/v1beta/models/"
+            f"{self.model}:embedContent?key={self.api_key}"
+        )
+
+    def _embed_one(self, text):
+        payload = {
+            "model": f"models/{self.model}",
+            "content": {"parts": [{"text": text}]}
+        }
+        for intento in range(3):
+            try:
+                resp = requests.post(self.base_url, json=payload, timeout=30)
+                resp.raise_for_status()
+                return resp.json()["embedding"]["values"]
+            except Exception as e:
+                if intento < 2:
+                    time.sleep(2)
+                else:
+                    raise e
+
+    def embed_documents(self, texts):
+        embeddings = []
+        for text in texts:
+            embeddings.append(self._embed_one(text))
+            time.sleep(0.05)
+        return embeddings
+
+    def embed_query(self, text):
+        return self._embed_one(text)
+
+
 def init_services():
     global vectorstore, gemini_model, api_token
 
@@ -51,7 +90,7 @@ def init_services():
 
     logger.info("Google API Key encontrada.")
 
-    # Configurar Gemini
+    # Configurar Gemini LLM
     try:
         genai.configure(api_key=api_token)
         gemini_model = genai.GenerativeModel(
@@ -67,22 +106,19 @@ def init_services():
         logger.error(f"Error configurando Gemini: {e}")
         return
 
-    # Cargar ChromaDB con embeddings de Google
+    # Cargar ChromaDB con embeddings REST
     if not HAS_DEPS:
         logger.warning("Faltan dependencias de LangChain/ChromaDB.")
         return
 
     if os.path.exists(CHROMA_DIR):
         try:
-            embeddings = GoogleGenerativeAIEmbeddings(
-                model="models/gemini-embedding-001",
-                google_api_key=api_token
-            )
+            embeddings = GoogleEmbeddingsREST(api_key=api_token)
             vectorstore = Chroma(
                 persist_directory=CHROMA_DIR,
                 embedding_function=embeddings
             )
-            logger.info("BD Vectorial cargada con Google Embeddings.")
+            logger.info("BD Vectorial cargada con Google Embeddings REST.")
         except Exception as e:
             logger.error(f"Error cargando ChromaDB: {e}")
 
@@ -119,12 +155,11 @@ def chat(request: ChatRequest):
                     logger.info(f"RAG: {len(docs)} fragmentos encontrados.")
                 except Exception as e:
                     logger.warning(f"RAG fallo, respondiendo sin contexto: {e}")
-                    contexto = ""
 
             if contexto:
                 user_prompt = (
                     f"Eres el Asistente Tematico del semillero GEIPER. "
-                    f"Usa el siguiente contexto extraido de los documentos del grupo para responder en español.\n\n"
+                    f"Usa el siguiente contexto de los documentos del grupo para responder en español.\n\n"
                     f"Contexto:\n{contexto}\n\n"
                     f"Pregunta: {request.query}"
                 )
