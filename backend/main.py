@@ -8,6 +8,10 @@ from pydantic import BaseModel, Field
 logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(message)s")
 logger = logging.getLogger(__name__)
 
+# Render asigna el puerto vía variable de entorno
+PORT = int(os.environ.get("PORT", 8000))
+logger.info(f"Configurado para escuchar en puerto {PORT}")
+
 try:
     from langchain_huggingface import HuggingFaceEndpoint
     from langchain_community.embeddings import HuggingFaceInferenceAPIEmbeddings
