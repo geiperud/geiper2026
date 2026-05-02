@@ -22,7 +22,8 @@ try:
     from langchain.chains import create_retrieval_chain
     from langchain.chains.combine_documents import create_stuff_documents_chain
     HAS_LANGCHAIN = True
-except ImportError:
+except ImportError as e:
+    logger.error(f"ImportError al cargar LangChain: {e}")
     HAS_LANGCHAIN = False
 
 app = FastAPI(title="GEIPER AI Cloud Backend")
