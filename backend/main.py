@@ -1,5 +1,7 @@
 import os
 import logging
+import traceback
+import requests
 from fastapi import FastAPI, HTTPException, Request, Response
 from fastapi.middleware.cors import CORSMiddleware
 from starlette.middleware.base import BaseHTTPMiddleware
@@ -9,7 +11,6 @@ logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(mess
 logger = logging.getLogger(__name__)
 
 try:
-    from huggingface_hub import InferenceClient
     from langchain_community.embeddings import HuggingFaceInferenceAPIEmbeddings
     from langchain_chroma import Chroma
     HAS_DEPS = True
@@ -28,7 +29,6 @@ class SecurityHeadersMiddleware(BaseHTTPMiddleware):
         return response
 
 app.add_middleware(SecurityHeadersMiddleware)
-
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["https://geiperud.github.io"],
@@ -37,31 +37,22 @@ app.add_middleware(
 )
 
 CHROMA_DIR = "chroma_db"
-DOCS_DIR = "documentos"
+HF_API_URL = "https://api-inference.huggingface.co/models/mistralai/Mistral-7B-Instruct-v0.3"
 vectorstore = None
-hf_client = None
+api_token = None
 
 def init_services():
-    global vectorstore, hf_client
-
-    if not HAS_DEPS:
-        logger.warning("Faltan dependencias.")
-        return
+    global vectorstore, api_token
 
     api_token = os.environ.get("HUGGINGFACEHUB_API_TOKEN", "")
     if not api_token:
         logger.warning("No se encontró HUGGINGFACEHUB_API_TOKEN.")
         return
 
-    try:
-        hf_client = InferenceClient(
-            model="mistralai/Mistral-7B-Instruct-v0.3",
-            token=api_token,
-            provider="hf-inference"
-        )
-        logger.info("Cliente HuggingFace listo.")
-    except Exception as e:
-        logger.error(f"Error creando cliente HF: {e}")
+    logger.info("Token HuggingFace encontrado.")
+
+    if not HAS_DEPS:
+        logger.warning("Faltan dependencias de LangChain/ChromaDB.")
         return
 
     if os.path.exists(CHROMA_DIR):
@@ -71,7 +62,7 @@ def init_services():
                 model_name="sentence-transformers/all-MiniLM-L6-v2"
             )
             vectorstore = Chroma(persist_directory=CHROMA_DIR, embedding_function=embeddings)
-            logger.info("BD Vectorial cargada desde disco.")
+            logger.info("BD Vectorial cargada.")
         except Exception as e:
             logger.error(f"Error cargando ChromaDB: {e}")
 
@@ -85,43 +76,61 @@ class ChatRequest(BaseModel):
 
 @app.get("/status")
 def status():
-    return {"status": "ok", "cloud_ready": hf_client is not None}
+    return {"status": "ok", "cloud_ready": bool(api_token)}
 
 @app.post("/chat")
 def chat(request: ChatRequest):
-    if hf_client is None:
-        raise HTTPException(status_code=500, detail="Backend sin conexión a HuggingFace.")
+    if not api_token:
+        raise HTTPException(status_code=500, detail="Sin token HuggingFace.")
 
     try:
+        # Construir prompt según modo
         if request.mode == "investigacion":
-            prompt = (
+            user_prompt = (
                 f"Eres el Asistente de Investigación del grupo GEIPER. "
                 f"Responde en español de forma profesional.\n\n"
-                f"Pregunta: {request.query}\nRespuesta:"
+                f"Pregunta: {request.query}"
             )
-        elif request.mode == "tematico":
+        else:
             contexto = ""
             if vectorstore is not None:
                 docs = vectorstore.similarity_search(request.query, k=3)
                 contexto = "\n\n".join([d.page_content for d in docs])
-
-            prompt = (
+            user_prompt = (
                 f"Eres el Asistente Temático del semillero GEIPER. "
-                f"Usa el contexto para responder amablemente en español.\n\n"
-                f"Contexto:\n{contexto}\n\n"
-                f"Pregunta: {request.query}\nRespuesta:"
+                f"Usa el contexto para responder en español.\n\n"
+                f"Contexto:\n{contexto}\n\nPregunta: {request.query}"
             )
+
+        # Llamada directa a HuggingFace API
+        headers = {"Authorization": f"Bearer {api_token}"}
+        payload = {
+            "inputs": user_prompt,
+            "parameters": {
+                "max_new_tokens": 500,
+                "temperature": 0.3,
+                "return_full_text": False
+            }
+        }
+
+        response = requests.post(HF_API_URL, headers=headers, json=payload, timeout=60)
+        logger.info(f"HF status: {response.status_code}")
+        logger.info(f"HF body: {response.text[:300]}")
+
+        response.raise_for_status()
+        data = response.json()
+
+        if isinstance(data, list) and len(data) > 0:
+            return {"response": data[0].get("generated_text", str(data))}
+        elif isinstance(data, dict) and "error" in data:
+            logger.error(f"HF error: {data['error']}")
+            raise HTTPException(status_code=503, detail=f"Modelo no disponible: {data['error']}")
         else:
-            raise HTTPException(status_code=400, detail="Modo inválido.")
+            return {"response": str(data)}
 
-        messages = [
-            {"role": "system", "content": "Eres un asistente del grupo de investigación GEIPER. Responde siempre en español de forma clara y profesional."},
-            {"role": "user", "content": prompt}
-        ]
-        result = hf_client.chat_completion(messages=messages, max_tokens=500, temperature=0.3)
-        respuesta = result.choices[0].message.content
-        return {"response": respuesta}
-
+    except HTTPException:
+        raise
     except Exception as e:
         logger.error(f"Error API: {e}")
+        logger.error(traceback.format_exc())
         raise HTTPException(status_code=500, detail="Servicio temporalmente no disponible.")
