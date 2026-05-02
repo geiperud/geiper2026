@@ -1,7 +1,7 @@
 import os
 import logging
 import traceback
-import requests
+import google.generativeai as genai
 from fastapi import FastAPI, HTTPException, Request, Response
 from fastapi.middleware.cors import CORSMiddleware
 from starlette.middleware.base import BaseHTTPMiddleware
@@ -11,7 +11,7 @@ logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(mess
 logger = logging.getLogger(__name__)
 
 try:
-    from langchain_community.embeddings import HuggingFaceInferenceAPIEmbeddings
+    from langchain_google_genai import GoogleGenerativeAIEmbeddings
     from langchain_chroma import Chroma
     HAS_DEPS = True
 except ImportError as e:
@@ -37,33 +37,52 @@ app.add_middleware(
 )
 
 CHROMA_DIR = "chroma_db"
-HF_API_URL = "https://router.huggingface.co/v1/chat/completions"
-HF_MODEL   = "mistralai/Mistral-7B-Instruct-v0.2:featherless-ai"
 vectorstore = None
+gemini_model = None
 api_token = None
 
 def init_services():
-    global vectorstore, api_token
+    global vectorstore, gemini_model, api_token
 
-    api_token = os.environ.get("HF_TOKEN", "") or os.environ.get("HUGGINGFACEHUB_API_TOKEN", "")
+    api_token = os.environ.get("GOOGLE_API_KEY", "")
     if not api_token:
-        logger.warning("No se encontró HF_TOKEN.")
+        logger.warning("No se encontro GOOGLE_API_KEY.")
         return
 
-    logger.info("Token HuggingFace encontrado.")
+    logger.info("Google API Key encontrada.")
 
+    # Configurar Gemini
+    try:
+        genai.configure(api_key=api_token)
+        gemini_model = genai.GenerativeModel(
+            model_name="gemini-1.5-flash",
+            generation_config=genai.GenerationConfig(
+                max_output_tokens=500,
+                temperature=0.3,
+            ),
+            system_instruction="Eres un asistente del grupo de investigacion GEIPER. Responde SIEMPRE en español, sin excepcion."
+        )
+        logger.info("Modelo Gemini 1.5 Flash listo.")
+    except Exception as e:
+        logger.error(f"Error configurando Gemini: {e}")
+        return
+
+    # Cargar ChromaDB con embeddings de Google
     if not HAS_DEPS:
         logger.warning("Faltan dependencias de LangChain/ChromaDB.")
         return
 
     if os.path.exists(CHROMA_DIR):
         try:
-            embeddings = HuggingFaceInferenceAPIEmbeddings(
-                api_key=api_token,
-                model_name="sentence-transformers/all-MiniLM-L6-v2"
+            embeddings = GoogleGenerativeAIEmbeddings(
+                model="models/text-embedding-004",
+                google_api_key=api_token
             )
-            vectorstore = Chroma(persist_directory=CHROMA_DIR, embedding_function=embeddings)
-            logger.info("BD Vectorial cargada.")
+            vectorstore = Chroma(
+                persist_directory=CHROMA_DIR,
+                embedding_function=embeddings
+            )
+            logger.info("BD Vectorial cargada con Google Embeddings.")
         except Exception as e:
             logger.error(f"Error cargando ChromaDB: {e}")
 
@@ -77,19 +96,18 @@ class ChatRequest(BaseModel):
 
 @app.get("/status")
 def status():
-    return {"status": "ok", "cloud_ready": bool(api_token)}
+    return {"status": "ok", "cloud_ready": bool(api_token and gemini_model)}
 
 @app.post("/chat")
 def chat(request: ChatRequest):
-    if not api_token:
-        raise HTTPException(status_code=500, detail="Sin token HuggingFace.")
+    if not api_token or not gemini_model:
+        raise HTTPException(status_code=500, detail="Sin configuracion de Google API.")
 
     try:
-        # Construir prompt según modo
         if request.mode == "investigacion":
             user_prompt = (
-                f"Eres el Asistente de Investigación del grupo GEIPER. "
-                f"Responde en español de forma profesional.\n\n"
+                f"Eres el Asistente de Investigacion del grupo GEIPER. "
+                f"Responde en español de forma profesional y detallada.\n\n"
                 f"Pregunta: {request.query}"
             )
         else:
@@ -100,36 +118,27 @@ def chat(request: ChatRequest):
                     contexto = "\n\n".join([d.page_content for d in docs])
                     logger.info(f"RAG: {len(docs)} fragmentos encontrados.")
                 except Exception as e:
-                    logger.warning(f"RAG falló, respondiendo sin contexto: {e}")
+                    logger.warning(f"RAG fallo, respondiendo sin contexto: {e}")
                     contexto = ""
-            user_prompt = (
-                f"Eres el Asistente Temático del semillero GEIPER. "
-                f"Usa el contexto para responder en español.\n\n"
-                f"Contexto:\n{contexto}\n\nPregunta: {request.query}"
-            )
 
-        # Llamada directa a HuggingFace API (formato OpenAI /v1/chat/completions)
-        headers = {
-            "Authorization": f"Bearer {api_token}",
-            "Content-Type": "application/json"
-        }
-        payload = {
-            "model": HF_MODEL,
-            "messages": [
-                {"role": "system", "content": "Eres un asistente del grupo GEIPER. Responde siempre en español."},
-                {"role": "user", "content": user_prompt}
-            ],
-            "max_tokens": 500,
-            "temperature": 0.3
-        }
+            if contexto:
+                user_prompt = (
+                    f"Eres el Asistente Tematico del semillero GEIPER. "
+                    f"Usa el siguiente contexto extraido de los documentos del grupo para responder en español.\n\n"
+                    f"Contexto:\n{contexto}\n\n"
+                    f"Pregunta: {request.query}"
+                )
+            else:
+                user_prompt = (
+                    f"Eres el Asistente Tematico del semillero GEIPER. "
+                    f"Responde en español sobre el grupo GEIPER y sus temas de investigacion.\n\n"
+                    f"Pregunta: {request.query}"
+                )
 
-        response = requests.post(HF_API_URL, headers=headers, json=payload, timeout=60)
-        logger.info(f"HF status: {response.status_code}")
-        logger.info(f"HF body: {response.text[:300]}")
-
-        response.raise_for_status()
-        data = response.json()
-        respuesta = data["choices"][0]["message"]["content"]
+        logger.info(f"Enviando prompt a Gemini (modo: {request.mode})")
+        response = gemini_model.generate_content(user_prompt)
+        respuesta = response.text
+        logger.info("Respuesta recibida de Gemini.")
         return {"response": respuesta}
 
     except HTTPException:
