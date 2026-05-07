@@ -4,6 +4,11 @@ import logging
 import traceback
 import requests
 from fastapi import FastAPI, HTTPException, Request, Response
+try:
+    from duckduckgo_search import DDGS
+    HAS_DDG = True
+except ImportError:
+    HAS_DDG = False
 from fastapi.middleware.cors import CORSMiddleware
 from starlette.middleware.base import BaseHTTPMiddleware
 from pydantic import BaseModel, Field
@@ -45,6 +50,25 @@ EMBED_URL    = f"https://generativelanguage.googleapis.com/v1beta/models/{EMBED_
 
 GLM_MODEL = "glm-4.5-flash"
 GLM_URL   = "https://api.z.ai/api/paas/v4/chat/completions"
+
+# Referencias APA 7ª edición de los documentos indexados
+REFERENCIAS_APA = {
+    "cai2005.pdf": (
+        "Cai, G., Wang, H., MacEachren, A. M., & Fuhrmann, S. (2005). "
+        "Natural conversational interfaces to geospatial databases. "
+        "Transactions in GIS, 9(2), 199–221."
+    ),
+    "wang2008.pdf": (
+        "Wang, H., Cai, G., & MacEachren, A. M. (2008). "
+        "GeoDialogue: A software agent enabling collaborative dialogues between a user and a conversational GIS. "
+        "En Proceedings of the 20th IEEE International Conference on Tools with Artificial Intelligence. IEEE."
+    ),
+    "GeoLLM-A-specialized-large-language-model-framework-for-intelligent-geotechnical-design.pdf": (
+        "Xu, H.-R., Zhang, N., Yin, Z.-Y., & Atangana Njock, P. G. (2025). "
+        "GeoLLM: A specialized large language model framework for intelligent geotechnical design. "
+        "Computers and Geotechnics, 177, 106849. https://doi.org/10.1016/j.compgeo.2025.106849"
+    ),
+}
 
 vectorstore = None
 api_token   = None
@@ -94,7 +118,14 @@ def glm_generate(prompt, api_key):
         "messages": [
             {
                 "role": "system",
-                "content": "Eres un asistente del grupo de investigacion GEIPER. Responde SIEMPRE en español, sin excepcion."
+                "content": (
+                    "Eres el Asistente Académico del semillero de investigación GEIPER. "
+                    "NORMAS ABSOLUTAS:\n"
+                    "- Responde SIEMPRE en español, sin excepción.\n"
+                    "- Sé preciso, académico y coherente.\n"
+                    "- NUNCA inventes información que no esté en el contexto proporcionado.\n"
+                    "- Si no tienes información suficiente, dilo claramente."
+                )
             },
             {
                 "role": "user",
@@ -102,7 +133,7 @@ def glm_generate(prompt, api_key):
             }
         ],
         "max_tokens": 1500,
-        "temperature": 0.3,
+        "temperature": 0.1,
         "stream": False
     }
     resp = requests.post(GLM_URL, json=payload, headers=headers, timeout=60)
@@ -147,6 +178,19 @@ def gemini_generate(prompt, api_key):
                 )
         resp.raise_for_status()
         return resp.json()["candidates"][0]["content"]["parts"][0]["text"]
+
+
+# ── Búsqueda web via DuckDuckGo ──────────────────────────────────────────────
+def web_search(query, max_results=3):
+    if not HAS_DDG:
+        return []
+    try:
+        with DDGS() as ddgs:
+            resultados = list(ddgs.text(query, max_results=max_results, region="es-es"))
+        return resultados
+    except Exception as e:
+        logger.warning(f"Web search fallo: {e}")
+        return []
 
 
 def init_services():
@@ -208,28 +252,72 @@ def chat(request: ChatRequest):
                 f"Pregunta: {request.query}"
             )
         else:
-            contexto = ""
+            contexto_docs = ""
+            contexto_web  = ""
+            fuentes_log   = []
+
+            # ── RAG: documentos indexados ────────────────────────────────────
             if vectorstore is not None:
                 try:
-                    docs = vectorstore.similarity_search(request.query, k=1)
-                    contexto = "\n\n".join([d.page_content[:800] for d in docs])
-                    logger.info(f"RAG: {len(docs)} fragmentos encontrados.")
+                    docs_scores = vectorstore.similarity_search_with_score(request.query, k=3)
+                    relevantes  = [(doc, score) for doc, score in docs_scores if score < 1.2]
+                    if relevantes:
+                        bloques = []
+                        for doc, score in relevantes:
+                            fuente = os.path.basename(doc.metadata.get("source", "documento"))
+                            apa    = REFERENCIAS_APA.get(fuente, fuente)
+                            fuentes_log.append(f"{fuente} (score:{score:.2f})")
+                            bloques.append(f"[Referencia APA: {apa}]\n{doc.page_content[:700]}")
+                        contexto_docs = "\n\n---\n\n".join(bloques)
+                        logger.info(f"RAG: {len(relevantes)} fragmentos relevantes: {', '.join(fuentes_log)}")
+                    else:
+                        logger.info("RAG: ningún fragmento superó el umbral de relevancia.")
                 except Exception as e:
                     logger.warning(f"RAG fallo: {e}")
 
-            if contexto:
+            # ── Web search: DuckDuckGo ───────────────────────────────────────
+            resultados_web = web_search(request.query, max_results=3)
+            if resultados_web:
+                bloques_web = []
+                for r in resultados_web:
+                    titulo = r.get("title", "")
+                    cuerpo = r.get("body", "")[:400]
+                    url    = r.get("href", "")
+                    bloques_web.append(f"[Web: {titulo} — {url}]\n{cuerpo}")
+                contexto_web = "\n\n---\n\n".join(bloques_web)
+                logger.info(f"Web search: {len(resultados_web)} resultados encontrados.")
+
+            # ── Construir prompt analítico ───────────────────────────────────
+            secciones = []
+            if contexto_docs:
+                secciones.append(f"DOCUMENTOS ACADÉMICOS INDEXADOS:\n{contexto_docs}")
+            if contexto_web:
+                secciones.append(f"RESULTADOS DE LA WEB (contexto complementario):\n{contexto_web}")
+
+            if secciones:
                 user_prompt = (
-                    f"Eres el Asistente Tematico del semillero GEIPER. "
-                    f"Responde SOLO basándote en el siguiente fragmento de documento. "
-                    f"No mezcles información de otros temas. Sé claro y conciso en español.\n\n"
-                    f"Fragmento:\n{contexto}\n\n"
-                    f"Pregunta: {request.query}"
+                    f"Eres el Asistente Académico del semillero GEIPER.\n\n"
+                    f"Tienes acceso a documentos académicos propios del semillero y a resultados "
+                    f"actuales de la web. Usa ambas fuentes para dar una respuesta completa, "
+                    f"analítica y contextualizada a la pregunta del usuario.\n\n"
+                    f"INSTRUCCIONES:\n"
+                    f"1. Analiza la pregunta en profundidad y responde de forma clara y académica.\n"
+                    f"2. Integra la información de los documentos y la web de manera coherente.\n"
+                    f"3. Cita los documentos académicos en formato APA 7ª edición.\n"
+                    f"4. Cita las fuentes web con su título y URL.\n"
+                    f"5. Al final incluye una sección 'Referencias:' con todas las fuentes usadas.\n"
+                    f"6. Responde siempre en español.\n\n"
+                    f"{chr(10).join(secciones)}\n\n"
+                    f"PREGUNTA: {request.query}"
                 )
             else:
                 user_prompt = (
-                    f"Eres el Asistente Tematico del semillero GEIPER. "
-                    f"Responde en español sobre el grupo GEIPER de forma concisa.\n\n"
-                    f"Pregunta: {request.query}"
+                    f"Eres el Asistente Académico del semillero GEIPER.\n\n"
+                    f"No encontraste información específica en los documentos ni en la web "
+                    f"para esta consulta. Responde en español indicando esto y sugiere "
+                    f"preguntar sobre los temas del semillero: interfaces conversacionales "
+                    f"con SIG, razonamiento en LLMs y geotecnia con inteligencia artificial.\n\n"
+                    f"PREGUNTA: {request.query}"
                 )
 
         # Intentar con GLM-4.5-Flash primero
