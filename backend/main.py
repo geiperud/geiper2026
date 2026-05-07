@@ -105,7 +105,7 @@ def glm_generate(prompt, api_key):
         "temperature": 0.3,
         "stream": False
     }
-    resp = requests.post(GLM_URL, json=payload, headers=headers, timeout=25)
+    resp = requests.post(GLM_URL, json=payload, headers=headers, timeout=60)
     if resp.status_code == 429:
         raise HTTPException(
             status_code=429,
