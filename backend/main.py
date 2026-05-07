@@ -211,8 +211,8 @@ def chat(request: ChatRequest):
             contexto = ""
             if vectorstore is not None:
                 try:
-                    docs = vectorstore.similarity_search(request.query, k=2)
-                    contexto = "\n\n".join([d.page_content[:600] for d in docs])
+                    docs = vectorstore.similarity_search(request.query, k=1)
+                    contexto = "\n\n".join([d.page_content[:800] for d in docs])
                     logger.info(f"RAG: {len(docs)} fragmentos encontrados.")
                 except Exception as e:
                     logger.warning(f"RAG fallo: {e}")
@@ -220,14 +220,15 @@ def chat(request: ChatRequest):
             if contexto:
                 user_prompt = (
                     f"Eres el Asistente Tematico del semillero GEIPER. "
-                    f"Usa el siguiente contexto de los documentos para responder en español.\n\n"
-                    f"Contexto:\n{contexto}\n\n"
+                    f"Responde SOLO basándote en el siguiente fragmento de documento. "
+                    f"No mezcles información de otros temas. Sé claro y conciso en español.\n\n"
+                    f"Fragmento:\n{contexto}\n\n"
                     f"Pregunta: {request.query}"
                 )
             else:
                 user_prompt = (
                     f"Eres el Asistente Tematico del semillero GEIPER. "
-                    f"Responde en español sobre el grupo GEIPER.\n\n"
+                    f"Responde en español sobre el grupo GEIPER de forma concisa.\n\n"
                     f"Pregunta: {request.query}"
                 )
 
