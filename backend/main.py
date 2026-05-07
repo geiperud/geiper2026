@@ -51,6 +51,9 @@ EMBED_URL    = f"https://generativelanguage.googleapis.com/v1beta/models/{EMBED_
 GLM_MODEL = "glm-4.5-flash"
 GLM_URL   = "https://api.z.ai/api/paas/v4/chat/completions"
 
+SALUDOS = {"hola", "hi", "hello", "buenas", "buen día", "buen dia", "buenos días",
+           "buenos dias", "hey", "saludos", "qué tal", "que tal", "ola"}
+
 # Referencias APA 7ª edición de los documentos indexados
 REFERENCIAS_APA = {
     "cai2005.pdf": (
@@ -136,7 +139,7 @@ def glm_generate(prompt, api_key):
         "temperature": 0.1,
         "stream": False
     }
-    resp = requests.post(GLM_URL, json=payload, headers=headers, timeout=60)
+    resp = requests.post(GLM_URL, json=payload, headers=headers, timeout=90)
     if resp.status_code == 429:
         raise HTTPException(
             status_code=429,
@@ -252,6 +255,29 @@ def chat(request: ChatRequest):
                 f"Pregunta: {request.query}"
             )
         else:
+            # ── Detección de saludo: respuesta directa sin RAG ni web ────────
+            es_saludo = request.query.strip().lower().rstrip("!?.") in SALUDOS
+            if es_saludo:
+                user_prompt = (
+                    f"Eres el Asistente Académico del semillero GEIPER. "
+                    f"El usuario te saludó. Responde con un saludo breve y amigable en español, "
+                    f"y pregúntale sobre cuál de los siguientes temas desea consultar:\n"
+                    f"1. Interfaces conversacionales con SIG (Cai et al., 2005; Wang et al., 2008)\n"
+                    f"2. Modelos de lenguaje para geotecnia (Xu et al., 2025)\n"
+                    f"Sé conciso, no más de 3 líneas."
+                )
+                if glm_token:
+                    try:
+                        respuesta = glm_generate(user_prompt, glm_token)
+                        return {"response": respuesta}
+                    except HTTPException:
+                        raise
+                    except Exception as e:
+                        logger.warning(f"GLM fallo en saludo: {e}")
+                if api_token:
+                    respuesta = gemini_generate(user_prompt, api_token)
+                    return {"response": respuesta}
+
             contexto_docs = ""
             contexto_web  = ""
             fuentes_log   = []
@@ -267,7 +293,7 @@ def chat(request: ChatRequest):
                             fuente = os.path.basename(doc.metadata.get("source", "documento"))
                             apa    = REFERENCIAS_APA.get(fuente, fuente)
                             fuentes_log.append(f"{fuente} (score:{score:.2f})")
-                            bloques.append(f"[Referencia APA: {apa}]\n{doc.page_content[:700]}")
+                            bloques.append(f"[Referencia APA: {apa}]\n{doc.page_content[:500]}")
                         contexto_docs = "\n\n---\n\n".join(bloques)
                         logger.info(f"RAG: {len(relevantes)} fragmentos relevantes: {', '.join(fuentes_log)}")
                     else:
@@ -276,12 +302,12 @@ def chat(request: ChatRequest):
                     logger.warning(f"RAG fallo: {e}")
 
             # ── Web search: DuckDuckGo ───────────────────────────────────────
-            resultados_web = web_search(request.query, max_results=3)
+            resultados_web = web_search(request.query, max_results=2)
             if resultados_web:
                 bloques_web = []
                 for r in resultados_web:
                     titulo = r.get("title", "")
-                    cuerpo = r.get("body", "")[:400]
+                    cuerpo = r.get("body", "")[:250]
                     url    = r.get("href", "")
                     bloques_web.append(f"[Web: {titulo} — {url}]\n{cuerpo}")
                 contexto_web = "\n\n---\n\n".join(bloques_web)
