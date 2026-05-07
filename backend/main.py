@@ -101,7 +101,7 @@ def glm_generate(prompt, api_key):
                 "content": prompt
             }
         ],
-        "max_tokens": 500,
+        "max_tokens": 1500,
         "temperature": 0.3,
         "stream": False
     }
@@ -211,8 +211,8 @@ def chat(request: ChatRequest):
             contexto = ""
             if vectorstore is not None:
                 try:
-                    docs = vectorstore.similarity_search(request.query, k=3)
-                    contexto = "\n\n".join([d.page_content for d in docs])
+                    docs = vectorstore.similarity_search(request.query, k=2)
+                    contexto = "\n\n".join([d.page_content[:600] for d in docs])
                     logger.info(f"RAG: {len(docs)} fragmentos encontrados.")
                 except Exception as e:
                     logger.warning(f"RAG fallo: {e}")
