@@ -102,18 +102,22 @@ document.addEventListener('DOMContentLoaded', () => {
 
     const contentDiv = document.createElement('div');
     contentDiv.className = 'message-content';
-    const p = document.createElement('p');
 
     if (isHtml) {
+      const p = document.createElement('p');
       p.innerHTML = text;
+      contentDiv.appendChild(p);
+    } else if (sender === 'bot' && typeof marked !== 'undefined') {
+      contentDiv.innerHTML = marked.parse(text);
     } else {
+      const p = document.createElement('p');
       text.split('\n').forEach((line, i) => {
         if (i > 0) p.appendChild(document.createElement('br'));
         p.appendChild(document.createTextNode(line));
       });
+      contentDiv.appendChild(p);
     }
 
-    contentDiv.appendChild(p);
     msgDiv.appendChild(contentDiv);
     chatMessages.appendChild(msgDiv);
     scrollBottom();

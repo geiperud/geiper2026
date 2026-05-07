@@ -123,11 +123,16 @@ def glm_generate(prompt, api_key):
                 "role": "system",
                 "content": (
                     "Eres el Asistente Académico del semillero de investigación GEIPER. "
+                    "Tu estilo es el de un investigador que explica temas a un colega: "
+                    "claro, fluido, riguroso pero cercano. "
                     "NORMAS ABSOLUTAS:\n"
-                    "- Responde SIEMPRE en español, sin excepción.\n"
-                    "- Sé preciso, académico y coherente.\n"
-                    "- NUNCA inventes información que no esté en el contexto proporcionado.\n"
-                    "- Si no tienes información suficiente, dilo claramente."
+                    "- Responde SIEMPRE en español.\n"
+                    "- Escribe en párrafos fluidos y naturales. Usa listas SOLO para enumerar elementos puntuales.\n"
+                    "- NUNCA uses títulos con # ni secciones formales. Esto es una conversación, no un informe.\n"
+                    "- NUNCA inventes autores, años ni títulos. Usa SOLO las referencias APA que se te proporcionan.\n"
+                    "- NUNCA menciones rutas de archivos ni nombres de archivos internos.\n"
+                    "- Termina siempre con una pregunta breve que invite a profundizar el tema.\n"
+                    "- Si no tienes información suficiente, dilo con naturalidad y sugiere qué sí puedes responder."
                 )
             },
             {
@@ -301,70 +306,65 @@ def chat(request: ChatRequest):
                 except Exception as e:
                     logger.warning(f"RAG fallo: {e}")
 
-            # ── Web search: DuckDuckGo ───────────────────────────────────────
-            resultados_web = web_search(request.query, max_results=2)
+            # ── Web search: DuckDuckGo (se añade al final, no al prompt de GLM) ─
+            resultados_web = web_search(request.query, max_results=3)
             if resultados_web:
-                bloques_web = []
-                for r in resultados_web:
-                    titulo = r.get("title", "")
-                    cuerpo = r.get("body", "")[:250]
-                    url    = r.get("href", "")
-                    bloques_web.append(f"[Web: {titulo} — {url}]\n{cuerpo}")
-                contexto_web = "\n\n---\n\n".join(bloques_web)
                 logger.info(f"Web search: {len(resultados_web)} resultados encontrados.")
 
-            # ── Construir prompt analítico ───────────────────────────────────
-            secciones = []
+            # ── Prompt para GLM: solo RAG (contexto pequeño = respuesta rápida) ─
             if contexto_docs:
-                secciones.append(f"DOCUMENTOS ACADÉMICOS INDEXADOS:\n{contexto_docs}")
-            if contexto_web:
-                secciones.append(f"RESULTADOS DE LA WEB (contexto complementario):\n{contexto_web}")
-
-            if secciones:
                 user_prompt = (
-                    f"Eres el Asistente Académico del semillero GEIPER.\n\n"
-                    f"Tienes acceso a documentos académicos propios del semillero y a resultados "
-                    f"actuales de la web. Usa ambas fuentes para dar una respuesta completa, "
-                    f"analítica y contextualizada a la pregunta del usuario.\n\n"
-                    f"INSTRUCCIONES:\n"
-                    f"1. Analiza la pregunta en profundidad y responde de forma clara y académica.\n"
-                    f"2. Integra la información de los documentos y la web de manera coherente.\n"
-                    f"3. Cita los documentos académicos en formato APA 7ª edición.\n"
-                    f"4. Cita las fuentes web con su título y URL.\n"
-                    f"5. Al final incluye una sección 'Referencias:' con todas las fuentes usadas.\n"
-                    f"6. Responde siempre en español.\n\n"
-                    f"{chr(10).join(secciones)}\n\n"
+                    f"Tienes acceso a fragmentos de documentos académicos del semillero GEIPER. "
+                    f"Cada fragmento incluye su referencia APA exacta entre corchetes — úsala tal cual, "
+                    f"sin modificar autores, años ni títulos. Nunca menciones rutas de archivos.\n\n"
+                    f"Responde a la pregunta de forma conversacional y académica: párrafos fluidos, "
+                    f"sin títulos con #, listas solo cuando sean estrictamente necesarias. "
+                    f"Integra la información de los fragmentos con análisis propio. "
+                    f"Al final añade un apartado breve 'Referencias:' con las citas APA usadas, "
+                    f"y cierra con una pregunta que invite a seguir conversando.\n\n"
+                    f"FRAGMENTOS:\n{contexto_docs}\n\n"
                     f"PREGUNTA: {request.query}"
                 )
             else:
                 user_prompt = (
-                    f"Eres el Asistente Académico del semillero GEIPER.\n\n"
-                    f"No encontraste información específica en los documentos ni en la web "
-                    f"para esta consulta. Responde en español indicando esto y sugiere "
-                    f"preguntar sobre los temas del semillero: interfaces conversacionales "
-                    f"con SIG, razonamiento en LLMs y geotecnia con inteligencia artificial.\n\n"
+                    f"No hay fragmentos relevantes en los documentos para esta consulta. "
+                    f"Responde con naturalidad indicando que no tienes información específica sobre eso, "
+                    f"y sugiere qué temas sí puedes abordar: interfaces conversacionales con SIG, "
+                    f"razonamiento en modelos de lenguaje o geotecnia con IA. "
+                    f"Sé breve y amigable.\n\n"
                     f"PREGUNTA: {request.query}"
                 )
 
-        # Intentar con GLM-4.5-Flash primero
+        # ── Generar respuesta (GLM primero, Gemini fallback) ─────────────────
+        respuesta = None
         if glm_token:
             try:
                 logger.info(f"Enviando a GLM-4.5-Flash (modo: {request.mode})")
                 respuesta = glm_generate(user_prompt, glm_token)
                 logger.info("Respuesta recibida de GLM.")
-                return {"response": respuesta}
             except HTTPException:
                 raise
             except Exception as e:
                 logger.warning(f"GLM fallo, intentando con Gemini: {e}")
 
-        # Fallback: Gemini
-        if not api_token:
-            raise HTTPException(status_code=500, detail="Servicio temporalmente no disponible.")
+        if respuesta is None:
+            if not api_token:
+                raise HTTPException(status_code=500, detail="Servicio temporalmente no disponible.")
+            logger.info(f"Enviando a Gemini fallback (modo: {request.mode})")
+            respuesta = gemini_generate(user_prompt, api_token)
+            logger.info("Respuesta recibida de Gemini.")
 
-        logger.info(f"Enviando a Gemini fallback (modo: {request.mode})")
-        respuesta = gemini_generate(user_prompt, api_token)
-        logger.info("Respuesta recibida de Gemini.")
+        # ── Añadir resultados web al final sin pasar por el modelo ───────────
+        if request.mode == "tematico" and resultados_web:
+            links = []
+            for r in resultados_web:
+                titulo = r.get("title", "Fuente web")
+                url    = r.get("href", "")
+                if url:
+                    links.append(f"- [{titulo}]({url})")
+            if links:
+                respuesta += "\n\n**Fuentes web relacionadas:**\n" + "\n".join(links)
+
         return {"response": respuesta}
 
     except HTTPException:
