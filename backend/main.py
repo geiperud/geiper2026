@@ -237,7 +237,7 @@ def init_services():
             allow_dangerous_deserialization=True
         )
         logger.info("BD Vectorial FAISS cargada.")
-    except Exception as e:
+      except Exception as e:
         logger.error(f"Error cargando FAISS: {e}")
 
 @app.on_event("startup")
