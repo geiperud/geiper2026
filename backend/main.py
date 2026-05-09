@@ -227,7 +227,7 @@ def init_services():
         return
 
     if os.path.exists(FAISS_DIR):
-    try:
+      try:
         embeddings = HuggingFaceEmbeddings(
             model_name="sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2"
         )
