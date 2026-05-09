@@ -17,7 +17,8 @@ logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(mess
 logger = logging.getLogger(__name__)
 
 try:
-    from langchain_chroma import Chroma
+    from langchain_community.vectorstores import FAISS
+    from langchain_community.embeddings import HuggingFaceEmbeddings
     from langchain_core.embeddings import Embeddings
     HAS_DEPS = True
 except ImportError as e:
@@ -42,7 +43,7 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-CHROMA_DIR   = "chroma_db"
+FAISS_DIR = "faiss_index"
 GEMINI_MODEL = "gemini-2.0-flash"
 EMBED_MODEL  = "gemini-embedding-001"
 GEMINI_URL   = f"https://generativelanguage.googleapis.com/v1beta/models/{GEMINI_MODEL}:generateContent"
@@ -225,19 +226,19 @@ def init_services():
         logger.warning("Faltan dependencias de LangChain/ChromaDB.")
         return
 
-    if os.path.exists(CHROMA_DIR):
-        try:
-            from langchain_community.embeddings import HuggingFaceEmbeddings
-embeddings = HuggingFaceEmbeddings(
-    model_name="sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2"
-)
-vectorstore = Chroma(
-    persist_directory=CHROMA_DIR,
-    embedding_function=embeddings
-)
-            logger.info("BD Vectorial cargada.")
-        except Exception as e:
-            logger.error(f"Error cargando ChromaDB: {e}")
+    if os.path.exists(FAISS_DIR):
+    try:
+        embeddings = HuggingFaceEmbeddings(
+            model_name="sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2"
+        )
+        vectorstore = FAISS.load_local(
+            FAISS_DIR,
+            embeddings,
+            allow_dangerous_deserialization=True
+        )
+        logger.info("BD Vectorial FAISS cargada.")
+    except Exception as e:
+        logger.error(f"Error cargando FAISS: {e}")
 
 @app.on_event("startup")
 def on_startup():
