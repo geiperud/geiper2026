@@ -227,11 +227,14 @@ def init_services():
 
     if os.path.exists(CHROMA_DIR):
         try:
-            embeddings = GoogleEmbeddingsREST(api_key=api_token)
-            vectorstore = Chroma(
-                persist_directory=CHROMA_DIR,
-                embedding_function=embeddings
-            )
+            from langchain_community.embeddings import HuggingFaceEmbeddings
+embeddings = HuggingFaceEmbeddings(
+    model_name="sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2"
+)
+vectorstore = Chroma(
+    persist_directory=CHROMA_DIR,
+    embedding_function=embeddings
+)
             logger.info("BD Vectorial cargada.")
         except Exception as e:
             logger.error(f"Error cargando ChromaDB: {e}")
