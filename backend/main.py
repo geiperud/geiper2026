@@ -48,8 +48,8 @@ EMBED_MODEL  = "gemini-embedding-001"
 GEMINI_URL   = f"https://generativelanguage.googleapis.com/v1beta/models/{GEMINI_MODEL}:generateContent"
 EMBED_URL    = f"https://generativelanguage.googleapis.com/v1beta/models/{EMBED_MODEL}:embedContent"
 
-GLM_MODEL = "glm-4.5-flash"
-GLM_URL   = "https://api.z.ai/api/paas/v4/chat/completions"
+GROQ_MODEL = "llama-3.3-70b-versatile"
+GROQ_URL   = "https://api.groq.com/openai/v1/chat/completions"
 
 SALUDOS = {"hola", "hi", "hello", "buenas", "buen día", "buen dia", "buenos días",
            "buenos dias", "hey", "saludos", "qué tal", "que tal", "ola"}
@@ -117,7 +117,7 @@ def glm_generate(prompt, api_key):
         "Authorization": f"Bearer {api_key}"
     }
     payload = {
-        "model": GLM_MODEL,
+        "model": GROQ_MODEL,
         "messages": [
             {
                 "role": "system",
@@ -144,7 +144,7 @@ def glm_generate(prompt, api_key):
         "temperature": 0.1,
         "stream": False
     }
-    resp = requests.post(GLM_URL, json=payload, headers=headers, timeout=90)
+    resp = requests.post(GROQ_URL, json=payload, headers=headers, timeout=90)
     if resp.status_code == 429:
         raise HTTPException(
             status_code=429,
@@ -204,7 +204,7 @@ def web_search(query, max_results=3):
 def init_services():
     global vectorstore, api_token, glm_token
 
-    glm_token = os.environ.get("GLM_API_KEY", "")
+    glm_token = os.environ.get("GROQ_API_KEY", "")
     if glm_token:
         logger.info("GLM API Key encontrada (modelo primario).")
     else:
