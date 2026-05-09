@@ -204,7 +204,8 @@ def web_search(query, max_results=3):
 def init_services():
     global vectorstore, api_token, glm_token
 
-    glm_token = os.environ.get("GROQ_API_KEY", "")
+    glm_token  = os.environ.get("GROQ_API_KEY", "")
+    glm_backup = os.environ.get("GLM_API_KEY", "")
     if glm_token:
         logger.info("GLM API Key encontrada (modelo primario).")
     else:
