@@ -1,0 +1,1763 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Geovisor – Semillero GEIPER</title>
+  <link rel="icon" type="image/png" href="../assets/images/Logo_GEIPER.png">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/ol@9.2.4/dist/ol.css">
+  <link rel="stylesheet" href="../css/styles.css">
+
+<style>
+/* ══════════════════════════════════════════════
+   GEOVISOR — Estilos exclusivos (no modifica styles.css)
+   ══════════════════════════════════════════════ */
+
+/* Reset de página completa para modo app */
+html, body {
+  height: 100vh;
+  overflow: hidden;
+}
+
+/* ── Wrapper principal ───────────────────────── */
+.geo-wrapper {
+  display: flex;
+  height: calc(100vh - 64px);
+  margin-top: 64px;
+  overflow: hidden;
+  font-family: 'Montserrat', sans-serif;
+}
+
+/* ════════════════════════════════════════════
+   SIDEBAR IZQUIERDA
+   ════════════════════════════════════════════ */
+.geo-sidebar {
+  width: 260px;
+  min-width: 260px;
+  background: #ffffff;
+  border-right: 1px solid #e2e8f0;
+  box-shadow: 2px 0 8px rgba(0,0,0,0.05);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  z-index: 5;
+}
+
+/* Encabezado sidebar */
+.geo-sidebar-header {
+  padding: 14px 16px 10px;
+  border-bottom: 1px solid #e2e8f0;
+  flex-shrink: 0;
+}
+
+.geo-sidebar-label {
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 2px;
+  color: #94a3b8;
+  text-transform: uppercase;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-bottom: 10px;
+}
+
+/* Buscador */
+.geo-search-wrap {
+  position: relative;
+  margin-bottom: 10px;
+}
+
+.geo-search-wrap i {
+  position: absolute;
+  left: 10px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: #94a3b8;
+  font-size: 12px;
+  pointer-events: none;
+}
+
+#searchInput {
+  width: 100%;
+  padding: 8px 10px 8px 30px;
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  font-size: 12px;
+  font-family: 'Montserrat', sans-serif;
+  color: #334155;
+  outline: none;
+  transition: border-color 0.2s, box-shadow 0.2s;
+}
+
+#searchInput:focus {
+  border-color: #1D9E75;
+  box-shadow: 0 0 0 3px rgba(29,158,117,0.1);
+}
+
+/* Chips de filtro */
+.geo-chips {
+  display: flex;
+  gap: 4px;
+  flex-wrap: wrap;
+}
+
+.geo-chip {
+  padding: 4px 10px;
+  font-size: 11px;
+  font-weight: 500;
+  font-family: 'Montserrat', sans-serif;
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 20px;
+  color: #64748b;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+
+.geo-chip:hover {
+  border-color: #1D9E75;
+  color: #0F6E56;
+}
+
+.geo-chip.active {
+  background: #1D9E75;
+  border-color: #1D9E75;
+  color: #ffffff;
+}
+
+/* Lista de proyectos */
+.geo-proj-list {
+  flex: 1;
+  overflow-y: auto;
+  padding: 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.geo-proj-list::-webkit-scrollbar { width: 4px; }
+.geo-proj-list::-webkit-scrollbar-track { background: transparent; }
+.geo-proj-list::-webkit-scrollbar-thumb { background: #e2e8f0; border-radius: 4px; }
+
+/* Tarjeta de proyecto */
+.geo-proj-card {
+  padding: 10px 12px;
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-left: 3px solid transparent;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+
+.geo-proj-card:hover {
+  background: #f0fdf4;
+  border-color: #bbf7d0;
+  border-left-color: #1D9E75;
+}
+
+.geo-proj-card.active {
+  background: #f0fdf4;
+  border-color: #86efac;
+  border-left-color: #1D9E75;
+}
+
+.geo-proj-name {
+  font-size: 12px;
+  font-weight: 600;
+  color: #1e293b;
+  line-height: 1.4;
+  margin-bottom: 6px;
+}
+
+.geo-proj-meta {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  flex-wrap: wrap;
+}
+
+.geo-badge-cat {
+  font-size: 9px;
+  font-weight: 600;
+  padding: 2px 7px;
+  border-radius: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.geo-badge-cat.pr  { background: #dcfce7; color: #166534; }
+.geo-badge-cat.sig { background: #dbeafe; color: #1e40af; }
+.geo-badge-cat.cat { background: #fef9c3; color: #854d0e; }
+
+.geo-proj-year {
+  font-size: 10px;
+  color: #94a3b8;
+}
+
+/* Pie de sidebar */
+.geo-sidebar-footer {
+  padding: 10px 16px;
+  background: #f8fafc;
+  border-top: 1px solid #e2e8f0;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 10px;
+  color: #94a3b8;
+}
+
+/* ════════════════════════════════════════════
+   ÁREA DEL MAPA
+   ════════════════════════════════════════════ */
+.geo-map-container {
+  flex: 1;
+  position: relative;
+  min-height: 0;
+  min-width: 0;
+  overflow: hidden;
+}
+
+#map {
+  position: absolute;
+  top: 0; left: 0; right: 0; bottom: 0;
+  background: #f9fafb;
+}
+
+/* Ocultar controles nativos de OL */
+.ol-zoom,
+.ol-attribution { display: none !important; }
+
+/* ScaleLine */
+.ol-scale-line {
+  background: rgba(255,255,255,0.85) !important;
+  border: 1px solid #e2e8f0 !important;
+  border-radius: 6px !important;
+  padding: 4px 8px !important;
+  bottom: 30px !important;
+  left: 50% !important;
+  transform: translateX(-50%) !important;
+  font-size: 10px !important;
+  color: #475569 !important;
+  font-family: 'Montserrat', sans-serif !important;
+}
+
+.ol-scale-line-inner {
+  border: 1.5px solid #94a3b8 !important;
+  border-top: none !important;
+  color: #475569 !important;
+  font-size: 10px !important;
+  font-family: 'Montserrat', sans-serif !important;
+}
+
+/* ── Badge de proyecto activo ─────────────── */
+.geo-badge {
+  position: absolute;
+  top: 12px;
+  left: 12px;
+  z-index: 10;
+  background: rgba(255,255,255,0.96);
+  backdrop-filter: blur(10px);
+  border: 1px solid #e2e8f0;
+  border-radius: 10px;
+  box-shadow: 0 4px 16px rgba(0,0,0,0.1);
+  padding: 10px 14px;
+  pointer-events: none;
+  transition: opacity 0.2s;
+  min-width: 180px;
+  max-width: 280px;
+}
+
+.geo-badge.hidden { opacity: 0; }
+
+.geo-badge-title {
+  font-size: 13px;
+  font-weight: 700;
+  color: #0F6E56;
+  line-height: 1.3;
+  margin-bottom: 4px;
+}
+
+.geo-badge-sub {
+  font-size: 10px;
+  color: #64748b;
+  line-height: 1.4;
+}
+
+/* ── Controles de zoom ────────────────────── */
+.geo-controls {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  z-index: 10;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.geo-controls .sep {
+  height: 4px;
+}
+
+.geo-btn {
+  width: 34px;
+  height: 34px;
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.08);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #64748b;
+  font-size: 13px;
+  transition: all 0.15s;
+}
+
+.geo-btn:hover {
+  background: #f0fdf4;
+  color: #0F6E56;
+  border-color: #86efac;
+  transform: scale(1.05);
+}
+
+/* ── Coordenadas ──────────────────────────── */
+.geo-coords {
+  position: absolute;
+  bottom: 8px;
+  right: 8px;
+  z-index: 10;
+  background: rgba(255,255,255,0.92);
+  border: 1px solid #e2e8f0;
+  border-radius: 4px;
+  padding: 3px 8px;
+  font-family: monospace;
+  font-size: 10px;
+  color: #475569;
+  pointer-events: none;
+}
+
+/* ── Popup de atributos ───────────────────── */
+.geo-popup-container {
+  position: absolute;
+  z-index: 20;
+  display: none;
+  transform: translate(-50%, calc(-100% - 14px));
+  pointer-events: auto;
+}
+
+.geo-popup {
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 10px;
+  box-shadow: 0 8px 28px rgba(0,0,0,0.15);
+  min-width: 200px;
+  max-width: 280px;
+  overflow: hidden;
+}
+
+.geo-popup::after {
+  content: '';
+  position: absolute;
+  bottom: -8px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 16px;
+  height: 8px;
+  background: #ffffff;
+  clip-path: polygon(0 0, 100% 0, 50% 100%);
+  border-left: 1px solid #e2e8f0;
+  border-right: 1px solid #e2e8f0;
+}
+
+.geo-popup-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 12px 8px;
+  border-bottom: 1px solid #f1f5f9;
+}
+
+.geo-popup-title {
+  font-size: 12px;
+  font-weight: 700;
+  color: #0F6E56;
+}
+
+#popupClose {
+  width: 20px;
+  height: 20px;
+  background: none;
+  border: none;
+  color: #94a3b8;
+  cursor: pointer;
+  font-size: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 4px;
+  transition: all 0.15s;
+}
+
+#popupClose:hover { background: #f1f5f9; color: #475569; }
+
+.geo-popup-body {
+  padding: 8px 12px 10px;
+  overflow-y: auto;
+  max-height: 200px;
+}
+
+.geo-popup-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.geo-popup-table tr + tr td {
+  border-top: 1px solid #f8fafc;
+}
+
+.geo-popup-table td {
+  padding: 3px 4px;
+  vertical-align: top;
+}
+
+.geo-popup-table td:first-child {
+  font-size: 9px;
+  font-weight: 600;
+  text-transform: uppercase;
+  color: #94a3b8;
+  letter-spacing: 0.5px;
+  white-space: nowrap;
+  padding-right: 8px;
+  width: 40%;
+}
+
+.geo-popup-table td:last-child {
+  font-size: 11px;
+  color: #334155;
+}
+
+/* ════════════════════════════════════════════
+   PANEL DERECHO
+   ════════════════════════════════════════════ */
+.geo-panel {
+  width: 215px;
+  min-width: 215px;
+  background: #ffffff;
+  border-left: 1px solid #e2e8f0;
+  box-shadow: -2px 0 8px rgba(0,0,0,0.05);
+  display: flex;
+  flex-direction: column;
+  overflow-y: auto;
+  z-index: 5;
+}
+
+.geo-panel::-webkit-scrollbar { width: 4px; }
+.geo-panel::-webkit-scrollbar-track { background: transparent; }
+.geo-panel::-webkit-scrollbar-thumb { background: #e2e8f0; border-radius: 4px; }
+
+/* Estado vacío */
+#panelEmpty {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 24px 16px;
+  text-align: center;
+  gap: 12px;
+}
+
+#panelEmpty i {
+  font-size: 28px;
+  color: #e2e8f0;
+}
+
+#panelEmpty p {
+  font-size: 11px;
+  color: #94a3b8;
+  line-height: 1.5;
+}
+
+/* Contenido del panel */
+#panelContent {
+  display: none;
+  flex-direction: column;
+}
+
+/* Secciones del panel */
+.geo-panel-section {
+  padding: 12px 14px;
+  border-bottom: 1px solid #f1f5f9;
+}
+
+.geo-panel-title {
+  font-size: 9px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 1.5px;
+  color: #94a3b8;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-bottom: 10px;
+}
+
+.geo-panel-title i {
+  color: #1D9E75;
+  font-size: 11px;
+}
+
+/* Lista de capas */
+.geo-layer-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 5px 8px;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: background 0.15s;
+  margin-bottom: 2px;
+}
+
+.geo-layer-row:hover { background: #f8fafc; }
+
+.geo-layer-row.selected {
+  background: #f0fdf4;
+}
+
+.geo-layer-row.selected .geo-layer-name {
+  color: #0F6E56;
+  font-weight: 700;
+}
+
+.geo-layer-dot {
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.geo-layer-name {
+  flex: 1;
+  font-size: 11px;
+  color: #475569;
+  line-height: 1.3;
+}
+
+/* Toggle switch */
+.geo-toggle {
+  position: relative;
+  width: 28px;
+  height: 16px;
+  flex-shrink: 0;
+}
+
+.geo-toggle input {
+  opacity: 0;
+  width: 0;
+  height: 0;
+  position: absolute;
+}
+
+.geo-toggle-slider {
+  position: absolute;
+  cursor: pointer;
+  top: 0; left: 0; right: 0; bottom: 0;
+  background: #e2e8f0;
+  border-radius: 16px;
+  transition: 0.2s;
+}
+
+.geo-toggle-slider::before {
+  content: '';
+  position: absolute;
+  width: 12px;
+  height: 12px;
+  left: 2px;
+  top: 2px;
+  background: white;
+  border-radius: 50%;
+  transition: 0.2s;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.2);
+}
+
+.geo-toggle input:checked + .geo-toggle-slider {
+  background: #1D9E75;
+}
+
+.geo-toggle input:checked + .geo-toggle-slider::before {
+  transform: translateX(12px);
+}
+
+/* Slider de opacidad */
+.geo-opacity-wrap {
+  margin-top: 8px;
+  padding: 0 2px;
+}
+
+.geo-opacity-label {
+  display: flex;
+  justify-content: space-between;
+  font-size: 9px;
+  color: #94a3b8;
+  margin-bottom: 4px;
+}
+
+.geo-opacity-label span:last-child {
+  color: #1D9E75;
+  font-weight: 600;
+}
+
+#opacitySlider {
+  width: 100%;
+  accent-color: #1D9E75;
+  cursor: pointer;
+}
+
+/* Tabla de metadatos */
+.geo-meta-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 10px;
+}
+
+.geo-meta-table tr + tr td {
+  border-top: 1px solid #f8fafc;
+}
+
+.geo-meta-table td {
+  padding: 4px 2px;
+  vertical-align: top;
+}
+
+.geo-meta-table td:first-child {
+  font-size: 9px;
+  font-weight: 600;
+  text-transform: uppercase;
+  color: #94a3b8;
+  letter-spacing: 0.5px;
+  white-space: nowrap;
+  padding-right: 8px;
+  width: 40%;
+}
+
+.geo-meta-table td:last-child {
+  color: #334155;
+  font-weight: 500;
+}
+
+/* Descargas */
+.geo-dl-row {
+  margin-bottom: 8px;
+}
+
+.geo-dl-row-label {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 10px;
+  color: #475569;
+  margin-bottom: 4px;
+}
+
+.geo-dl-select {
+  width: 100%;
+  padding: 5px 8px;
+  border: 1px solid #e2e8f0;
+  border-radius: 6px;
+  font-size: 10px;
+  font-family: 'Montserrat', sans-serif;
+  color: #475569;
+  background: #f8fafc;
+  outline: none;
+  cursor: pointer;
+  transition: border-color 0.15s;
+}
+
+.geo-dl-select:focus { border-color: #1D9E75; }
+
+.geo-btn-dl-all {
+  width: 100%;
+  margin-top: 10px;
+  padding: 9px;
+  background: #1D9E75;
+  color: #ffffff;
+  border: none;
+  border-radius: 8px;
+  font-size: 11px;
+  font-weight: 600;
+  font-family: 'Montserrat', sans-serif;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  transition: background 0.15s;
+}
+
+.geo-btn-dl-all:hover { background: #0F6E56; }
+
+/* Opciones de mapa base */
+.geo-basemap-option {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 5px 0;
+  cursor: pointer;
+}
+
+.geo-basemap-option input[type="radio"] {
+  accent-color: #1D9E75;
+  cursor: pointer;
+}
+
+.geo-basemap-swatch {
+  width: 28px;
+  height: 18px;
+  border-radius: 3px;
+  border: 1px solid #e2e8f0;
+  flex-shrink: 0;
+}
+
+.geo-basemap-label {
+  font-size: 11px;
+  color: #475569;
+}
+
+/* ════════════════════════════════════════════
+   TOAST
+   ════════════════════════════════════════════ */
+#geoToast {
+  position: fixed;
+  bottom: 28px;
+  left: 50%;
+  transform: translateX(-50%) translateY(70px);
+  background: #0F6E56;
+  color: #ffffff;
+  padding: 10px 20px;
+  border-radius: 30px;
+  font-size: 12px;
+  font-family: 'Montserrat', sans-serif;
+  font-weight: 500;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  z-index: 9999;
+  transition: transform 0.3s cubic-bezier(.34,1.56,.64,1), opacity 0.3s;
+  opacity: 0;
+  pointer-events: none;
+  white-space: nowrap;
+}
+
+#geoToast i { color: #86efac; }
+
+#geoToast.show {
+  transform: translateX(-50%) translateY(0);
+  opacity: 1;
+}
+
+/* ════════════════════════════════════════════
+   SCROLLBAR GLOBAL (panel y sidebar)
+   ════════════════════════════════════════════ */
+.geo-panel::-webkit-scrollbar,
+.geo-proj-list::-webkit-scrollbar {
+  width: 4px;
+}
+</style>
+</head>
+<body>
+
+<!-- ── HEADER ────────────────────────────────── -->
+<header>
+  <nav>
+    <a href="../index.html" class="nav-brand">
+      <img src="../assets/images/Logo_GEIPER.png" alt="GEIPER" class="nav-logo-img">
+      <span>GEIPER</span>
+    </a>
+    <button class="nav-hamburger" id="navHamburger" aria-label="Abrir menú" aria-expanded="false">
+      <span></span><span></span><span></span>
+    </button>
+    <div class="nav-links" id="navLinks">
+      <a href="../index.html">Inicio</a>
+      <a href="../index.html#quienes">Quiénes somos</a>
+      <a href="../index.html#lineas">Líneas de investigación</a>
+      <a href="integrantes.html">Integrantes</a>
+      <a href="repositorios.html">Repositorios</a>
+      <a href="eventos.html">Eventos</a>
+      <a href="geovisor.html" class="active">Geovisor</a>
+      <a href="chatbots.html">Asistentes IA</a>
+    </div>
+  </nav>
+</header>
+
+<!-- ══════════════════════════════════════════
+     WRAPPER PRINCIPAL (tres columnas)
+     ══════════════════════════════════════════ -->
+<div class="geo-wrapper">
+
+  <!-- ── COLUMNA 1: Sidebar de proyectos ───── -->
+  <aside class="geo-sidebar">
+    <div class="geo-sidebar-header">
+      <div class="geo-sidebar-label">
+        <i class="fa-solid fa-map"></i>
+        PROYECTOS
+      </div>
+      <!-- Buscador -->
+      <div class="geo-search-wrap">
+        <i class="fa-solid fa-magnifying-glass"></i>
+        <input type="text" id="searchInput" placeholder="Buscar proyecto...">
+      </div>
+      <!-- Chips de filtro -->
+      <div class="geo-chips">
+        <button class="geo-chip active" data-filter="todos">Todos</button>
+        <button class="geo-chip" data-filter="sig">SIG</button>
+        <button class="geo-chip" data-filter="pr">PR</button>
+        <button class="geo-chip" data-filter="cat">Catastro</button>
+      </div>
+    </div>
+
+    <!-- Lista de proyectos -->
+    <div class="geo-proj-list" id="projectList"></div>
+
+    <!-- Pie de sidebar -->
+    <div class="geo-sidebar-footer">
+      <i class="fa-solid fa-circle-info"></i>
+      <span id="footerCount">7 proyectos · 3 categorías</span>
+    </div>
+  </aside>
+
+  <!-- ── COLUMNA 2: Mapa ──────────────────── -->
+  <div class="geo-map-container">
+    <!-- Mapa OpenLayers -->
+    <div id="map"></div>
+
+    <!-- Badge de proyecto activo -->
+    <div class="geo-badge hidden" id="geoBadge">
+      <div class="geo-badge-title" id="badgeTitle">—</div>
+      <div class="geo-badge-sub" id="badgeSub">—</div>
+    </div>
+
+    <!-- Controles de zoom -->
+    <div class="geo-controls">
+      <button class="geo-btn" id="btnZoomIn"    title="Acercar">   <i class="fa-solid fa-plus"></i>    </button>
+      <button class="geo-btn" id="btnZoomOut"   title="Alejar">    <i class="fa-solid fa-minus"></i>   </button>
+      <div class="sep"></div>
+      <button class="geo-btn" id="btnColombia"  title="Volver a Bogotá"> <i class="fa-solid fa-house"></i>  </button>
+      <button class="geo-btn" id="btnFullscreen" title="Pantalla completa"> <i class="fa-solid fa-expand" id="fsIcon"></i> </button>
+    </div>
+
+    <!-- Coordenadas del cursor -->
+    <div class="geo-coords" id="geoCoords">— ° N &nbsp; — ° W</div>
+
+    <!-- Popup de atributos -->
+    <div class="geo-popup-container" id="geoPopup">
+      <div class="geo-popup">
+        <div class="geo-popup-header">
+          <span class="geo-popup-title" id="popupTitle">Atributos</span>
+          <button id="popupClose"><i class="fa-solid fa-xmark"></i></button>
+        </div>
+        <div class="geo-popup-body">
+          <table class="geo-popup-table" id="popupTable"></table>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── COLUMNA 3: Panel derecho ─────────── -->
+  <aside class="geo-panel">
+
+    <!-- Estado vacío -->
+    <div id="panelEmpty">
+      <i class="fa-solid fa-hand-pointer"></i>
+      <p>Selecciona un proyecto para ver capas, metadatos y descargas</p>
+    </div>
+
+    <!-- Contenido activo -->
+    <div id="panelContent">
+
+      <!-- SECCIÓN 1: Capas activas -->
+      <div class="geo-panel-section">
+        <div class="geo-panel-title">
+          <i class="fa-solid fa-layer-group"></i>
+          CAPAS ACTIVAS
+        </div>
+        <div id="layerList"></div>
+        <div class="geo-opacity-wrap">
+          <div class="geo-opacity-label">
+            <span>Opacidad capa</span>
+            <span id="opacityVal">100%</span>
+          </div>
+          <input type="range" id="opacitySlider" min="0" max="100" value="100">
+        </div>
+      </div>
+
+      <!-- SECCIÓN 2: Metadatos -->
+      <div class="geo-panel-section">
+        <div class="geo-panel-title">
+          <i class="fa-solid fa-circle-info"></i>
+          METADATOS
+        </div>
+        <table class="geo-meta-table" id="metaTable"></table>
+      </div>
+
+      <!-- SECCIÓN 3: Descargas -->
+      <div class="geo-panel-section">
+        <div class="geo-panel-title">
+          <i class="fa-solid fa-download"></i>
+          DESCARGAS
+        </div>
+        <div id="downloadList"></div>
+        <button class="geo-btn-dl-all" id="btnDlAll">
+          <i class="fa-solid fa-file-zipper"></i>
+          Descargar proyecto completo
+        </button>
+      </div>
+
+      <!-- SECCIÓN 4: Mapa base -->
+      <div class="geo-panel-section">
+        <div class="geo-panel-title">
+          <i class="fa-solid fa-globe"></i>
+          MAPA BASE
+        </div>
+        <label class="geo-basemap-option">
+          <input type="radio" name="basemap" value="osm" checked>
+          <span class="geo-basemap-swatch" style="background: linear-gradient(135deg,#a8d8a8,#6aada0);"></span>
+          <span class="geo-basemap-label">OpenStreetMap</span>
+        </label>
+        <label class="geo-basemap-option">
+          <input type="radio" name="basemap" value="sat">
+          <span class="geo-basemap-swatch" style="background: linear-gradient(135deg,#2d5a27,#1a3e1a);"></span>
+          <span class="geo-basemap-label">Satélite</span>
+        </label>
+        <label class="geo-basemap-option">
+          <input type="radio" name="basemap" value="blank">
+          <span class="geo-basemap-swatch" style="background: #e8ecef;"></span>
+          <span class="geo-basemap-label">Sin fondo</span>
+        </label>
+      </div>
+
+    </div><!-- /panelContent -->
+  </aside>
+
+</div><!-- /geo-wrapper -->
+
+<!-- Toast -->
+<div id="geoToast"><i class="fa-solid fa-check"></i> <span id="toastMsg"></span></div>
+
+<!-- ── OpenLayers JS ────────────────────────── -->
+<script src="https://cdn.jsdelivr.net/npm/ol@9.2.4/dist/ol.js"></script>
+
+<script>
+/* ══════════════════════════════════════════════
+   DATOS DE PROYECTOS
+   ══════════════════════════════════════════════ */
+const PROJECTS = [
+  {
+    id: 1,
+    nombre: 'Monitoreo de cobertura vegetal — Amazonia colombiana',
+    cat: 'pr',
+    catLabel: 'Percepción Remota',
+    año: 2023,
+    sensor: 'Landsat 8 OLI/TIRS',
+    escala: '1:100.000',
+    crs: 'EPSG:4326',
+    autor: 'GEIPER — UD',
+    extent: [-74.5, -1.5, -69.0, 2.5],
+    capas: [
+      { id: 'cobveg_bosque',   nombre: 'Bosque denso',        color: '#166534', visible: true },
+      { id: 'cobveg_degra',    nombre: 'Áreas degradadas',    color: '#dc2626', visible: true },
+      { id: 'cobveg_agua',     nombre: 'Cuerpos de agua',     color: '#2563eb', visible: true }
+    ],
+    features: [
+      {
+        type: 'Feature', layer: 'cobveg_bosque',
+        properties: { 'Cobertura': 'Bosque denso', 'Área (ha)': '42.800', 'NDVI medio': '0.82', 'Imagen': 'LC08_L2SP_2023', 'Estado': 'Conservado' },
+        geometry: { type: 'Polygon', coordinates: [[[-73.2,-0.8],[-72.5,-0.8],[-72.5,-0.2],[-73.2,-0.2],[-73.2,-0.8]]] }
+      },
+      {
+        type: 'Feature', layer: 'cobveg_degra',
+        properties: { 'Cobertura': 'Bosque degradado', 'Área (ha)': '6.340', 'NDVI medio': '0.41', 'Causa': 'Deforestación', 'Año detección': '2022' },
+        geometry: { type: 'Polygon', coordinates: [[[-72.0,0.2],[-71.3,0.2],[-71.3,0.8],[-72.0,0.8],[-72.0,0.2]]] }
+      },
+      {
+        type: 'Feature', layer: 'cobveg_agua',
+        properties: { 'Nombre': 'Río Vaupés', 'Longitud (km)': '1.120', 'Ancho medio (m)': '320', 'Cuenca': 'Amazonas' },
+        geometry: { type: 'LineString', coordinates: [[-73.0,1.0],[-72.0,0.5],[-71.0,0.0],[-70.0,-0.5],[-69.5,-1.0]] }
+      },
+      {
+        type: 'Feature', layer: 'cobveg_bosque',
+        properties: { 'Cobertura': 'Bosque húmedo tropical', 'Área (ha)': '18.200', 'NDVI medio': '0.87', 'Imagen': 'LC08_L2SP_2023', 'Estado': 'Primario' },
+        geometry: { type: 'Polygon', coordinates: [[[-71.5,1.5],[-70.8,1.5],[-70.8,2.2],[-71.5,2.2],[-71.5,1.5]]] }
+      }
+    ]
+  },
+  {
+    id: 2,
+    nombre: 'Análisis multitemporal NDVI — Orinoquia',
+    cat: 'pr',
+    catLabel: 'Percepción Remota',
+    año: 2024,
+    sensor: 'Sentinel-2 MSI',
+    escala: '1:50.000',
+    crs: 'EPSG:4326',
+    autor: 'GEIPER — UD',
+    extent: [-73.5, 4.0, -68.0, 7.5],
+    capas: [
+      { id: 'ndvi_alto',   nombre: 'NDVI alto (> 0.6)',    color: '#15803d', visible: true },
+      { id: 'ndvi_medio',  nombre: 'NDVI medio (0.3–0.6)', color: '#ca8a04', visible: true },
+      { id: 'ndvi_bajo',   nombre: 'NDVI bajo (< 0.3)',    color: '#dc2626', visible: true },
+      { id: 'puntos_ref',  nombre: 'Puntos de referencia', color: '#7c3aed', visible: true }
+    ],
+    features: [
+      {
+        type: 'Feature', layer: 'ndvi_alto',
+        properties: { 'Clase NDVI': 'Alta vegetación', 'Valor medio': '0.74', 'Área (km²)': '3.820', 'Periodo': 'Ene–Mar 2024', 'Cobertura': 'Sabana arbolada' },
+        geometry: { type: 'Polygon', coordinates: [[[-72.5,5.2],[-71.8,5.2],[-71.8,6.0],[-72.5,6.0],[-72.5,5.2]]] }
+      },
+      {
+        type: 'Feature', layer: 'ndvi_medio',
+        properties: { 'Clase NDVI': 'Vegetación media', 'Valor medio': '0.47', 'Área (km²)': '2.140', 'Periodo': 'Ene–Mar 2024', 'Cobertura': 'Pastizales' },
+        geometry: { type: 'Polygon', coordinates: [[[-71.5,4.5],[-70.8,4.5],[-70.8,5.2],[-71.5,5.2],[-71.5,4.5]]] }
+      },
+      {
+        type: 'Feature', layer: 'ndvi_bajo',
+        properties: { 'Clase NDVI': 'Vegetación escasa', 'Valor medio': '0.18', 'Área (km²)': '580', 'Periodo': 'Ene–Mar 2024', 'Cobertura': 'Suelo desnudo / quemas' },
+        geometry: { type: 'Polygon', coordinates: [[[-70.5,6.0],[-69.8,6.0],[-69.8,6.8],[-70.5,6.8],[-70.5,6.0]]] }
+      },
+      {
+        type: 'Feature', layer: 'puntos_ref',
+        properties: { 'ID punto': 'OR-001', 'Latitud': '5.4820', 'Longitud': '-72.1234', 'NDVI campo': '0.71', 'Fecha visita': '2024-02-14' },
+        geometry: { type: 'Point', coordinates: [-72.1234, 5.4820] }
+      },
+      {
+        type: 'Feature', layer: 'puntos_ref',
+        properties: { 'ID punto': 'OR-002', 'Latitud': '6.2150', 'Longitud': '-70.3410', 'NDVI campo': '0.19', 'Fecha visita': '2024-02-16' },
+        geometry: { type: 'Point', coordinates: [-70.3410, 6.2150] }
+      }
+    ]
+  },
+  {
+    id: 3,
+    nombre: 'Modelamiento de riesgo sísmico — Bogotá D.C.',
+    cat: 'sig',
+    catLabel: 'Sistemas de Información Geográfica',
+    año: 2023,
+    sensor: 'CartoCiudad / SGC',
+    escala: '1:25.000',
+    crs: 'EPSG:4326',
+    autor: 'GEIPER — UD',
+    extent: [-74.25, 4.45, -73.95, 4.80],
+    capas: [
+      { id: 'riesgo_alto',  nombre: 'Riesgo sísmico alto',   color: '#dc2626', visible: true },
+      { id: 'riesgo_medio', nombre: 'Riesgo sísmico medio',  color: '#f97316', visible: true },
+      { id: 'riesgo_bajo',  nombre: 'Riesgo sísmico bajo',   color: '#facc15', visible: true },
+      { id: 'fallas',       nombre: 'Fallas geológicas',     color: '#7c3aed', visible: true }
+    ],
+    features: [
+      {
+        type: 'Feature', layer: 'riesgo_alto',
+        properties: { 'Localidad': 'Bosa', 'Nivel riesgo': 'Alto', 'PGA (g)': '0.18', 'Suelo tipo': 'S3 blando', 'Población': '836.000' },
+        geometry: { type: 'Polygon', coordinates: [[[-74.22,4.57],[-74.15,4.57],[-74.15,4.64],[-74.22,4.64],[-74.22,4.57]]] }
+      },
+      {
+        type: 'Feature', layer: 'riesgo_medio',
+        properties: { 'Localidad': 'Kennedy', 'Nivel riesgo': 'Medio', 'PGA (g)': '0.12', 'Suelo tipo': 'S2 intermedio', 'Población': '1.230.000' },
+        geometry: { type: 'Polygon', coordinates: [[[-74.15,4.60],[-74.08,4.60],[-74.08,4.67],[-74.15,4.67],[-74.15,4.60]]] }
+      },
+      {
+        type: 'Feature', layer: 'riesgo_bajo',
+        properties: { 'Localidad': 'Usaquén', 'Nivel riesgo': 'Bajo', 'PGA (g)': '0.07', 'Suelo tipo': 'S1 rígido', 'Población': '472.000' },
+        geometry: { type: 'Polygon', coordinates: [[[-74.05,4.68],[-73.98,4.68],[-73.98,4.75],[-74.05,4.75],[-74.05,4.68]]] }
+      },
+      {
+        type: 'Feature', layer: 'fallas',
+        properties: { 'Nombre falla': 'Falla de Bogotá', 'Tipo': 'Inversa', 'Longitud (km)': '110', 'Mag. máx. esperada': 'Mw 6.5', 'Estado': 'Activa' },
+        geometry: { type: 'LineString', coordinates: [[-74.20,4.50],[-74.10,4.60],[-74.00,4.72],[-73.98,4.78]] }
+      }
+    ]
+  },
+  {
+    id: 4,
+    nombre: 'Actualización catastral rural — Cundinamarca',
+    cat: 'cat',
+    catLabel: 'Catastro',
+    año: 2024,
+    sensor: 'IGAC / Drones DJI Matrice',
+    escala: '1:5.000',
+    crs: 'EPSG:4326',
+    autor: 'GEIPER — UD',
+    extent: [-74.80, 4.80, -73.80, 5.30],
+    capas: [
+      { id: 'predios_rural', nombre: 'Predios rurales',       color: '#d97706', visible: true },
+      { id: 'vias_vereda',   nombre: 'Vías veredales',        color: '#92400e', visible: true },
+      { id: 'puntos_ctrl',   nombre: 'Puntos de control GPS', color: '#0369a1', visible: true }
+    ],
+    features: [
+      {
+        type: 'Feature', layer: 'predios_rural',
+        properties: { 'Matrícula': '252-87421', 'Área (ha)': '12.4', 'Vereda': 'La Pradera', 'Municipio': 'Facatativá', 'Uso': 'Agrícola', 'Propietario': 'Persona natural' },
+        geometry: { type: 'Polygon', coordinates: [[[-74.40,5.05],[-74.35,5.05],[-74.35,5.10],[-74.40,5.10],[-74.40,5.05]]] }
+      },
+      {
+        type: 'Feature', layer: 'predios_rural',
+        properties: { 'Matrícula': '252-91034', 'Área (ha)': '8.7', 'Vereda': 'El Rosal', 'Municipio': 'El Rosal', 'Uso': 'Ganadero', 'Propietario': 'Persona jurídica' },
+        geometry: { type: 'Polygon', coordinates: [[[-74.26,4.92],[-74.20,4.92],[-74.20,4.98],[-74.26,4.98],[-74.26,4.92]]] }
+      },
+      {
+        type: 'Feature', layer: 'vias_vereda',
+        properties: { 'Nombre': 'Vía La Pradera – Facatativá', 'Longitud (km)': '7.2', 'Estado': 'Regular', 'Tipo pavimento': 'Afirmado', 'Año mantenimiento': '2021' },
+        geometry: { type: 'LineString', coordinates: [[-74.40,5.07],[-74.32,5.06],[-74.25,5.03],[-74.18,5.00]] }
+      },
+      {
+        type: 'Feature', layer: 'puntos_ctrl',
+        properties: { 'ID': 'GPS-CUN-04', 'Latitud': '5.0820', 'Longitud': '-74.3540', 'Precisión (m)': '0.015', 'Datum': 'MAGNA-SIRGAS', 'Equipo': 'Leica GS16' },
+        geometry: { type: 'Point', coordinates: [-74.3540, 5.0820] }
+      },
+      {
+        type: 'Feature', layer: 'puntos_ctrl',
+        properties: { 'ID': 'GPS-CUN-07', 'Latitud': '4.9610', 'Longitud': '-74.1820', 'Precisión (m)': '0.012', 'Datum': 'MAGNA-SIRGAS', 'Equipo': 'Leica GS16' },
+        geometry: { type: 'Point', coordinates: [-74.1820, 4.9610] }
+      }
+    ]
+  },
+  {
+    id: 5,
+    nombre: 'Detección de cambios urbanos — SAR Sentinel-1',
+    cat: 'pr',
+    catLabel: 'Percepción Remota',
+    año: 2024,
+    sensor: 'Sentinel-1 C-SAR IW',
+    escala: '1:50.000',
+    crs: 'EPSG:4326',
+    autor: 'GEIPER — UD',
+    extent: [-76.60, 3.20, -75.60, 4.00],
+    capas: [
+      { id: 'cambio_nuevo',    nombre: 'Nuevas construcciones', color: '#dc2626', visible: true },
+      { id: 'cambio_demol',    nombre: 'Demoliciones',          color: '#7c3aed', visible: true },
+      { id: 'area_estudio',    nombre: 'Área de estudio',       color: '#0369a1', visible: true }
+    ],
+    features: [
+      {
+        type: 'Feature', layer: 'area_estudio',
+        properties: { 'Ciudad': 'Cali — Ladera sur', 'Área (km²)': '48', 'Periodo': '2022–2024', 'Pasadas SAR': '24', 'Órbita': 'Ascendente' },
+        geometry: { type: 'Polygon', coordinates: [[[-76.58,3.30],[-75.80,3.30],[-75.80,3.92],[-76.58,3.92],[-76.58,3.30]]] }
+      },
+      {
+        type: 'Feature', layer: 'cambio_nuevo',
+        properties: { 'Tipo cambio': 'Nueva edificación', 'Área afectada (m²)': '4.200', 'Zona': 'Commune 18', 'Coherencia SAR': '0.12', 'Fecha detección': '2023-08' },
+        geometry: { type: 'Polygon', coordinates: [[[-76.40,3.42],[-76.35,3.42],[-76.35,3.47],[-76.40,3.47],[-76.40,3.42]]] }
+      },
+      {
+        type: 'Feature', layer: 'cambio_nuevo',
+        properties: { 'Tipo cambio': 'Ampliación vial', 'Área afectada (m²)': '11.800', 'Zona': 'Corredor Aguablanca', 'Coherencia SAR': '0.08', 'Fecha detección': '2024-01' },
+        geometry: { type: 'Polygon', coordinates: [[[-76.20,3.55],[-76.12,3.55],[-76.12,3.62],[-76.20,3.62],[-76.20,3.55]]] }
+      },
+      {
+        type: 'Feature', layer: 'cambio_demol',
+        properties: { 'Tipo cambio': 'Demolición estructura', 'Área afectada (m²)': '1.560', 'Zona': 'Centro histórico', 'Coherencia SAR': '0.05', 'Fecha detección': '2023-11' },
+        geometry: { type: 'Point', coordinates: [-76.53, 3.45] }
+      }
+    ]
+  },
+  {
+    id: 6,
+    nombre: 'Zonificación de uso del suelo — Sabana de Bogotá',
+    cat: 'sig',
+    catLabel: 'Sistemas de Información Geográfica',
+    año: 2023,
+    sensor: 'SPOT 6 / IGAC',
+    escala: '1:25.000',
+    crs: 'EPSG:4326',
+    autor: 'GEIPER — UD',
+    extent: [-74.50, 4.50, -73.70, 5.10],
+    capas: [
+      { id: 'zona_agro',    nombre: 'Zona agrícola',         color: '#15803d', visible: true },
+      { id: 'zona_urb',     nombre: 'Zona urbana',           color: '#dc2626', visible: true },
+      { id: 'zona_prot',    nombre: 'Zona de protección',    color: '#0369a1', visible: true },
+      { id: 'zona_ind',     nombre: 'Zona industrial',       color: '#7c3aed', visible: true }
+    ],
+    features: [
+      {
+        type: 'Feature', layer: 'zona_agro',
+        properties: { 'Uso': 'Horticultura intensiva', 'Área (ha)': '8.400', 'Municipio': 'Mosquera', 'Capacidad suelo': 'Clase II', 'Riego': 'Tecnificado' },
+        geometry: { type: 'Polygon', coordinates: [[[-74.30,4.68],[-74.22,4.68],[-74.22,4.76],[-74.30,4.76],[-74.30,4.68]]] }
+      },
+      {
+        type: 'Feature', layer: 'zona_urb',
+        properties: { 'Uso': 'Residencial consolidado', 'Área (ha)': '3.200', 'Municipio': 'Funza', 'Densidad (hab/ha)': '185', 'Estrato predominante': '3' },
+        geometry: { type: 'Polygon', coordinates: [[[-74.22,4.80],[-74.14,4.80],[-74.14,4.87],[-74.22,4.87],[-74.22,4.80]]] }
+      },
+      {
+        type: 'Feature', layer: 'zona_prot',
+        properties: { 'Uso': 'Humedal protegido', 'Área (ha)': '420', 'Nombre': 'Humedal Gualí-Tres Esquinas', 'RAMSAR': 'No', 'Estado': 'En recuperación' },
+        geometry: { type: 'Polygon', coordinates: [[[-74.10,4.85],[-74.05,4.85],[-74.05,4.90],[-74.10,4.90],[-74.10,4.85]]] }
+      },
+      {
+        type: 'Feature', layer: 'zona_ind',
+        properties: { 'Uso': 'Parque industrial', 'Área (ha)': '1.100', 'Municipio': 'Madrid', 'Tipo industria': 'Manufactura ligera', 'Acceso vial': 'Autopista Medellín' },
+        geometry: { type: 'Polygon', coordinates: [[[-74.28,4.74],[-74.22,4.74],[-74.22,4.80],[-74.28,4.80],[-74.28,4.74]]] }
+      }
+    ]
+  },
+  {
+    id: 7,
+    nombre: 'Potencial solar fotovoltaico — La Guajira',
+    cat: 'cat',
+    catLabel: 'Catastro',
+    año: 2024,
+    sensor: 'Sentinel-2 / GEE PVOUT',
+    escala: '1:200.000',
+    crs: 'EPSG:4326',
+    autor: 'GEIPER — UD',
+    extent: [-73.40, 10.80, -71.50, 12.40],
+    capas: [
+      { id: 'pot_muy_alto', nombre: 'Potencial muy alto (> 5.5 kWh/m²/día)', color: '#dc2626', visible: true },
+      { id: 'pot_alto',     nombre: 'Potencial alto (4.5–5.5 kWh/m²/día)',   color: '#f97316', visible: true },
+      { id: 'zonas_excl',   nombre: 'Zonas excluidas (resguardos/áreas prot.)', color: '#64748b', visible: true }
+    ],
+    features: [
+      {
+        type: 'Feature', layer: 'pot_muy_alto',
+        properties: { 'Municipio': 'Uribia', 'Irradiancia (kWh/m²/día)': '6.1', 'Área apta (km²)': '4.200', 'Capacidad instalable (MW)': '1.890', 'Viento medio (m/s)': '8.4' },
+        geometry: { type: 'Polygon', coordinates: [[[-72.80,11.50],[-71.80,11.50],[-71.80,12.30],[-72.80,12.30],[-72.80,11.50]]] }
+      },
+      {
+        type: 'Feature', layer: 'pot_alto',
+        properties: { 'Municipio': 'Manaure', 'Irradiancia (kWh/m²/día)': '5.2', 'Área apta (km²)': '1.850', 'Capacidad instalable (MW)': '740', 'Viento medio (m/s)': '7.1' },
+        geometry: { type: 'Polygon', coordinates: [[[-73.20,11.00],[-72.50,11.00],[-72.50,11.50],[-73.20,11.50],[-73.20,11.00]]] }
+      },
+      {
+        type: 'Feature', layer: 'zonas_excl',
+        properties: { 'Nombre': 'Resguardo Wayuu Alta Guajira', 'Tipo exclusión': 'Resguardo indígena', 'Área (km²)': '3.120', 'Decreto': '2164/1995', 'Pueblo': 'Wayuu' },
+        geometry: { type: 'Polygon', coordinates: [[[-72.20,11.80],[-71.60,11.80],[-71.60,12.30],[-72.20,12.30],[-72.20,11.80]]] }
+      },
+      {
+        type: 'Feature', layer: 'pot_muy_alto',
+        properties: { 'Municipio': 'Maicao', 'Irradiancia (kWh/m²/día)': '5.9', 'Área apta (km²)': '2.640', 'Capacidad instalable (MW)': '1.100', 'Viento medio (m/s)': '7.8' },
+        geometry: { type: 'Point', coordinates: [-72.2470, 11.3820] }
+      }
+    ]
+  }
+];
+
+/* ══════════════════════════════════════════════
+   ESTADO GLOBAL
+   ══════════════════════════════════════════════ */
+let activeProject  = null;
+let activeLayerId  = null;
+let currentFilter  = 'todos';
+let vectorLayer    = null;
+let map, osmLayer, satLayer, view;
+let toastTimer     = null;
+
+/* ══════════════════════════════════════════════
+   INIT MAP
+   ══════════════════════════════════════════════ */
+function initMap() {
+  osmLayer = new ol.layer.Tile({ source: new ol.source.OSM() });
+
+  satLayer = new ol.layer.Tile({
+    source: new ol.source.XYZ({
+      url: 'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',
+      attributions: 'Tiles &copy; Esri'
+    }),
+    visible: false
+  });
+
+  view = new ol.View({
+    center: ol.proj.fromLonLat([-74.0721, 4.7110]),
+    zoom: 11,
+    minZoom: 4,
+    maxZoom: 19
+  });
+
+  map = new ol.Map({
+    target: 'map',
+    layers: [osmLayer, satLayer],
+    view: view,
+    controls: ol.control.defaults({ zoom: false, attribution: false })
+      .extend([new ol.control.ScaleLine({ units: 'metric' })])
+  });
+
+  /* Coordenadas del cursor */
+  map.on('pointermove', function (evt) {
+    const coord = ol.proj.toLonLat(evt.coordinate);
+    const lon   = Math.abs(coord[0]).toFixed(4);
+    const lat   = Math.abs(coord[1]).toFixed(4);
+    const lonDir = coord[0] >= 0 ? 'E' : 'W';
+    const latDir = coord[1] >= 0 ? 'N' : 'S';
+    document.getElementById('geoCoords').textContent =
+      lat + '\u00b0 ' + latDir + '\u00a0\u00a0\u00a0' + lon + '\u00b0 ' + lonDir;
+  });
+
+  /* Click en feature → popup */
+  map.on('singleclick', function (evt) {
+    const popup = document.getElementById('geoPopup');
+    let found   = false;
+
+    map.forEachFeatureAtPixel(evt.pixel, function (feature) {
+      if (found) return;
+      found = true;
+
+      const props = feature.getProperties();
+      const geom  = feature.getGeometry();
+      let pixel;
+
+      if (geom.getType() === 'Point') {
+        pixel = map.getPixelFromCoordinate(geom.getCoordinates());
+      } else if (geom.getType() === 'LineString') {
+        const coords = geom.getCoordinates();
+        const mid    = coords[Math.floor(coords.length / 2)];
+        pixel = map.getPixelFromCoordinate(mid);
+      } else {
+        const ext = geom.getExtent();
+        const ctr = ol.extent.getCenter(ext);
+        pixel = map.getPixelFromCoordinate(ctr);
+      }
+
+      /* Título del popup */
+      const layerName = activeProject
+        ? (activeProject.capas.find(c => c.id === props['__layer']) || { nombre: 'Feature' }).nombre
+        : 'Atributos';
+      document.getElementById('popupTitle').textContent = layerName;
+
+      /* Tabla de atributos */
+      const table = document.getElementById('popupTable');
+      table.innerHTML = '';
+      Object.entries(props).forEach(function ([k, v]) {
+        if (k === '__layer' || k === 'geometry') return;
+        const row = document.createElement('tr');
+        row.innerHTML = '<td>' + escHtml(k) + '</td><td>' + escHtml(String(v)) + '</td>';
+        table.appendChild(row);
+      });
+
+      /* Posicionar popup */
+      popup.style.left = pixel[0] + 'px';
+      popup.style.top  = pixel[1] + 'px';
+      popup.style.display = 'block';
+    }, { hitTolerance: 8 });
+
+    if (!found) {
+      document.getElementById('geoPopup').style.display = 'none';
+    }
+  });
+
+  /* Cerrar popup */
+  document.getElementById('popupClose').addEventListener('click', function () {
+    document.getElementById('geoPopup').style.display = 'none';
+  });
+}
+
+/* Escapar HTML para evitar XSS */
+function escHtml(str) {
+  return str.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+/* ══════════════════════════════════════════════
+   CARGAR PROYECTO
+   ══════════════════════════════════════════════ */
+function loadProject(proj) {
+  activeProject = proj;
+  activeLayerId = proj.capas.length ? proj.capas[0].id : null;
+
+  /* Ocultar popup */
+  document.getElementById('geoPopup').style.display = 'none';
+
+  /* Badge */
+  const badge = document.getElementById('geoBadge');
+  badge.classList.remove('hidden');
+  document.getElementById('badgeTitle').textContent = proj.nombre;
+  document.getElementById('badgeSub').textContent =
+    proj.catLabel + ' · ' + proj.sensor + ' · ' + proj.año;
+
+  /* Renderizar features */
+  renderProjectFeatures(proj);
+
+  /* Encuadrar */
+  const ext3857 = ol.proj.transformExtent(proj.extent, 'EPSG:4326', 'EPSG:3857');
+  view.fit(ext3857, { padding: [50, 50, 50, 50], duration: 700 });
+
+  /* Panel derecho */
+  renderPanel(proj);
+
+  /* Marcar tarjeta activa */
+  document.querySelectorAll('.geo-proj-card').forEach(function (el) {
+    el.classList.toggle('active', parseInt(el.dataset.id) === proj.id);
+  });
+}
+
+/* ══════════════════════════════════════════════
+   RENDERIZAR FEATURES EN EL MAPA
+   ══════════════════════════════════════════════ */
+function renderProjectFeatures(proj) {
+  if (vectorLayer) {
+    map.removeLayer(vectorLayer);
+    vectorLayer = null;
+  }
+
+  const gjFormat = new ol.format.GeoJSON({
+    dataProjection:    'EPSG:4326',
+    featureProjection: 'EPSG:3857'
+  });
+
+  const features = [];
+  proj.features.forEach(function (f) {
+    const capa = proj.capas.find(c => c.id === f.layer);
+    if (!capa || !capa.visible) return;
+
+    const olFeature = gjFormat.readFeature(f);
+    olFeature.set('__layer', f.layer);
+    olFeature.setStyle(buildStyle(f.geometry.type, capa.color));
+    features.push(olFeature);
+  });
+
+  const source = new ol.source.Vector({ features: features });
+  vectorLayer  = new ol.layer.Vector({ source: source });
+  map.addLayer(vectorLayer);
+}
+
+/* ── Estilos por tipo de geometría ─────────── */
+function buildStyle(type, color) {
+  if (type === 'Point') {
+    return new ol.style.Style({
+      image: new ol.style.Circle({
+        radius: 7,
+        fill:   new ol.style.Fill({ color: color }),
+        stroke: new ol.style.Stroke({ color: '#ffffff', width: 2 })
+      })
+    });
+  } else if (type === 'LineString') {
+    return new ol.style.Style({
+      stroke: new ol.style.Stroke({ color: color, width: 2.5 })
+    });
+  } else {
+    /* Polygon */
+    return new ol.style.Style({
+      fill:   new ol.style.Fill({ color: color + '55' }),
+      stroke: new ol.style.Stroke({ color: color, width: 1.5 })
+    });
+  }
+}
+
+/* ── Refrescar capas según visibilidad ─────── */
+function refreshLayers() {
+  if (!activeProject || !vectorLayer) return;
+  const src = vectorLayer.getSource();
+  src.clear();
+
+  const gjFormat = new ol.format.GeoJSON({
+    dataProjection:    'EPSG:4326',
+    featureProjection: 'EPSG:3857'
+  });
+
+  activeProject.features.forEach(function (f) {
+    const capa = activeProject.capas.find(c => c.id === f.layer);
+    if (!capa || !capa.visible) return;
+    const olFeature = gjFormat.readFeature(f);
+    olFeature.set('__layer', f.layer);
+    olFeature.setStyle(buildStyle(f.geometry.type, capa.color));
+    src.addFeature(olFeature);
+  });
+}
+
+/* ══════════════════════════════════════════════
+   RENDERIZAR PANEL DERECHO
+   ══════════════════════════════════════════════ */
+function renderPanel(proj) {
+  document.getElementById('panelEmpty').style.display   = 'none';
+  document.getElementById('panelContent').style.display = 'flex';
+
+  /* ── Capas ── */
+  const layerList = document.getElementById('layerList');
+  layerList.innerHTML = '';
+
+  proj.capas.forEach(function (capa) {
+    const row = document.createElement('div');
+    row.className = 'geo-layer-row' + (capa.id === activeLayerId ? ' selected' : '');
+    row.dataset.id = capa.id;
+
+    const toggleId = 'tog-' + capa.id;
+    row.innerHTML =
+      '<div class="geo-layer-dot" style="background:' + capa.color + ';"></div>' +
+      '<span class="geo-layer-name">' + escHtml(capa.nombre) + '</span>' +
+      '<label class="geo-toggle" onclick="event.stopPropagation()">' +
+        '<input type="checkbox" id="' + toggleId + '"' + (capa.visible ? ' checked' : '') + '>' +
+        '<span class="geo-toggle-slider"></span>' +
+      '</label>';
+
+    /* Click en fila → seleccionar capa activa */
+    row.addEventListener('click', function () {
+      activeLayerId = capa.id;
+      document.querySelectorAll('.geo-layer-row').forEach(r => r.classList.remove('selected'));
+      row.classList.add('selected');
+    });
+
+    /* Toggle visibilidad */
+    row.querySelector('input[type="checkbox"]').addEventListener('change', function (e) {
+      capa.visible = e.target.checked;
+      refreshLayers();
+    });
+
+    layerList.appendChild(row);
+  });
+
+  /* Slider de opacidad */
+  const slider = document.getElementById('opacitySlider');
+  slider.value = 100;
+  document.getElementById('opacityVal').textContent = '100%';
+
+  /* ── Metadatos ── */
+  const metaFields = [
+    ['Autor',     proj.autor],
+    ['Año',       proj.año],
+    ['Sensor',    proj.sensor],
+    ['Escala',    proj.escala],
+    ['CRS',       proj.crs],
+    ['Categoría', proj.catLabel]
+  ];
+  const metaTable = document.getElementById('metaTable');
+  metaTable.innerHTML = metaFields.map(function ([k, v]) {
+    return '<tr><td>' + escHtml(k) + '</td><td>' + escHtml(String(v)) + '</td></tr>';
+  }).join('');
+
+  /* ── Descargas ── */
+  const dlList = document.getElementById('downloadList');
+  dlList.innerHTML = '';
+  proj.capas.forEach(function (capa) {
+    const div = document.createElement('div');
+    div.className = 'geo-dl-row';
+    const selId = 'dl-' + capa.id;
+    div.innerHTML =
+      '<div class="geo-dl-row-label">' +
+        '<div class="geo-layer-dot" style="background:' + capa.color + ';flex-shrink:0;"></div>' +
+        escHtml(capa.nombre) +
+      '</div>' +
+      '<select class="geo-dl-select" id="' + selId + '">' +
+        '<option value="">— Seleccionar formato —</option>' +
+        '<option value="geojson">GeoJSON</option>' +
+        '<option value="shp">SHP (ZIP)</option>' +
+        '<option value="kml">KML</option>' +
+        '<option value="csv">CSV (atributos)</option>' +
+      '</select>';
+
+    dlList.appendChild(div);
+
+    div.querySelector('select').addEventListener('change', function (e) {
+      if (!e.target.value) return;
+      showToast('Descargando ' + capa.nombre + ' como ' + e.target.value.toUpperCase());
+      const sel = e.target;
+      setTimeout(function () { sel.value = ''; }, 1200);
+    });
+  });
+}
+
+/* ══════════════════════════════════════════════
+   LISTA DE PROYECTOS (sidebar)
+   ══════════════════════════════════════════════ */
+function renderProjectList() {
+  const query  = document.getElementById('searchInput').value.toLowerCase().trim();
+  const list   = document.getElementById('projectList');
+  list.innerHTML = '';
+
+  const filtered = PROJECTS.filter(function (p) {
+    const matchCat  = currentFilter === 'todos' || p.cat === currentFilter;
+    const matchText = !query ||
+      p.nombre.toLowerCase().includes(query) ||
+      p.catLabel.toLowerCase().includes(query) ||
+      String(p.año).includes(query) ||
+      p.sensor.toLowerCase().includes(query);
+    return matchCat && matchText;
+  });
+
+  filtered.forEach(function (proj) {
+    const card = document.createElement('div');
+    card.className = 'geo-proj-card' + (activeProject && activeProject.id === proj.id ? ' active' : '');
+    card.dataset.id = proj.id;
+
+    const badgeClass = proj.cat;
+    card.innerHTML =
+      '<div class="geo-proj-name">' + escHtml(proj.nombre) + '</div>' +
+      '<div class="geo-proj-meta">' +
+        '<span class="geo-badge-cat ' + badgeClass + '">' + escHtml(proj.catLabel) + '</span>' +
+        '<span class="geo-proj-year">' + proj.año + '</span>' +
+      '</div>';
+
+    card.addEventListener('click', function () { loadProject(proj); });
+    list.appendChild(card);
+  });
+
+  /* Contador en footer */
+  const cats = new Set(filtered.map(p => p.cat));
+  document.getElementById('footerCount').textContent =
+    filtered.length + ' proyecto' + (filtered.length !== 1 ? 's' : '') +
+    ' · ' + cats.size + ' categoría' + (cats.size !== 1 ? 's' : '');
+}
+
+/* ══════════════════════════════════════════════
+   TOAST
+   ══════════════════════════════════════════════ */
+function showToast(msg) {
+  const toast = document.getElementById('geoToast');
+  document.getElementById('toastMsg').textContent = msg;
+  clearTimeout(toastTimer);
+  toast.classList.add('show');
+  toastTimer = setTimeout(function () {
+    toast.classList.remove('show');
+  }, 3000);
+}
+
+/* ══════════════════════════════════════════════
+   INICIALIZAR UI
+   ══════════════════════════════════════════════ */
+function initUI() {
+  /* Chips de filtro */
+  document.querySelectorAll('.geo-chip').forEach(function (chip) {
+    chip.addEventListener('click', function () {
+      document.querySelectorAll('.geo-chip').forEach(c => c.classList.remove('active'));
+      chip.classList.add('active');
+      currentFilter = chip.dataset.filter;
+      renderProjectList();
+    });
+  });
+
+  /* Buscador */
+  document.getElementById('searchInput').addEventListener('keyup', renderProjectList);
+
+  /* Zoom in / out */
+  document.getElementById('btnZoomIn').addEventListener('click', function () {
+    view.animate({ zoom: view.getZoom() + 1, duration: 250 });
+  });
+  document.getElementById('btnZoomOut').addEventListener('click', function () {
+    view.animate({ zoom: view.getZoom() - 1, duration: 250 });
+  });
+
+  /* Volver a Bogotá */
+  document.getElementById('btnColombia').addEventListener('click', function () {
+    view.animate({ center: ol.proj.fromLonLat([-74.0721, 4.7110]), zoom: 11, duration: 600 });
+
+    /* Limpiar proyecto activo */
+    activeProject = null;
+    activeLayerId = null;
+    if (vectorLayer) { map.removeLayer(vectorLayer); vectorLayer = null; }
+    document.getElementById('geoBadge').classList.add('hidden');
+    document.getElementById('geoPopup').style.display = 'none';
+    document.getElementById('panelEmpty').style.display   = 'flex';
+    document.getElementById('panelContent').style.display = 'none';
+    document.querySelectorAll('.geo-proj-card').forEach(c => c.classList.remove('active'));
+  });
+
+  /* Pantalla completa */
+  document.getElementById('btnFullscreen').addEventListener('click', function () {
+    const container = document.querySelector('.geo-map-container');
+    const fsIcon    = document.getElementById('fsIcon');
+    if (!document.fullscreenElement) {
+      container.requestFullscreen && container.requestFullscreen();
+      fsIcon.classList.replace('fa-expand', 'fa-compress');
+    } else {
+      document.exitFullscreen && document.exitFullscreen();
+      fsIcon.classList.replace('fa-compress', 'fa-expand');
+    }
+  });
+
+  document.addEventListener('fullscreenchange', function () {
+    if (!document.fullscreenElement) {
+      document.getElementById('fsIcon').classList.replace('fa-compress', 'fa-expand');
+    }
+  });
+
+  /* Slider de opacidad */
+  document.getElementById('opacitySlider').addEventListener('input', function () {
+    const val = parseInt(this.value);
+    document.getElementById('opacityVal').textContent = val + '%';
+    if (vectorLayer) vectorLayer.setOpacity(val / 100);
+  });
+
+  /* Descargar proyecto completo */
+  document.getElementById('btnDlAll').addEventListener('click', function () {
+    if (activeProject) {
+      showToast('Descargando proyecto completo: ' + activeProject.nombre);
+    }
+  });
+
+  /* Radios de mapa base */
+  document.querySelectorAll('input[name="basemap"]').forEach(function (radio) {
+    radio.addEventListener('change', function () {
+      const val = this.value;
+      const mapDiv = document.getElementById('map');
+      osmLayer.setVisible(val === 'osm');
+      satLayer.setVisible(val === 'sat');
+      mapDiv.style.background = val === 'blank' ? '#f9fafb' : '';
+    });
+  });
+
+  /* Hamburger menu del navbar */
+  (function () {
+    const header = document.querySelector('header');
+    const btn    = document.getElementById('navHamburger');
+    const links  = document.getElementById('navLinks');
+    if (!btn || !links) return;
+
+    function checkFit() {
+      header.classList.remove('mobile-nav');
+      links.classList.remove('open');
+      btn.classList.remove('open');
+      btn.setAttribute('aria-expanded', 'false');
+
+      links.style.cssText = 'display:flex;flex-direction:row;position:static;width:auto;visibility:hidden;';
+      btn.style.display   = 'none';
+
+      const navEl   = document.querySelector('nav');
+      const brandEl = navEl.querySelector('.nav-brand');
+      const gap     = 40;
+      const fits    = brandEl.offsetWidth + gap + links.scrollWidth <= navEl.offsetWidth;
+
+      links.style.cssText = '';
+      btn.style.display   = '';
+
+      if (!fits) header.classList.add('mobile-nav');
+    }
+
+    btn.addEventListener('click', function () {
+      const isOpen = links.classList.toggle('open');
+      btn.classList.toggle('open', isOpen);
+      btn.setAttribute('aria-expanded', isOpen);
+    });
+
+    links.querySelectorAll('a').forEach(function (a) {
+      a.addEventListener('click', function () {
+        links.classList.remove('open');
+        btn.classList.remove('open');
+        btn.setAttribute('aria-expanded', 'false');
+      });
+    });
+
+    document.addEventListener('click', function (e) {
+      if (!btn.contains(e.target) && !links.contains(e.target)) {
+        links.classList.remove('open');
+        btn.classList.remove('open');
+        btn.setAttribute('aria-expanded', 'false');
+      }
+    });
+
+    checkFit();
+    window.addEventListener('resize', checkFit);
+  })();
+}
+
+/* ══════════════════════════════════════════════
+   ARRANQUE (window.load para dimensiones reales)
+   ══════════════════════════════════════════════ */
+window.addEventListener('load', function () {
+  initMap();
+  initUI();
+  renderProjectList();
+});
+</script>
+</body>
+</html>
