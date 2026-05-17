@@ -1282,9 +1282,9 @@ function initMap() {
     target: 'map',
     layers: [osmLayer, satLayer],
     view: view,
-    controls: ol.control.defaults({ zoom: false, attribution: false })
-      .extend([new ol.control.ScaleLine({ units: 'metric' })])
+    controls: []
   });
+  map.addControl(new ol.control.ScaleLine({ units: 'metric' }));
 
   /* Coordenadas del cursor */
   map.on('pointermove', function (evt) {
