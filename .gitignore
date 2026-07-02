@@ -1,0 +1,23 @@
+# Variables de entorno y secretos
+.env
+.env.local
+*.env
+
+# Python
+__pycache__/
+*.pyc
+.venv/
+venv/
+
+# Archivos de indexado local (datos crudos, no deben subirse)
+backend/documentos/
+backend/chroma_db/
+
+# Excel de origen de eventos (dato sensible/temporal, no versionar)
+*.xlsx
+!data/*.xlsx
+
+# Sistema operativo / editores
+.DS_Store
+Thumbs.db
+.vscode/

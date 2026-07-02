@@ -9,9 +9,7 @@ services:
     envVars:
       - key: PYTHON_VERSION
         value: 3.11.0
-      - key: HF_TOKEN
+      - key: GROQ_API_KEY
         sync: false
-    disk:
-      name: chroma-data
-      mountPath: /backend/chroma_db
-      sizeGB: 1
+      - key: GOOGLE_API_KEY
+        sync: false

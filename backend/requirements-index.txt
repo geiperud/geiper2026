@@ -1,0 +1,9 @@
+# Dependencias de INDEXADO (solo local, para indexar.py)
+# Instalar con: pip install -r requirements-index.txt --break-system-packages
+langchain-community>=0.3.0
+langchain-text-splitters>=0.3.0
+langchain-chroma>=0.2.0
+pypdf>=3.17.0
+docx2txt>=0.8
+unstructured>=0.10.0
+requests>=2.31.0
