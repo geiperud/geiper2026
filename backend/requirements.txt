@@ -1,14 +1,11 @@
+# Dependencias de PRODUCCIÓN (Render) — usadas por main.py
 fastapi>=0.109.0
 uvicorn>=0.27.0
+slowapi>=0.1.9
 pydantic>=2.7.4
 langchain-core>=0.3.0
-langchain-chroma>=0.2.0
 langchain-community>=0.3.0
 faiss-cpu>=1.7.0
 sentence-transformers>=2.2.0
-pypdf>=3.17.0
-docx2txt>=0.8
-unstructured>=0.10.0
 requests>=2.31.0
 duckduckgo-search>=6.0.0
-sentence-transformers>=2.2.0

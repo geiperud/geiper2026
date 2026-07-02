@@ -104,11 +104,17 @@ document.addEventListener('DOMContentLoaded', () => {
     contentDiv.className = 'message-content';
 
     if (isHtml) {
+      // Solo se usa para saludos fijos definidos en botsConfig (texto propio, no del backend)
       const p = document.createElement('p');
       p.innerHTML = text;
       contentDiv.appendChild(p);
     } else if (sender === 'bot' && typeof marked !== 'undefined') {
-      contentDiv.innerHTML = marked.parse(text);
+      // La respuesta viene del backend (LLM + resultados web): siempre se sanitiza
+      // antes de insertarla, para evitar HTML/JS malicioso inyectado vía prompt injection.
+      const rawHtml = marked.parse(text);
+      contentDiv.innerHTML = typeof DOMPurify !== 'undefined'
+        ? DOMPurify.sanitize(rawHtml)
+        : rawHtml;
     } else {
       const p = document.createElement('p');
       text.split('\n').forEach((line, i) => {

@@ -12,6 +12,9 @@ except ImportError:
 from fastapi.middleware.cors import CORSMiddleware
 from starlette.middleware.base import BaseHTTPMiddleware
 from pydantic import BaseModel, Field
+from slowapi import Limiter, _rate_limit_exceeded_handler
+from slowapi.util import get_remote_address
+from slowapi.errors import RateLimitExceeded
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(message)s")
 logger = logging.getLogger(__name__)
@@ -27,12 +30,18 @@ except ImportError as e:
 
 app = FastAPI(title="GEIPER AI Cloud Backend")
 
+# ── Rate limiting: máximo de peticiones por IP para evitar abuso/saturación ──
+limiter = Limiter(key_func=get_remote_address)
+app.state.limiter = limiter
+app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
+
 class SecurityHeadersMiddleware(BaseHTTPMiddleware):
     async def dispatch(self, request: Request, call_next):
         response: Response = await call_next(request)
         response.headers["X-Content-Type-Options"] = "nosniff"
         response.headers["X-Frame-Options"] = "DENY"
         response.headers["X-XSS-Protection"] = "1; mode=block"
+        response.headers["Content-Security-Policy"] = "default-src 'none'; frame-ancestors 'none'"
         return response
 
 app.add_middleware(SecurityHeadersMiddleware)
@@ -76,7 +85,7 @@ REFERENCIAS_APA = {
 
 vectorstore = None
 api_token   = None
-glm_token   = None
+groq_token   = None
 
 # ── Embeddings via REST ──────────────────────────────────────────────────────
 class GoogleEmbeddingsREST(Embeddings):
@@ -111,8 +120,8 @@ class GoogleEmbeddingsREST(Embeddings):
         return self._embed_one(text)
 
 
-# ── LLM GLM-4.5-Flash via Z.ai (primario) ───────────────────────────────────
-def glm_generate(prompt, api_key):
+# ── LLM Groq (Llama 3.3 70B) vía API REST (primario) ────────────────────────
+def groq_generate(prompt, api_key):
     headers = {
         "Content-Type": "application/json",
         "Authorization": f"Bearer {api_key}"
@@ -203,14 +212,13 @@ def web_search(query, max_results=3):
 
 
 def init_services():
-    global vectorstore, api_token, glm_token
+    global vectorstore, api_token, groq_token
 
-    glm_token  = os.environ.get("GROQ_API_KEY", "")
-    glm_backup = os.environ.get("GLM_API_KEY", "")
-    if glm_token:
-        logger.info("GLM API Key encontrada (modelo primario).")
+    groq_token  = os.environ.get("GROQ_API_KEY", "")
+    if groq_token:
+        logger.info("Groq API Key encontrada (modelo primario).")
     else:
-        logger.warning("No se encontro GLM_API_KEY.")
+        logger.warning("No se encontro GROQ_API_KEY.")
 
     api_token = os.environ.get("GOOGLE_API_KEY", "")
     if api_token:
@@ -218,7 +226,7 @@ def init_services():
     else:
         logger.warning("No se encontro GOOGLE_API_KEY.")
 
-    if not glm_token and not api_token:
+    if not groq_token and not api_token:
         logger.error("No hay ninguna API Key configurada.")
         return
 
@@ -250,23 +258,24 @@ class ChatRequest(BaseModel):
 
 @app.get("/status")
 def status():
-    return {"status": "ok", "cloud_ready": bool(glm_token or api_token)}
+    return {"status": "ok", "cloud_ready": bool(groq_token or api_token)}
 
 @app.post("/chat")
-def chat(request: ChatRequest):
-    if not glm_token and not api_token:
+@limiter.limit("10/minute")
+def chat(request: Request, chat_request: ChatRequest):
+    if not groq_token and not api_token:
         raise HTTPException(status_code=500, detail="Sin configuracion de API.")
 
     try:
-        if request.mode == "investigacion":
+        if chat_request.mode == "investigacion":
             user_prompt = (
                 f"Eres el Asistente de Investigacion del grupo GEIPER. "
                 f"Responde en español de forma profesional.\n\n"
-                f"Pregunta: {request.query}"
+                f"Pregunta: {chat_request.query}"
             )
         else:
             # ── Detección de saludo: respuesta directa sin RAG ni web ────────
-            es_saludo = request.query.strip().lower().rstrip("!?.") in SALUDOS
+            es_saludo = chat_request.query.strip().lower().rstrip("!?.") in SALUDOS
             if es_saludo:
                 user_prompt = (
                     f"Eres el Asistente Académico del semillero GEIPER. "
@@ -276,14 +285,14 @@ def chat(request: ChatRequest):
                     f"2. Modelos de lenguaje para geotecnia (Xu et al., 2025)\n"
                     f"Sé conciso, no más de 3 líneas."
                 )
-                if glm_token:
+                if groq_token:
                     try:
-                        respuesta = glm_generate(user_prompt, glm_token)
+                        respuesta = groq_generate(user_prompt, groq_token)
                         return {"response": respuesta}
                     except HTTPException:
                         raise
                     except Exception as e:
-                        logger.warning(f"GLM fallo en saludo: {e}")
+                        logger.warning(f"Groq fallo en saludo: {e}")
                 if api_token:
                     respuesta = gemini_generate(user_prompt, api_token)
                     return {"response": respuesta}
@@ -295,7 +304,7 @@ def chat(request: ChatRequest):
             # ── RAG: documentos indexados ────────────────────────────────────
             if vectorstore is not None:
                 try:
-                    docs_scores = vectorstore.similarity_search_with_score(request.query, k=3)
+                    docs_scores = vectorstore.similarity_search_with_score(chat_request.query, k=3)
                     relevantes  = [(doc, score) for doc, score in docs_scores if score < 1.2]
                     if relevantes:
                         bloques = []
@@ -311,12 +320,12 @@ def chat(request: ChatRequest):
                 except Exception as e:
                     logger.warning(f"RAG fallo: {e}")
 
-            # ── Web search: DuckDuckGo (se añade al final, no al prompt de GLM) ─
-            resultados_web = web_search(request.query, max_results=3)
+            # ── Web search: DuckDuckGo (se añade al final, no al prompt de Groq) ─
+            resultados_web = web_search(chat_request.query, max_results=3)
             if resultados_web:
                 logger.info(f"Web search: {len(resultados_web)} resultados encontrados.")
 
-            # ── Prompt para GLM: solo RAG (contexto pequeño = respuesta rápida) ─
+            # ── Prompt para Groq: solo RAG (contexto pequeño = respuesta rápida) ─
             if contexto_docs:
                 user_prompt = (
                     f"Tienes acceso a fragmentos de documentos académicos del semillero GEIPER. "
@@ -328,7 +337,7 @@ def chat(request: ChatRequest):
                     f"Al final añade un apartado breve 'Referencias:' con las citas APA usadas, "
                     f"y cierra con una pregunta que invite a seguir conversando.\n\n"
                     f"FRAGMENTOS:\n{contexto_docs}\n\n"
-                    f"PREGUNTA: {request.query}"
+                    f"PREGUNTA: {chat_request.query}"
                 )
             else:
                 user_prompt = (
@@ -337,30 +346,30 @@ def chat(request: ChatRequest):
                     f"y sugiere qué temas sí puedes abordar: interfaces conversacionales con SIG, "
                     f"razonamiento en modelos de lenguaje o geotecnia con IA. "
                     f"Sé breve y amigable.\n\n"
-                    f"PREGUNTA: {request.query}"
+                    f"PREGUNTA: {chat_request.query}"
                 )
 
-        # ── Generar respuesta (GLM primero, Gemini fallback) ─────────────────
+        # ── Generar respuesta (Groq primero, Gemini fallback) ─────────────────
         respuesta = None
-        if glm_token:
+        if groq_token:
             try:
-                logger.info(f"Enviando a GLM-4.5-Flash (modo: {request.mode})")
-                respuesta = glm_generate(user_prompt, glm_token)
-                logger.info("Respuesta recibida de GLM.")
+                logger.info(f"Enviando a Groq (Llama 3.3 70B) (modo: {chat_request.mode})")
+                respuesta = groq_generate(user_prompt, groq_token)
+                logger.info("Respuesta recibida de Groq.")
             except HTTPException:
                 raise
             except Exception as e:
-                logger.warning(f"GLM fallo, intentando con Gemini: {e}")
+                logger.warning(f"Groq fallo, intentando con Gemini: {e}")
 
         if respuesta is None:
             if not api_token:
                 raise HTTPException(status_code=500, detail="Servicio temporalmente no disponible.")
-            logger.info(f"Enviando a Gemini fallback (modo: {request.mode})")
+            logger.info(f"Enviando a Gemini fallback (modo: {chat_request.mode})")
             respuesta = gemini_generate(user_prompt, api_token)
             logger.info("Respuesta recibida de Gemini.")
 
         # ── Añadir resultados web al final sin pasar por el modelo ───────────
-        if request.mode == "tematico" and resultados_web:
+        if chat_request.mode == "tematico" and resultados_web:
             links = []
             for r in resultados_web:
                 titulo = r.get("title", "Fuente web")

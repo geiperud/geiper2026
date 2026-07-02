@@ -1,0 +1,4 @@
+User-agent: *
+Allow: /
+
+Sitemap: https://geiperud.github.io/geiper2026/sitemap.xml
