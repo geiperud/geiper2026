@@ -88,11 +88,17 @@ nav .nav-brand {
     background-size: cover;
     background-position: center;
     color: white;
+    padding: 80px 8% 60px;
+    margin-top: 64px;
+}
+
+.hero-inner {
+    max-width: 1200px;
+    margin: 0 auto;
     display: flex;
     align-items: center;
-    padding: 80px 8% 60px;
+    justify-content: center;
     gap: 40px;
-    margin-top: 64px;
 }
 
 .hero-logo-side {
@@ -445,7 +451,8 @@ footer { background: var(--azul-oscuro); color: white; padding: 0; }
 
 /* ── RESPONSIVE ──────────────────────────────── */
 @media (max-width: 900px) {
-    .hero          { flex-direction: column; text-align: center; padding: 60px 30px; }
+    .hero          { padding: 60px 30px; text-align: center; }
+    .hero-inner    { flex-direction: column; }
     .hero-text     { text-align: center; }
     .hero-text h1  { font-size: 36px; }
     .hero-logo-placeholder { width: 140px; height: 140px; }
@@ -533,40 +540,6 @@ header.mobile-nav .nav-links a.active {
     background: rgba(255,255,255,0.08);
     border-left: 3px solid #F5A623;
     padding-left: 21px;
-}
-
-/* ── RESPONSIVE ──────────────────────────────── */
-@media (max-width: 900px) {
-    .hero          { flex-direction: column; text-align: center; padding: 80px 30px 60px; }
-    .hero-text     { text-align: center; }
-    .hero-text h1  { font-size: 36px; }
-    .hero-logo-placeholder { width: 140px; height: 140px; }
-    .hero-logo-placeholder span { font-size: 40px; }
-    .hero-logo-img { width: 160px; height: 160px; }
-    .footer-logo-img { width: 90px; height: 90px; }
-
-    section { padding: 80px 30px; }
-
-    .lineas      { grid-template-columns: 1fr 1fr; }
-    .profesores  { grid-template-columns: 1fr 1fr; }
-    .integrantes { grid-template-columns: 1fr 1fr; }
-    .two         { grid-template-columns: 1fr; }
-    .repos-grid  { grid-template-columns: 1fr; }
-    .sub-grid    { grid-template-columns: 1fr; }
-
-    .stats-section { flex-wrap: wrap; gap: 40px; }
-    .stat-item     { max-width: 130px; }
-
-    .footer-container { grid-template-columns: 1fr 1fr; text-align: center; }
-    .footer-logo { margin: 0 auto 12px; }
-
-    nav { padding: 15px 20px; }
-}
-
-@media (max-width: 600px) {
-    .hero-text h1 { font-size: 30px; }
-    .footer-container { grid-template-columns: 1fr; }
-    .page-hero h1 { font-size: 28px; }
 }
 
 /* ── ESTILOS DEL FEED DE EVENTOS (RSS) ───────── */
