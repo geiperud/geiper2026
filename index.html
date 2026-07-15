@@ -60,11 +60,9 @@
     </button>
         <div class="nav-links" id="navLinks">
       <a href="index.html" class="active">Inicio</a>
-      <a href="#quienes">Quiénes somos</a>
       <a href="pages/lineas.html">Líneas de investigación</a>
       <a href="pages/integrantes.html">Integrantes</a>
       <a href="pages/repositorios.html">Repositorios</a>
-      <a href="pages/eventos.html">Eventos</a>
       <a href="pages/geovisor.html">Geovisor</a>
       <a href="pages/chatbots.html">Asistentes IA</a>
     </div>
@@ -230,6 +228,24 @@
     <div class="carrusel-dots" id="carruselDots"></div>
     <button class="carrusel-btn" id="carruselNext">&#8594;</button>
     <span class="carrusel-counter" id="carruselCounter">1 / 1</span>
+  </div>
+</section>
+
+<!-- ── FEED RSS EVENTOS (RESUMEN) ─────────────── -->
+<section id="rss-feed-section" style="background-color: var(--gris-muy-claro); padding: 60px 20px;">
+  <div style="max-width: 1000px; margin: auto;">
+    <h2 class="section-title">Novedades & Convocatorias</h2>
+    <p style="text-align: center; color: var(--gris); margin-bottom: 40px; margin-top:-10px;">
+      Feed automático de noticias, congresos y oportunidades académicas.
+    </p>
+
+    <div id="rssFeedContainer" class="feed-grid" data-feed-url="data/eventos_feed.json" data-limit="3">
+      <!-- Las tarjetas se inyectarán aquí vía JS -->
+    </div>
+
+    <div style="text-align:center; margin-top:32px;">
+      <a href="pages/eventos.html" class="btn">Ver más →</a>
+    </div>
   </div>
 </section>
 
@@ -512,5 +528,6 @@ document.getElementById('contactForm').addEventListener('submit', async function
   }
 });
 </script>
+<script src="js/eventos_rss.js"></script>
 </body>
 </html>
