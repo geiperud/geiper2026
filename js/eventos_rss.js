@@ -7,7 +7,8 @@ document.addEventListener('DOMContentLoaded', () => {
   const rssContainer = document.getElementById('rssFeedContainer');
   if (!rssContainer) return;
 
-  const url = '../data/eventos_feed.json';
+  const url = rssContainer.dataset.feedUrl || '../data/eventos_feed.json';
+  const limit = rssContainer.dataset.limit ? parseInt(rssContainer.dataset.limit, 10) : null;
 
   function sanitizeUrl(rawUrl) {
     try {
@@ -94,7 +95,9 @@ document.addEventListener('DOMContentLoaded', () => {
         return;
       }
 
-      data.forEach(evento => {
+      const sorted = [...data].sort((a, b) => new Date(b.date) - new Date(a.date));
+      const eventos = limit ? sorted.slice(0, limit) : sorted;
+      eventos.forEach(evento => {
         rssContainer.appendChild(buildCard(evento));
       });
 
