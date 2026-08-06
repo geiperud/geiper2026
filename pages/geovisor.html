@@ -252,35 +252,8 @@ html, body {
 }
 
 /* Ocultar controles nativos de OL */
-.ol-zoom { display: none !important; }
-
-/* Atribución (créditos de fuentes externas, ej. IGAC) — visible y estilizada.
-   Se mantiene visible siempre que haya alguna capa con atribución activa
-   (OpenLayers la oculta automáticamente si no hay nada que atribuir). */
-.ol-attribution {
-  bottom: 6px !important;
-  right: 6px !important;
-  left: auto !important;
-  top: auto !important;
-}
-
-.ol-attribution:not(.ol-collapsed) {
-  background: rgba(255,255,255,0.85) !important;
-  border-radius: 6px !important;
-  border: 1px solid #e2e8f0 !important;
-}
-
-.ol-attribution ul {
-  font-size: 10px !important;
-  font-family: 'Montserrat', sans-serif !important;
-  color: #475569 !important;
-  text-shadow: none !important;
-}
-
-.ol-attribution button {
-  background: rgba(255,255,255,0.9) !important;
-  color: #475569 !important;
-}
+.ol-zoom,
+.ol-attribution { display: none !important; }
 
 /* ScaleLine */
 .ol-scale-line {
@@ -772,8 +745,7 @@ html, body {
   color: #475569;
 }
 
-.bp-bm-option input[type="radio"],
-.bp-bm-option input[type="checkbox"] { accent-color: #1D9E75; cursor: pointer; }
+.bp-bm-option input[type="radio"] { accent-color: #1D9E75; cursor: pointer; }
 
 .bp-bm-thumb { width: 22px; height: 14px; border-radius: 3px; border: 1px solid #e2e8f0; flex-shrink: 0; }
 .bp-bm-thumb.osm   { background: linear-gradient(135deg, #ddf2d0, #b3d4f5); }
@@ -973,19 +945,6 @@ html, body {
             <div class="bp-bm-thumb blank"></div>
             Sin fondo
           </label>
-
-          <div style="margin-top:12px; padding-top:12px; border-top:1px solid #e2e8f0;">
-            <div style="font-size:10px; font-weight:600; letter-spacing:1px; color:#94a3b8; text-transform:uppercase; margin-bottom:8px;">
-              Capas de referencia externas
-            </div>
-            <label class="bp-bm-option" style="width:100%;">
-              <input type="checkbox" id="chkCartoIGAC">
-              Cartografía Básica IGAC (1:100.000)
-            </label>
-            <div style="font-size:9px; color:#94a3b8; margin-top:4px; padding-left:2px;">
-              Fuente: Instituto Geográfico Agustín Codazzi — Colombia en Mapas
-            </div>
-          </div>
         </div>
       </div>
     </div><!-- /bottomPanel -->
@@ -1092,21 +1051,13 @@ const PROJECTS = [
 ];
 
 /* ══════════════════════════════════════════════
-   CONFIGURACIÓN — BACKEND / GEOSERVICIOS EXTERNOS
-   ══════════════════════════════════════════════ */
-const API_BASE = window.GEIPER_API_URL ||
-                  (location.hostname === 'localhost' || location.hostname === '127.0.0.1'
-                    ? 'http://localhost:8000'
-                    : 'https://geiper2026.onrender.com');
-
-/* ══════════════════════════════════════════════
    ESTADO GLOBAL
    ══════════════════════════════════════════════ */
 let activeProject  = null;
 let activeLayerId  = null;
 let currentFilter  = 'todos';
 let vectorLayer    = null;
-let map, osmLayer, satLayer, wmsCartoIGACLayer, view;
+let map, osmLayer, satLayer, view;
 let toastTimer     = null;
 
 /* ══════════════════════════════════════════════
@@ -1123,23 +1074,6 @@ function initMap() {
     visible: false
   });
 
-  /* Capa de referencia externa: Cartografía Básica IGAC (WMS, vía proxy backend).
-     Se consume a través del backend propio para evitar bloqueo por mixed
-     content (el servicio del IGAC es HTTP, el sitio es HTTPS) y por CORS.
-     'Todas' es el grupo de capas del servicio que renderiza junta toda la
-     cartografía básica (vías, drenajes, límites, construcciones, etc.) —
-     confirmado contra el listado real de capas del servicio 'cien_mil'. */
-  wmsCartoIGACLayer = new ol.layer.Tile({
-    source: new ol.source.TileWMS({
-      url: API_BASE + '/api/wms-proxy/cien_mil',
-      params: { 'LAYERS': 'Todas', 'TILED': true, 'VERSION': '1.1.1' },
-      serverType: 'geoserver',
-      attributions: 'Fuente: Instituto Geográfico Agustín Codazzi'
-    }),
-    visible: false,
-    opacity: 0.8
-  });
-
   view = new ol.View({
     center: ol.proj.fromLonLat([-74.0721, 4.7110]),
     zoom: 11,
@@ -1149,12 +1083,11 @@ function initMap() {
 
   map = new ol.Map({
     target: 'map',
-    layers: [osmLayer, satLayer, wmsCartoIGACLayer],
+    layers: [osmLayer, satLayer],
     view: view,
     controls: []
   });
   map.addControl(new ol.control.ScaleLine({ units: 'metric' }));
-  map.addControl(new ol.control.Attribution({ collapsible: true, collapsed: true }));
 
   /* Coordenadas del cursor */
   map.on('pointermove', function (evt) {
@@ -1344,11 +1277,6 @@ function renderPanel(proj) {
   const bp = document.getElementById('bottomPanel');
   bp.style.display = 'flex';
   bp.classList.remove('collapsed');
-  /* El panel cambia la altura disponible para el mapa: OpenLayers necesita
-     que se le avise explícitamente para recalcular el tamaño de su canvas,
-     o el mapa base queda con dimensiones desactualizadas (se ve encogido/
-     descuadrado respecto a las capas agregadas después). */
-  setTimeout(function () { map.updateSize(); }, 50);
 
   document.getElementById('bpProjName').textContent = proj.nombre;
 
@@ -1576,12 +1504,6 @@ function initUI() {
       satLayer.setVisible(this.value === 'sat');
       document.getElementById('map').style.background = this.value === 'blank' ? '#f9fafb' : '';
     });
-  });
-
-  /* ── Toggle: capa de referencia Cartografía Básica IGAC ── */
-  document.getElementById('chkCartoIGAC').addEventListener('change', function () {
-    wmsCartoIGACLayer.setVisible(this.checked);
-    if (this.checked) showToast('Cartografía Básica IGAC activada');
   });
 
   /* Hamburger menu del navbar */

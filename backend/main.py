@@ -2,7 +2,6 @@ import os
 import time
 import logging
 import traceback
-import threading
 import requests
 from fastapi import FastAPI, HTTPException, Request, Response
 try:
@@ -64,45 +63,6 @@ GROQ_URL   = "https://api.groq.com/openai/v1/chat/completions"
 
 SALUDOS = {"hola", "hi", "hello", "buenas", "buen día", "buen dia", "buenos días",
            "buenos dias", "hey", "saludos", "qué tal", "que tal", "ola"}
-
-# ── Proxy WMS: geoservicios externos permitidos (whitelist) ──────────────────
-# Estos servicios se sirven por HTTP (no HTTPS) desde el IGAC, y GitHub Pages
-# sirve el sitio por HTTPS, por lo que el navegador bloquea la petición directa
-# (mixed content). Este backend actúa de intermediario: hace la petición HTTP
-# al IGAC y devuelve la respuesta por HTTPS con CORS habilitado para el sitio.
-WMS_SERVICES = {
-    "cien_mil": {
-        "url": "http://geocarto.igac.gov.co/geoservicios/cien_mil/wms",
-        "descripcion": "Cartografía Básica IGAC 1:100.000 (cobertura nacional)",
-        "atribucion": "Fuente: Instituto Geográfico Agustín Codazzi",
-        # Capas verificadas del servicio (59 en total). Grupos útiles:
-        #   'Todas'                       → toda la cartografía básica junta
-        #   'Limite_Departamental_Linea'  → solo límites de departamento
-        #   'Limite_Municipal_Linea'      → solo límites de municipio
-        # Otras disponibles: Via_Tipo_1..6, Drenaje_Sencillo/Doble, Bosque,
-        # Construccion_Poligono, Puente_Linea/Punto, Punto_Geodesico, etc.
-        # NOTA: este dominio (geocarto.igac.gov.co) rechaza las conexiones
-        # desde Render con "Connection reset by peer" — probablemente
-        # bloquea por rango de IP de proveedores de nube, no por User-Agent.
-        # Diagnóstico en curso: ver 'diag_mapas_igac' más abajo.
-    },
-    "quinientos_mil": {
-        "url": "http://geocarto.igac.gov.co/geoservicios/quinientos_mil/wms",
-        "descripcion": "Cartografía Básica IGAC 1:500.000 (cobertura nacional)",
-        "atribucion": "Fuente: Instituto Geográfico Agustín Codazzi",
-    },
-    # ── Servicio de diagnóstico temporal ──────────────────────────────────
-    # Prueba si el dominio mapas.igac.gov.co (infraestructura distinta a
-    # geocarto.igac.gov.co) también está bloqueado, o si el bloqueo es
-    # específico de geocarto. Cartografía de Quebradanegra (Cundinamarca)
-    # a escala 1:10.000, vía ArcGIS Server (formato WMS también soportado).
-    "diag_mapas_igac": {
-        "url": "https://mapas.igac.gov.co/server/rest/services/carto/"
-               "carto10000quebradanegra25592/MapServer/WMSServer",
-        "descripcion": "[DIAGNÓSTICO] Quebradanegra 1:10.000 vía mapas.igac.gov.co",
-        "atribucion": "Fuente: Instituto Geográfico Agustín Codazzi, Colombia en Mapas",
-    },
-}
 
 # Referencias APA 7ª edición de los documentos indexados
 REFERENCIAS_APA = {
@@ -251,11 +211,8 @@ def web_search(query, max_results=3):
         return []
 
 
-def init_api_keys():
-    """Parte liviana del arranque: solo lee variables de entorno. Se ejecuta
-    de forma síncrona porque es instantánea — no bloquea el arranque del
-    servidor ni consume memoria relevante."""
-    global api_token, groq_token
+def init_services():
+    global vectorstore, api_token, groq_token
 
     groq_token  = os.environ.get("GROQ_API_KEY", "")
     if groq_token:
@@ -271,37 +228,14 @@ def init_api_keys():
 
     if not groq_token and not api_token:
         logger.error("No hay ninguna API Key configurada.")
-
-
-def load_vectorstore_background():
-    """Parte pesada del arranque: carga el modelo de embeddings y el índice
-    FAISS (RAG del chatbot). Se ejecuta en un hilo aparte, DESPUÉS de que el
-    servidor ya está escuchando en el puerto.
-
-    Por qué: en el plan gratuito de Render (512MB RAM), cargar
-    sentence-transformers + torch de forma síncrona durante el arranque
-    puede tardar tanto o consumir tanta memoria que Render mata el proceso
-    o corta el deploy por timeout ("no open ports detected") antes de que
-    el servidor llegue a abrir el puerto. Al diferir esta carga, el puerto
-    se abre de inmediato y el deploy no depende de que este paso termine.
-
-    Efecto si esto falla o tarda: el chatbot en modo 'investigacion' (RAG)
-    simplemente responde sin contexto de documentos hasta que termine de
-    cargar (o queda deshabilitado si falla) — el resto del sitio, incluido
-    el proxy WMS del geovisor, no se ve afectado en absoluto.
-    """
-    global vectorstore
+        return
 
     if not HAS_DEPS:
         logger.warning("Faltan dependencias de LangChain/ChromaDB.")
         return
 
-    if not os.path.exists(FAISS_DIR):
-        logger.warning(f"No existe el directorio '{FAISS_DIR}', RAG deshabilitado.")
-        return
-
-    try:
-        logger.info("Cargando modelo de embeddings en segundo plano...")
+    if os.path.exists(FAISS_DIR):
+      try:
         embeddings = HuggingFaceEmbeddings(
             model_name="sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2"
         )
@@ -310,16 +244,13 @@ def load_vectorstore_background():
             embeddings,
             allow_dangerous_deserialization=True
         )
-        logger.info("BD Vectorial FAISS cargada (segundo plano).")
-    except Exception as e:
-        logger.error(f"Error cargando FAISS en segundo plano: {e}")
-
+        logger.info("BD Vectorial FAISS cargada.")
+      except Exception as e:
+        logger.error(f"Error cargando FAISS: {e}")
 
 @app.on_event("startup")
 def on_startup():
-    init_api_keys()
-    # daemon=True: si el proceso principal termina, este hilo no lo bloquea.
-    threading.Thread(target=load_vectorstore_background, daemon=True).start()
+    init_services()
 
 class ChatRequest(BaseModel):
     query: str = Field(min_length=1, max_length=2000)
@@ -327,72 +258,7 @@ class ChatRequest(BaseModel):
 
 @app.get("/status")
 def status():
-    return {
-        "status": "ok",
-        "cloud_ready": bool(groq_token or api_token),
-        "vectorstore_ready": vectorstore is not None,
-    }
-
-@app.get("/api/wms-proxy/{servicio_key}")
-@limiter.limit("120/minute")
-def wms_proxy(servicio_key: str, request: Request):
-    """
-    Reenvía peticiones WMS (GetCapabilities, GetMap, GetFeatureInfo,
-    GetLegendGraphic) a un geoservicio externo registrado en WMS_SERVICES.
-
-    Solo reenvía a servicios explícitamente registrados (whitelist) — nunca
-    actúa como proxy abierto hacia una URL arbitraria.
-
-    Uso desde el geovisor (OpenLayers):
-        new ol.source.TileWMS({
-          url: 'https://<tu-backend>.onrender.com/api/wms-proxy/cien_mil',
-          params: { LAYERS: 'nombre_capa', TILED: true },
-          attributions: 'Fuente: Instituto Geográfico Agustín Codazzi'
-        })
-    """
-    servicio = WMS_SERVICES.get(servicio_key)
-    if servicio is None:
-        raise HTTPException(
-            status_code=404,
-            detail=f"Servicio '{servicio_key}' no registrado. "
-                   f"Disponibles: {list(WMS_SERVICES.keys())}",
-        )
-
-    params = dict(request.query_params)
-
-    # Muchos geoservicios gubernamentales (incluido este del IGAC) bloquean
-    # peticiones cuyo User-Agent delata una librería automatizada (el default
-    # de `requests` es "python-requests/x.x.x"). Se envía un User-Agent de
-    # navegador real para evitar ese bloqueo a nivel de firewall/WAF.
-    headers = {
-        "User-Agent": (
-            "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 "
-            "(KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36"
-        )
-    }
-
-    try:
-        upstream = requests.get(servicio["url"], params=params, headers=headers, timeout=20)
-    except requests.exceptions.Timeout:
-        raise HTTPException(status_code=504, detail="El servicio del IGAC no respondió a tiempo.")
-    except requests.exceptions.RequestException as e:
-        logger.warning(f"wms_proxy fallo contactando '{servicio_key}': {e}")
-        raise HTTPException(status_code=502, detail="No se pudo contactar el servicio externo.")
-
-    if upstream.status_code != 200:
-        raise HTTPException(status_code=upstream.status_code, detail="El servicio externo devolvió un error.")
-
-    content_type = upstream.headers.get("content-type", "application/octet-stream")
-    return Response(
-        content=upstream.content,
-        media_type=content_type,
-        headers={"Cache-Control": "public, max-age=3600"},
-    )
-
-@app.get("/api/wms-proxy")
-def wms_proxy_list():
-    """Lista los geoservicios disponibles en el proxy (útil para depurar)."""
-    return {k: {"descripcion": v["descripcion"], "atribucion": v["atribucion"]} for k, v in WMS_SERVICES.items()}
+    return {"status": "ok", "cloud_ready": bool(groq_token or api_token)}
 
 @app.post("/chat")
 @limiter.limit("10/minute")
