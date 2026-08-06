@@ -1344,6 +1344,11 @@ function renderPanel(proj) {
   const bp = document.getElementById('bottomPanel');
   bp.style.display = 'flex';
   bp.classList.remove('collapsed');
+  /* El panel cambia la altura disponible para el mapa: OpenLayers necesita
+     que se le avise explícitamente para recalcular el tamaño de su canvas,
+     o el mapa base queda con dimensiones desactualizadas (se ve encogido/
+     descuadrado respecto a las capas agregadas después). */
+  setTimeout(function () { map.updateSize(); }, 50);
 
   document.getElementById('bpProjName').textContent = proj.nombre;
 
