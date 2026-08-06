@@ -81,11 +81,26 @@ WMS_SERVICES = {
         #   'Limite_Municipal_Linea'      → solo límites de municipio
         # Otras disponibles: Via_Tipo_1..6, Drenaje_Sencillo/Doble, Bosque,
         # Construccion_Poligono, Puente_Linea/Punto, Punto_Geodesico, etc.
+        # NOTA: este dominio (geocarto.igac.gov.co) rechaza las conexiones
+        # desde Render con "Connection reset by peer" — probablemente
+        # bloquea por rango de IP de proveedores de nube, no por User-Agent.
+        # Diagnóstico en curso: ver 'diag_mapas_igac' más abajo.
     },
     "quinientos_mil": {
         "url": "http://geocarto.igac.gov.co/geoservicios/quinientos_mil/wms",
         "descripcion": "Cartografía Básica IGAC 1:500.000 (cobertura nacional)",
         "atribucion": "Fuente: Instituto Geográfico Agustín Codazzi",
+    },
+    # ── Servicio de diagnóstico temporal ──────────────────────────────────
+    # Prueba si el dominio mapas.igac.gov.co (infraestructura distinta a
+    # geocarto.igac.gov.co) también está bloqueado, o si el bloqueo es
+    # específico de geocarto. Cartografía de Quebradanegra (Cundinamarca)
+    # a escala 1:10.000, vía ArcGIS Server (formato WMS también soportado).
+    "diag_mapas_igac": {
+        "url": "https://mapas.igac.gov.co/server/rest/services/carto/"
+               "carto10000quebradanegra25592/MapServer/WMSServer",
+        "descripcion": "[DIAGNÓSTICO] Quebradanegra 1:10.000 vía mapas.igac.gov.co",
+        "atribucion": "Fuente: Instituto Geográfico Agustín Codazzi, Colombia en Mapas",
     },
 }
 
