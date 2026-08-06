@@ -2,6 +2,7 @@ import os
 import time
 import logging
 import traceback
+import threading
 import requests
 from fastapi import FastAPI, HTTPException, Request, Response
 try:
@@ -235,8 +236,11 @@ def web_search(query, max_results=3):
         return []
 
 
-def init_services():
-    global vectorstore, api_token, groq_token
+def init_api_keys():
+    """Parte liviana del arranque: solo lee variables de entorno. Se ejecuta
+    de forma síncrona porque es instantánea — no bloquea el arranque del
+    servidor ni consume memoria relevante."""
+    global api_token, groq_token
 
     groq_token  = os.environ.get("GROQ_API_KEY", "")
     if groq_token:
@@ -252,14 +256,37 @@ def init_services():
 
     if not groq_token and not api_token:
         logger.error("No hay ninguna API Key configurada.")
-        return
+
+
+def load_vectorstore_background():
+    """Parte pesada del arranque: carga el modelo de embeddings y el índice
+    FAISS (RAG del chatbot). Se ejecuta en un hilo aparte, DESPUÉS de que el
+    servidor ya está escuchando en el puerto.
+
+    Por qué: en el plan gratuito de Render (512MB RAM), cargar
+    sentence-transformers + torch de forma síncrona durante el arranque
+    puede tardar tanto o consumir tanta memoria que Render mata el proceso
+    o corta el deploy por timeout ("no open ports detected") antes de que
+    el servidor llegue a abrir el puerto. Al diferir esta carga, el puerto
+    se abre de inmediato y el deploy no depende de que este paso termine.
+
+    Efecto si esto falla o tarda: el chatbot en modo 'investigacion' (RAG)
+    simplemente responde sin contexto de documentos hasta que termine de
+    cargar (o queda deshabilitado si falla) — el resto del sitio, incluido
+    el proxy WMS del geovisor, no se ve afectado en absoluto.
+    """
+    global vectorstore
 
     if not HAS_DEPS:
         logger.warning("Faltan dependencias de LangChain/ChromaDB.")
         return
 
-    if os.path.exists(FAISS_DIR):
-      try:
+    if not os.path.exists(FAISS_DIR):
+        logger.warning(f"No existe el directorio '{FAISS_DIR}', RAG deshabilitado.")
+        return
+
+    try:
+        logger.info("Cargando modelo de embeddings en segundo plano...")
         embeddings = HuggingFaceEmbeddings(
             model_name="sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2"
         )
@@ -268,13 +295,16 @@ def init_services():
             embeddings,
             allow_dangerous_deserialization=True
         )
-        logger.info("BD Vectorial FAISS cargada.")
-      except Exception as e:
-        logger.error(f"Error cargando FAISS: {e}")
+        logger.info("BD Vectorial FAISS cargada (segundo plano).")
+    except Exception as e:
+        logger.error(f"Error cargando FAISS en segundo plano: {e}")
+
 
 @app.on_event("startup")
 def on_startup():
-    init_services()
+    init_api_keys()
+    # daemon=True: si el proceso principal termina, este hilo no lo bloquea.
+    threading.Thread(target=load_vectorstore_background, daemon=True).start()
 
 class ChatRequest(BaseModel):
     query: str = Field(min_length=1, max_length=2000)
@@ -282,7 +312,11 @@ class ChatRequest(BaseModel):
 
 @app.get("/status")
 def status():
-    return {"status": "ok", "cloud_ready": bool(groq_token or api_token)}
+    return {
+        "status": "ok",
+        "cloud_ready": bool(groq_token or api_token),
+        "vectorstore_ready": vectorstore is not None,
+    }
 
 @app.get("/api/wms-proxy/{servicio_key}")
 @limiter.limit("120/minute")
