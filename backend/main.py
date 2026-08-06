@@ -21,7 +21,6 @@ logger = logging.getLogger(__name__)
 
 try:
     from langchain_community.vectorstores import FAISS
-    from langchain_community.embeddings import HuggingFaceEmbeddings
     from langchain_core.embeddings import Embeddings
     HAS_DEPS = True
 except ImportError as e:
@@ -222,7 +221,7 @@ def init_services():
 
     api_token = os.environ.get("GOOGLE_API_KEY", "")
     if api_token:
-        logger.info("Google API Key encontrada (modelo fallback).")
+        logger.info("Google API Key encontrada (modelo fallback + embeddings RAG).")
     else:
         logger.warning("No se encontro GOOGLE_API_KEY.")
 
@@ -231,22 +230,26 @@ def init_services():
         return
 
     if not HAS_DEPS:
-        logger.warning("Faltan dependencias de LangChain/ChromaDB.")
+        logger.warning("Faltan dependencias de LangChain/FAISS.")
+        return
+
+    if not api_token:
+        logger.warning("GOOGLE_API_KEY no configurada: no se puede cargar FAISS (embeddings via Gemini REST).")
         return
 
     if os.path.exists(FAISS_DIR):
       try:
-        embeddings = HuggingFaceEmbeddings(
-            model_name="sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2"
-        )
+        embeddings = GoogleEmbeddingsREST(api_key=api_token)
         vectorstore = FAISS.load_local(
             FAISS_DIR,
             embeddings,
             allow_dangerous_deserialization=True
         )
-        logger.info("BD Vectorial FAISS cargada.")
+        logger.info("BD Vectorial FAISS cargada (embeddings Gemini via REST, sin modelo local).")
       except Exception as e:
         logger.error(f"Error cargando FAISS: {e}")
+    else:
+        logger.warning(f"No se encontro la carpeta '{FAISS_DIR}'. El RAG no tendra documentos.")
 
 @app.on_event("startup")
 def on_startup():

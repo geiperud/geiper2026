@@ -1,5 +1,6 @@
 """
-indexar.py — Ejecutar UNA SOLA VEZ localmente para generar chroma_db/
+indexar.py — Ejecutar localmente cada vez que agregues/quites documentos en documentos/
+             para regenerar el indice FAISS que usa el backend en produccion (main.py).
 
 Formatos soportados:
   - PDF     (.pdf)
@@ -15,7 +16,14 @@ Pasos:
        $env:GOOGLE_API_KEY="tu_clave"   (PowerShell)
        set GOOGLE_API_KEY=tu_clave      (CMD)
   3. python indexar.py
-  4. Sube chroma_db/ al repositorio y haz deploy en Render
+  4. Sube faiss_index/ al repositorio y haz deploy en Render:
+       git add backend/faiss_index
+       git commit -m "feat: actualizar indice RAG"
+       git push
+
+IMPORTANTE: este script usa los MISMOS embeddings (Gemini via REST, GoogleEmbeddingsREST)
+que main.py usa para leer el indice. Si cambias el modelo de embeddings aqui, debes
+cambiarlo tambien en main.py, o el indice quedara incompatible con las consultas.
 """
 
 import os
@@ -33,15 +41,16 @@ try:
         UnstructuredMarkdownLoader,
     )
     from langchain_text_splitters import RecursiveCharacterTextSplitter
-    from langchain_chroma import Chroma
+    from langchain_community.vectorstores import FAISS
+    from langchain_core.embeddings import Embeddings
 except ImportError as e:
     print(f"ERROR de importacion: {e}")
     print("Instala con:")
-    print("  python -m pip install langchain-community langchain-text-splitters langchain-chroma chromadb pypdf docx2txt unstructured")
+    print("  python -m pip install -r requirements-index.txt")
     sys.exit(1)
 
-DOCS_DIR   = "documentos"
-CHROMA_DIR = "chroma_db"
+DOCS_DIR  = "documentos"
+FAISS_DIR = "faiss_index"
 
 # ── Leer clave de Google ─────────────────────────────────────────────────────
 GOOGLE_API_KEY = os.environ.get("GOOGLE_API_KEY", "")
@@ -51,8 +60,8 @@ if not GOOGLE_API_KEY:
     print("  CMD:         set GOOGLE_API_KEY=tu_clave_aqui")
     sys.exit(1)
 
-# ── Clase de embeddings via REST ─────────────────────────────────────────────
-class GoogleEmbeddingsREST:
+# ── Clase de embeddings via REST (identica a la de main.py) ─────────────────
+class GoogleEmbeddingsREST(Embeddings):
     def __init__(self, api_key):
         self.api_key  = api_key
         self.model    = "gemini-embedding-001"
@@ -161,25 +170,25 @@ splitter = RecursiveCharacterTextSplitter(chunk_size=1000, chunk_overlap=200)
 splits   = splitter.split_documents(docs)
 print(f"  {len(splits)} fragmentos generados.")
 
-# ── 3. Generar embeddings y guardar en chroma_db/ ────────────────────────────
+# ── 3. Generar embeddings y guardar como indice FAISS ────────────────────────
 print()
 print("Generando embeddings con Google gemini-embedding-001 via REST ...")
 print("(Esto puede tardar unos minutos segun la cantidad de documentos)")
 print()
 
 embeddings  = GoogleEmbeddingsREST(api_key=GOOGLE_API_KEY)
-vectorstore = Chroma.from_documents(
+vectorstore = FAISS.from_documents(
     documents=splits,
     embedding=embeddings,
-    persist_directory=CHROMA_DIR,
 )
+vectorstore.save_local(FAISS_DIR)
 
 print()
 print("Indexacion completada exitosamente.")
-print(f"  BD vectorial guardada en: {os.path.abspath(CHROMA_DIR)}")
+print(f"  Indice FAISS guardado en: {os.path.abspath(FAISS_DIR)}")
 print(f"  Total de fragmentos indexados: {len(splits)}")
 print()
-print("Siguiente paso: sube chroma_db/ a git y haz push:")
-print("  git add backend/chroma_db backend/documentos/.gitkeep")
+print("Siguiente paso: sube faiss_index/ a git y haz push:")
+print("  git add backend/faiss_index")
 print("  git commit -m 'feat: actualizar indice RAG'")
 print("  git push")
