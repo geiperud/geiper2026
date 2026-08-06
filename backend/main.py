@@ -345,8 +345,19 @@ def wms_proxy(servicio_key: str, request: Request):
 
     params = dict(request.query_params)
 
+    # Muchos geoservicios gubernamentales (incluido este del IGAC) bloquean
+    # peticiones cuyo User-Agent delata una librería automatizada (el default
+    # de `requests` es "python-requests/x.x.x"). Se envía un User-Agent de
+    # navegador real para evitar ese bloqueo a nivel de firewall/WAF.
+    headers = {
+        "User-Agent": (
+            "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 "
+            "(KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36"
+        )
+    }
+
     try:
-        upstream = requests.get(servicio["url"], params=params, timeout=20)
+        upstream = requests.get(servicio["url"], params=params, headers=headers, timeout=20)
     except requests.exceptions.Timeout:
         raise HTTPException(status_code=504, detail="El servicio del IGAC no respondió a tiempo.")
     except requests.exceptions.RequestException as e:
