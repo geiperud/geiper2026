@@ -64,6 +64,30 @@ GROQ_URL   = "https://api.groq.com/openai/v1/chat/completions"
 SALUDOS = {"hola", "hi", "hello", "buenas", "buen día", "buen dia", "buenos días",
            "buenos dias", "hey", "saludos", "qué tal", "que tal", "ola"}
 
+# ── Proxy WMS: geoservicios externos permitidos (whitelist) ──────────────────
+# Estos servicios se sirven por HTTP (no HTTPS) desde el IGAC, y GitHub Pages
+# sirve el sitio por HTTPS, por lo que el navegador bloquea la petición directa
+# (mixed content). Este backend actúa de intermediario: hace la petición HTTP
+# al IGAC y devuelve la respuesta por HTTPS con CORS habilitado para el sitio.
+WMS_SERVICES = {
+    "cien_mil": {
+        "url": "http://geocarto.igac.gov.co/geoservicios/cien_mil/wms",
+        "descripcion": "Cartografía Básica IGAC 1:100.000 (cobertura nacional)",
+        "atribucion": "Fuente: Instituto Geográfico Agustín Codazzi",
+        # Capas verificadas del servicio (59 en total). Grupos útiles:
+        #   'Todas'                       → toda la cartografía básica junta
+        #   'Limite_Departamental_Linea'  → solo límites de departamento
+        #   'Limite_Municipal_Linea'      → solo límites de municipio
+        # Otras disponibles: Via_Tipo_1..6, Drenaje_Sencillo/Doble, Bosque,
+        # Construccion_Poligono, Puente_Linea/Punto, Punto_Geodesico, etc.
+    },
+    "quinientos_mil": {
+        "url": "http://geocarto.igac.gov.co/geoservicios/quinientos_mil/wms",
+        "descripcion": "Cartografía Básica IGAC 1:500.000 (cobertura nacional)",
+        "atribucion": "Fuente: Instituto Geográfico Agustín Codazzi",
+    },
+}
+
 # Referencias APA 7ª edición de los documentos indexados
 REFERENCIAS_APA = {
     "cai2005.pdf": (
@@ -259,6 +283,56 @@ class ChatRequest(BaseModel):
 @app.get("/status")
 def status():
     return {"status": "ok", "cloud_ready": bool(groq_token or api_token)}
+
+@app.get("/api/wms-proxy/{servicio_key}")
+@limiter.limit("120/minute")
+def wms_proxy(servicio_key: str, request: Request):
+    """
+    Reenvía peticiones WMS (GetCapabilities, GetMap, GetFeatureInfo,
+    GetLegendGraphic) a un geoservicio externo registrado en WMS_SERVICES.
+
+    Solo reenvía a servicios explícitamente registrados (whitelist) — nunca
+    actúa como proxy abierto hacia una URL arbitraria.
+
+    Uso desde el geovisor (OpenLayers):
+        new ol.source.TileWMS({
+          url: 'https://<tu-backend>.onrender.com/api/wms-proxy/cien_mil',
+          params: { LAYERS: 'nombre_capa', TILED: true },
+          attributions: 'Fuente: Instituto Geográfico Agustín Codazzi'
+        })
+    """
+    servicio = WMS_SERVICES.get(servicio_key)
+    if servicio is None:
+        raise HTTPException(
+            status_code=404,
+            detail=f"Servicio '{servicio_key}' no registrado. "
+                   f"Disponibles: {list(WMS_SERVICES.keys())}",
+        )
+
+    params = dict(request.query_params)
+
+    try:
+        upstream = requests.get(servicio["url"], params=params, timeout=20)
+    except requests.exceptions.Timeout:
+        raise HTTPException(status_code=504, detail="El servicio del IGAC no respondió a tiempo.")
+    except requests.exceptions.RequestException as e:
+        logger.warning(f"wms_proxy fallo contactando '{servicio_key}': {e}")
+        raise HTTPException(status_code=502, detail="No se pudo contactar el servicio externo.")
+
+    if upstream.status_code != 200:
+        raise HTTPException(status_code=upstream.status_code, detail="El servicio externo devolvió un error.")
+
+    content_type = upstream.headers.get("content-type", "application/octet-stream")
+    return Response(
+        content=upstream.content,
+        media_type=content_type,
+        headers={"Cache-Control": "public, max-age=3600"},
+    )
+
+@app.get("/api/wms-proxy")
+def wms_proxy_list():
+    """Lista los geoservicios disponibles en el proxy (útil para depurar)."""
+    return {k: {"descripcion": v["descripcion"], "atribucion": v["atribucion"]} for k, v in WMS_SERVICES.items()}
 
 @app.post("/chat")
 @limiter.limit("10/minute")
