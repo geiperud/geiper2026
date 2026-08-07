@@ -425,8 +425,11 @@ _PATRON_SECCION_PIE = re.compile(
 )
 
 _PATRONES_SECCION_VACIA = [
-    re.compile(r'(?i)^\s*no se (han )?utiliz\w*\s'),
-    re.compile(r'(?i)^\s*no se encontr[oó]\s'),
+    re.compile(r'(?i)no se (han )?utiliz\w*'),
+    re.compile(r'(?i)no se encontr[oó]'),
+    re.compile(r'(?i)no hay referencias'),
+    re.compile(r'(?i)no hay fuentes'),
+    re.compile(r'(?i)no se citaron'),
     re.compile(r'(?i)^\s*no hay\s'),
     re.compile(r'(?i)^\s*ningun[oa]?\.?\s*$'),
 ]
@@ -438,7 +441,7 @@ def _seccion_esta_vacia(contenido):
     contenido = contenido.strip()
     if not contenido:
         return True
-    return any(p.match(contenido) for p in _PATRONES_SECCION_VACIA)
+    return any(p.search(contenido) for p in _PATRONES_SECCION_VACIA)
 
 
 def formatear_pie_respuesta(texto):
@@ -558,7 +561,7 @@ HECHOS_SEMILLERO = (
     "  4. Detección de cambios en objetos y fenómenos geográficos — modelado "
     "territorial, evaluación de riesgos y análisis geoespacial.\n"
     "Contacto: geiper@udistrital.edu.co, Instagram/redes @semillerogeiper.\n"
-    "Líder del semillero: Laura Dayana Díaz Beltrán (estudiante, investigación en percepción remota).\n"
+    "La líder del semillero (mujer) es Laura Dayana Díaz Beltrán (estudiante, investigación en percepción remota).\n"
     "Profesores vinculados: José Luis Herrera Escorcia, Carlos Germán Ramírez Ramos, "
     "Maykol Camilo Delgado Correal, Paulo César Coronado Sánchez.\n"
     "Estudiantes integrantes (además de la líder): Argenis Alexandra Daza Roa, Mayra Ibeth Pérez "
@@ -751,19 +754,51 @@ def construir_transcripcion(historial):
     return "HISTORIAL RECIENTE DE LA CONVERSACIÓN (para contexto, no la repitas):\n" + "\n".join(lineas) + "\n\n"
 
 
+_PALABRAS_CONFIRMACION = (
+    r'si+|s[ií]+|dale|adelante|claro|ok(ay)?|vale|va|de una|continua(mos)?|continuemos|'
+    r'sigamos|hazlo|obvio|correcto|exacto|por favor|que'
+)
+_PATRON_CONFIRMACION_BREVE = re.compile(
+    rf'^({_PALABRAS_CONFIRMACION})([\s,]+({_PALABRAS_CONFIRMACION}))*[\s,\.!¡¿?]*$',
+    re.IGNORECASE
+)
+
+
+def es_confirmacion_breve(query):
+    return bool(_PATRON_CONFIRMACION_BREVE.match(query.strip()))
+
+
 def construir_consulta_efectiva(chat_request):
     """
-    Combina el ultimo turno del usuario con la pregunta actual, para que las
-    preguntas de seguimiento con pronombres ('lo', 'eso', 'ese tema') sigan
-    encontrando contexto relevante al buscar en documentos y en la web.
+    Combina turnos previos con la pregunta actual, para que las preguntas de
+    seguimiento sigan encontrando contexto relevante al buscar en documentos
+    y en la web.
+
+    - Si la pregunta actual es una confirmación breve ('sí, adelante', 'dale',
+      'continuemos'), el tema real casi siempre vive en la ÚLTIMA PREGUNTA QUE
+      HIZO EL PROPIO ASISTENTE (la pregunta de cierre que el usuario está
+      confirmando) — no en el último mensaje del usuario, que puede ser de
+      un tema completamente distinto y ya resuelto. Se usa ese turno.
+    - En cualquier otro caso, se combina con el último turno del usuario, para
+      resolver pronombres ('lo', 'eso', 'ese tema').
     """
+    query = chat_request.query
+
+    if es_confirmacion_breve(query) and chat_request.historial:
+        ultimo_turno_asistente = next(
+            (t.content for t in reversed(chat_request.historial) if t.role == "assistant"),
+            None
+        )
+        if ultimo_turno_asistente:
+            return f"{ultimo_turno_asistente} {query}"
+
     ultimo_turno_usuario = next(
         (t.content for t in reversed(chat_request.historial) if t.role == "user"),
         None
     )
     if ultimo_turno_usuario:
-        return f"{ultimo_turno_usuario} {chat_request.query}"
-    return chat_request.query
+        return f"{ultimo_turno_usuario} {query}"
+    return query
 
 @app.get("/status")
 def status():
