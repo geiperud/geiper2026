@@ -176,6 +176,17 @@ def obtener_referencia_apa(referencias_dict, nombre_archivo):
     return nombre_archivo
 
 
+_PATRON_CORCHETES_FINALES = re.compile(r'\s*\[[^\]]*\]\.?\s*$')
+
+
+def _quitar_corchetes_finales(cita):
+    """Quita el bloque final entre corchetes de una cita APA (ej. '[Trabajo
+    de grado, Universidad Distrital...]'), para que el listado de documentos
+    se vea mas limpio. Solo se usa en el listado, no en las citas dentro de
+    una respuesta normal, donde el corchete si aporta contexto."""
+    return _PATRON_CORCHETES_FINALES.sub('.', cita).strip()
+
+
 def listar_documentos_indexados(vectorstore_local, referencias_apa):
     """Enumera, directamente desde el índice, los documentos realmente indexados."""
     if vectorstore_local is None:
@@ -188,7 +199,10 @@ def listar_documentos_indexados(vectorstore_local, referencias_apa):
                 fuentes.add(fuente)
         if not fuentes:
             return None
-        lineas = [f"- {obtener_referencia_apa(referencias_apa, fuente)}" for fuente in sorted(fuentes)]
+        lineas = [
+            f"- {_quitar_corchetes_finales(obtener_referencia_apa(referencias_apa, fuente))}"
+            for fuente in sorted(fuentes)
+        ]
         return "\n".join(lineas)
     except Exception as e:
         logger.warning(f"No se pudo listar documentos indexados: {e}")
