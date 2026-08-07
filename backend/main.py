@@ -405,13 +405,38 @@ def gemini_generate(prompt, api_key, nombre_asistente="Asistente Académico"):
 
 
 # ── Búsqueda web via DuckDuckGo ──────────────────────────────────────────────
+# Dominios genericos que no son fuentes serias para citar en un contexto
+# academico (enciclopedias colaborativas, diccionarios, foros, redes
+# sociales, sitios de descargas). Se excluyen de los resultados de busqueda.
+_DOMINIOS_EXCLUIDOS_WEB = {
+    "wikipedia.org", "wikimedia.org", "wiktionary.org", "wikihow.com",
+    "rae.es", "dle.rae.es",
+    "quora.com", "reddit.com", "pinterest.com",
+    "facebook.com", "twitter.com", "x.com", "instagram.com", "tiktok.com",
+    "youtube.com", "youtu.be",
+    "ccm.net", "commentcamarche.net", "forums.commentcamarche.net",
+}
+
+
+def _dominio_excluido(url):
+    try:
+        dominio = re.sub(r'^www\.', '', url.split("/")[2].lower())
+        return any(dominio == d or dominio.endswith("." + d) for d in _DOMINIOS_EXCLUIDOS_WEB)
+    except Exception:
+        return False
+
+
 def web_search(query, max_results=3):
     if not HAS_DDG:
         return []
     try:
+        # Se piden mas resultados de los necesarios porque algunos se van a
+        # filtrar despues; asi no se queda corto si varios eran de dominios
+        # excluidos.
         with DDGS() as ddgs:
-            resultados = list(ddgs.text(query, max_results=max_results, region="es-es"))
-        return resultados
+            resultados_brutos = list(ddgs.text(query, max_results=max_results * 3, region="es-es"))
+        resultados_filtrados = [r for r in resultados_brutos if not _dominio_excluido(r.get("href", ""))]
+        return resultados_filtrados[:max_results]
     except Exception as e:
         logger.warning(f"Web search fallo: {e}")
         return []
@@ -444,12 +469,50 @@ def _seccion_esta_vacia(contenido):
     return any(p.search(contenido) for p in _PATRONES_SECCION_VACIA)
 
 
-def formatear_pie_respuesta(texto):
+# ── Detección de citas inventadas en TODO el cuerpo de la respuesta ──────────
+# No solo en 'Referencias:' -- un modelo puede alucinar un autor/año dentro
+# del parrafo mismo ("...segun Hernandez et al. (2019)..."), lo cual no se
+# puede limpiar de forma quirurgica con regex sin arriesgar romper el texto.
+# Por eso, si se detecta AUNQUE SEA UNA cita no verificable en cualquier
+# parte del texto, se descarta la respuesta completa por seguridad.
+_PATRON_CITA_INLINE = re.compile(
+    r'\b([A-ZÁÉÍÓÚÑ][\wÁÉÍÓÚÑáéíóúñ\'-]+)'
+    r'(?:\s+et\s+al\.|(?:,\s*[A-ZÁÉÍÓÚÑ]\.){1,3}(?:,?\s*&\s*[A-ZÁÉÍÓÚÑ][\wÁÉÍÓÚÑáéíóúñ]+(?:,\s*[A-ZÁÉÍÓÚÑ]\.){1,3})?)'
+    r'\s*\((\d{4})\)'
+)
+
+
+def detectar_citas_no_verificadas(texto, referencias_validas):
+    """
+    Busca patrones tipo 'Apellido et al. (2020)' o 'Apellido, A. (2020)' en
+    cualquier parte del texto, y verifica que el apellido y el año
+    coincidan con alguna cita real conocida. Devuelve la lista de
+    coincidencias que NO se pudieron verificar (posibles alucinaciones).
+    """
+    if not referencias_validas:
+        return []
+    referencias_texto = " ".join(referencias_validas).lower()
+    sospechosas = []
+    for m in _PATRON_CITA_INLINE.finditer(texto):
+        cita_completa = m.group(0)
+        apellido = m.group(1).lower()
+        anio = m.group(2)
+        if apellido not in referencias_texto or anio not in referencias_texto:
+            sospechosas.append(cita_completa)
+    return sospechosas
+
+
+def formatear_pie_respuesta(texto, referencias_validas=None):
     """
     Post-procesa las secciones 'Referencias:' y 'Fuentes web consultadas:'
     generadas por el modelo:
       - Si el modelo indico que no se uso nada, la seccion se elimina por
         completo (no se muestra "No se utilizaron...").
+      - Si 'Referencias:' no coincide con NINGUNA cita real conocida (las que
+        estan en REFERENCIAS_APA / REFERENCIAS_APA_INVESTIGACION), se asume
+        que el modelo la inventó (autor/año/título que no existen en el
+        corpus) y se elimina esa sección por completo -- no se confía
+        únicamente en que el modelo siga la instrucción de no inventar.
       - Si hay contenido real, se envuelve en <small><em> (fuente pequeña,
         cursiva) y los links en formato markdown se convierten a <a> reales.
     """
@@ -459,6 +522,19 @@ def formatear_pie_respuesta(texto):
 
         if _seccion_esta_vacia(contenido):
             return ""
+
+        if etiqueta.strip() == "Referencias:" and referencias_validas:
+            coincide_con_cita_real = any(
+                cita[:35].lower() in contenido.lower()
+                for cita in referencias_validas
+                if len(cita) >= 35
+            )
+            if not coincide_con_cita_real:
+                logger.warning(
+                    f"Cita en 'Referencias:' no coincide con ninguna conocida "
+                    f"(posible alucinación), se elimina: {contenido[:200]}"
+                )
+                return ""
 
         contenido_html = _PATRON_LINK_MD.sub(
             r'<a href="\2" target="_blank" rel="noopener">\1</a>', contenido
@@ -634,8 +710,10 @@ def construir_prompt_conversacional(contexto_docs, contexto_web, transcripcion, 
             "ÚNICAMENTE si de verdad hace falta para completar la respuesta de forma fluida — por "
             "ejemplo, si los documentos no cubren un dato puntual o una cifra actual que la pregunta "
             "necesita. Si los documentos ya responden bien por sí solos, ignora la búsqueda web por "
-            "completo y no la menciones. Cuando sí la uses, cita el sitio con el formato "
-            "[Título del sitio](URL), y nunca la uses para contradecir a los documentos."
+            "completo y no la menciones. Si entre los resultados web hay varias fuentes, prioriza las "
+            "más serias y confiables (artículos académicos, revistas especializadas, libros, sitios "
+            "institucionales o gubernamentales) sobre fuentes genéricas. Cuando sí la uses, cita el "
+            "sitio con el formato [Título del sitio](URL), y nunca la uses para contradecir a los documentos."
         )
 
     if partes_contexto:
@@ -945,8 +1023,32 @@ def chat(request: Request, chat_request: ChatRequest):
             respuesta = gemini_generate(user_prompt, api_token, nombre_asistente)
             logger.info("Respuesta recibida de Gemini.")
 
+        # ── Verificación anti-alucinación: descarta toda la respuesta si hay ──
+        # una cita no verificable en cualquier parte del texto, no solo en
+        # 'Referencias:'. Prioridad absoluta: nunca mostrar una cita inventada.
+        citas_sospechosas = detectar_citas_no_verificadas(respuesta, referencias_activas.values())
+        if citas_sospechosas:
+            logger.warning(
+                f"Respuesta descartada por citas no verificables: {citas_sospechosas} "
+                f"(modo: {chat_request.mode}, pregunta: {chat_request.query!r})"
+            )
+            listado_docs = listar_documentos_indexados(vectorstore_activo, referencias_activas)
+            sugerencia_docs = (
+                f"\n\nEstos son los documentos que sí tengo disponibles:\n\n{listado_docs}"
+                if listado_docs else ""
+            )
+            return {
+                "response": (
+                    f"No tengo un documento específico sobre eso en mi corpus actual, "
+                    f"y prefiero decírtelo con claridad en vez de arriesgarme a darte "
+                    f"una referencia incorrecta.{sugerencia_docs}\n\n"
+                    f"¿Quieres que busquemos algo relacionado en lo que sí tengo, o "
+                    f"prefieres reformular la pregunta?"
+                )
+            }
+
         # ── Formatear el pie de respuesta (Referencias / Fuentes web) ────────
-        respuesta = formatear_pie_respuesta(respuesta)
+        respuesta = formatear_pie_respuesta(respuesta, referencias_validas=referencias_activas.values())
 
         return {"response": respuesta}
 
