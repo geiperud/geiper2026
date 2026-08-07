@@ -452,9 +452,36 @@ def buscar_contexto_documentos(vectorstore_local, referencias_apa, query_actual,
         return ""
 
 
-def buscar_contexto_web(consulta):
-    """Busca en la web (DuckDuckGo) y arma el bloque de contexto complementario."""
-    resultados_web = web_search(consulta, max_results=3)
+# ── Detección de preguntas sobre el semillero mismo (líder, integrantes, etc.) ─
+_PATRON_SOBRE_SEMILLERO = re.compile(
+    r'\b(semillero|geiper)\b|\blider(azgo)?\b|\bintegrantes?\b|\bmiembros?\b|'
+    r'\bdirector(a)?\b|\bcoordinador(a)?\b|\bequipo\b',
+    re.IGNORECASE
+)
+
+
+def es_pregunta_sobre_semillero(query):
+    return bool(_PATRON_SOBRE_SEMILLERO.search(_normalizar_texto(query)))
+
+
+def buscar_contexto_web(consulta, priorizar_geiper=False):
+    """
+    Busca en la web (DuckDuckGo) y arma el bloque de contexto complementario.
+    Si priorizar_geiper=True (preguntas sobre el semillero mismo: líder,
+    integrantes, etc.), primero busca especificamente dentro del sitio de
+    GEIPER (site:geiperud.github.io), ya que una busqueda abierta rara vez
+    encuentra un sitio pequeño frente a resultados mas populares. Si esa
+    busqueda no encuentra nada, cae de vuelta a la busqueda abierta normal.
+    """
+    resultados_web = []
+    if priorizar_geiper:
+        resultados_web = web_search(f"site:geiperud.github.io {consulta}", max_results=3)
+        if resultados_web:
+            logger.info("Búsqueda web priorizada al sitio de GEIPER (site:geiperud.github.io).")
+
+    if not resultados_web:
+        resultados_web = web_search(consulta, max_results=3)
+
     if not resultados_web:
         return ""
     bloques_web = []
@@ -467,6 +494,7 @@ def buscar_contexto_web(consulta):
     if bloques_web:
         logger.info(f"Web search: {len(resultados_web)} resultados encontrados.")
     return "\n\n---\n\n".join(bloques_web)
+
 
 
 def construir_prompt_conversacional(contexto_docs, contexto_web, transcripcion, query):
@@ -719,7 +747,9 @@ def chat(request: Request, chat_request: ChatRequest):
         contexto_docs = buscar_contexto_documentos(
             vectorstore_activo, referencias_activas, chat_request.query, consulta_efectiva
         )
-        contexto_web = buscar_contexto_web(consulta_efectiva)
+        contexto_web = buscar_contexto_web(
+            consulta_efectiva, priorizar_geiper=es_pregunta_sobre_semillero(chat_request.query)
+        )
         user_prompt = construir_prompt_conversacional(contexto_docs, contexto_web, transcripcion, chat_request.query)
 
         # ── Generar respuesta (Groq primero, Gemini fallback) ─────────────────
