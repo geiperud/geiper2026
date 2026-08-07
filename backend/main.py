@@ -366,16 +366,41 @@ def formatear_pie_respuesta(texto):
     return _PATRON_SECCION_PIE.sub(procesar, texto).strip()
 
 
-def buscar_contexto_documentos(vectorstore_local, referencias_apa, consulta):
-    """Busca en el indice FAISS dado y arma el bloque de contexto con citas APA."""
+def buscar_contexto_documentos(vectorstore_local, referencias_apa, query_actual, consulta_efectiva):
+    """
+    Busca en el índice FAISS dado y arma el bloque de contexto con citas APA.
+
+    Prueba DOS versiones de la búsqueda: la pregunta tal cual la escribió el
+    usuario, y la version combinada con el turno anterior (consulta_efectiva).
+    Esto evita que preguntas claras y autosuficientes ("monografia") se vean
+    perjudicadas por quedar mezcladas con contexto previo no relacionado,
+    mientras que preguntas ambiguas con pronombres ("¿lo menciona algun
+    trabajo?") siguen beneficiándose de la combinación.
+    """
     if vectorstore_local is None:
         return ""
     try:
-        docs_scores = vectorstore_local.similarity_search_with_score(consulta, k=5)
-        relevantes = [(doc, score) for doc, score in docs_scores if score < 1.6]
+        candidatos = {}
+        consultas_a_probar = [query_actual]
+        if consulta_efectiva != query_actual:
+            consultas_a_probar.append(consulta_efectiva)
+
+        for consulta in consultas_a_probar:
+            docs_scores = vectorstore_local.similarity_search_with_score(consulta, k=5)
+            for doc, score in docs_scores:
+                clave = f"{doc.metadata.get('source', '')}|{doc.metadata.get('page', '')}|{doc.page_content[:50]}"
+                if clave not in candidatos or score < candidatos[clave][1]:
+                    candidatos[clave] = (doc, score)
+
+        relevantes = sorted(
+            [(doc, score) for doc, score in candidatos.values() if score < 1.6],
+            key=lambda par: par[1]
+        )[:5]
+
         if not relevantes:
-            logger.info("RAG: ningún fragmento superó el umbral de relevancia.")
+            logger.info("RAG: ningún fragmento superó el umbral de relevancia (en ninguna de las dos consultas).")
             return ""
+
         bloques = []
         fuentes_log = []
         for doc, score in relevantes:
@@ -427,12 +452,15 @@ def construir_prompt_conversacional(contexto_docs, contexto_web, transcripcion, 
 
     if contexto_web:
         partes_contexto.append(
-            f"RESULTADOS DE BÚSQUEDA WEB (para complementar o precisar datos actuales):\n{contexto_web}"
+            f"RESULTADOS DE BÚSQUEDA WEB (respaldo opcional, no fuente principal):\n{contexto_web}"
         )
         instrucciones_citas.append(
-            "Para información de la búsqueda web, cita el sitio con el formato "
-            "[Título del sitio](URL), y úsala solo para complementar o precisar detalles "
-            "puntuales que los documentos no cubran — nunca para contradecirlos."
+            "Responde principalmente con los fragmentos de documentos. Usa la información web "
+            "ÚNICAMENTE si de verdad hace falta para completar la respuesta de forma fluida — por "
+            "ejemplo, si los documentos no cubren un dato puntual o una cifra actual que la pregunta "
+            "necesita. Si los documentos ya responden bien por sí solos, ignora la búsqueda web por "
+            "completo y no la menciones. Cuando sí la uses, cita el sitio con el formato "
+            "[Título del sitio](URL), y nunca la uses para contradecir a los documentos."
         )
 
     if partes_contexto:
@@ -631,9 +659,17 @@ def chat(request: Request, chat_request: ChatRequest):
             vectorstore_activo   = vectorstore
             referencias_activas  = REFERENCIAS_APA
 
-        contexto_docs = buscar_contexto_documentos(vectorstore_activo, referencias_activas, consulta_efectiva)
-        contexto_web  = buscar_contexto_web(consulta_efectiva)
-        user_prompt   = construir_prompt_conversacional(contexto_docs, contexto_web, transcripcion, chat_request.query)
+        # ── Primero documentos (fuente principal), web como complemento fluido ─
+        # El orden de ejecucion ya garantiza que los documentos se consultan
+        # antes que la web. La prioridad real (documentos > web) la aplica el
+        # modelo via las instrucciones del prompt, no un bloqueo binario aqui,
+        # para que la web siga pudiendo aportar datos puntuales o actuales
+        # incluso cuando los documentos ya respondieron parte de la pregunta.
+        contexto_docs = buscar_contexto_documentos(
+            vectorstore_activo, referencias_activas, chat_request.query, consulta_efectiva
+        )
+        contexto_web = buscar_contexto_web(consulta_efectiva)
+        user_prompt = construir_prompt_conversacional(contexto_docs, contexto_web, transcripcion, chat_request.query)
 
         # ── Generar respuesta (Groq primero, Gemini fallback) ─────────────────
         respuesta = None
