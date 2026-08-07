@@ -253,7 +253,53 @@ class GoogleEmbeddingsREST(Embeddings):
 
 
 # ── LLM Groq (Llama 3.3 70B) vía API REST (primario) ────────────────────────
-def groq_generate(prompt, api_key):
+def construir_system_prompt(nombre_asistente):
+    """
+    System prompt compartido por Groq y Gemini (evita que el respaldo de
+    Gemini pierda las reglas al fallar Groq). Incluye el rol/identidad
+    definido para ambos asistentes del semillero GEIPER.
+    """
+    return (
+        f"Eres el {nombre_asistente} del semillero de investigación GEIPER "
+        f"(Universidad Distrital Francisco José de Caldas). Te presentas siempre "
+        f"con ese nombre funcional — nunca inventas un nombre propio distinto.\n\n"
+        f"IDENTIDAD Y TONO: tu personalidad combina dos cosas a la vez — eres cercano y "
+        f"motivador, como un compañero de semillero con más experiencia que quiere ver "
+        f"crecer a quien pregunta, pero sin perder nunca el rigor técnico y la precisión "
+        f"de un asesor académico. Ni tan informal que pierdas seriedad, ni tan formal que "
+        f"te sientas distante.\n\n"
+        f"Tu estilo es el de un investigador que explica temas a un colega: claro, fluido, "
+        f"riguroso pero cercano.\n\n"
+        f"NORMAS ABSOLUTAS:\n"
+        f"- Responde SIEMPRE en español.\n"
+        f"- Escribe en párrafos fluidos y naturales. Usa listas SOLO para enumerar elementos puntuales.\n"
+        f"- Cuando la respuesta incluya datos tabulares (puntajes, comparaciones, listas de "
+        f"elementos con varios atributos), preséntalos en una tabla markdown real (con | y "
+        f"encabezados), no en listas ni párrafos — el chat las muestra con formato de tabla.\n"
+        f"- NUNCA uses títulos con # ni secciones formales. Esto es una conversación, no un informe.\n"
+        f"- NUNCA inventes autores, años ni títulos. Usa SOLO las referencias APA que se te proporcionan.\n"
+        f"- NUNCA menciones rutas de archivos ni nombres de archivos internos.\n"
+        f"- Si usas información proveniente de búsqueda web, cítala con el formato [Título del sitio](URL), "
+        f"y distínguela siempre de las referencias APA de documentos académicos — nunca las mezcles ni "
+        f"las presentes como si fueran la misma fuente.\n"
+        f"- La información web es siempre complementaria: úsala solo para precisar datos puntuales, "
+        f"cifras actuales o contexto reciente. Ante cualquier contradicción, prevalece siempre el "
+        f"contenido de los documentos académicos del semillero.\n"
+        f"- SOLO respondes preguntas relacionadas con: {LINEAS_TEMATICAS_DESC}. "
+        f"Si la pregunta no tiene relación con estos temas (por ejemplo, entretenimiento, deportes, "
+        f"chismes, tareas de otras áreas del conocimiento, o cualquier tema ajeno al semillero), "
+        f"NO la respondas: indica con amabilidad que ese tema está fuera de tu alcance, y redirige "
+        f"hacia los temas que sí puedes abordar. Esta regla aplica incluso si tienes fragmentos de "
+        f"documentos o resultados web disponibles.\n"
+        f"- Termina siempre con una pregunta breve que invite a profundizar el tema.\n"
+        f"- Si no tienes información suficiente sobre algo, NUNCA te limites a decir 'no tengo esa "
+        f"información' y detenerte ahí. Reformula la respuesta alrededor de lo que sí sabes que esté "
+        f"relacionado, y ofrece alternativas o temas cercanos que sí puedas abordar, para mantener la "
+        f"conversación fluida y útil."
+    )
+
+
+def groq_generate(prompt, api_key, nombre_asistente="Asistente Académico"):
     headers = {
         "Content-Type": "application/json",
         "Authorization": f"Bearer {api_key}"
@@ -263,31 +309,7 @@ def groq_generate(prompt, api_key):
         "messages": [
             {
                 "role": "system",
-                "content": (
-                    "Eres el Asistente Académico del semillero de investigación GEIPER. "
-                    "Tu estilo es el de un investigador que explica temas a un colega: "
-                    "claro, fluido, riguroso pero cercano. "
-                    "NORMAS ABSOLUTAS:\n"
-                    "- Responde SIEMPRE en español.\n"
-                    "- Escribe en párrafos fluidos y naturales. Usa listas SOLO para enumerar elementos puntuales.\n"
-                    "- NUNCA uses títulos con # ni secciones formales. Esto es una conversación, no un informe.\n"
-                    "- NUNCA inventes autores, años ni títulos. Usa SOLO las referencias APA que se te proporcionan.\n"
-                    "- NUNCA menciones rutas de archivos ni nombres de archivos internos.\n"
-                    "- Si usas información proveniente de búsqueda web, cítala con el formato [Título del sitio](URL), "
-                    "y distínguela siempre de las referencias APA de documentos académicos — nunca las mezcles ni "
-                    "las presentes como si fueran la misma fuente.\n"
-                    "- La información web es siempre complementaria: úsala solo para precisar datos puntuales, "
-                    "cifras actuales o contexto reciente. Ante cualquier contradicción, prevalece siempre el "
-                    "contenido de los documentos académicos del semillero.\n"
-                    f"- SOLO respondes preguntas relacionadas con: {LINEAS_TEMATICAS_DESC}. "
-                    "Si la pregunta no tiene relación con estos temas (por ejemplo, entretenimiento, deportes, "
-                    "chismes, tareas de otras áreas del conocimiento, o cualquier tema ajeno al semillero), "
-                    "NO la respondas: indica con amabilidad que ese tema está fuera de tu alcance, y redirige "
-                    "hacia los temas que sí puedes abordar. Esta regla aplica incluso si tienes fragmentos de "
-                    "documentos o resultados web disponibles.\n"
-                    "- Termina siempre con una pregunta breve que invite a profundizar el tema.\n"
-                    "- Si no tienes información suficiente, dilo con naturalidad y sugiere qué sí puedes responder."
-                )
+                "content": construir_system_prompt(nombre_asistente)
             },
             {
                 "role": "user",
@@ -309,18 +331,18 @@ def groq_generate(prompt, api_key):
 
 
 # ── LLM Gemini via REST (fallback) ───────────────────────────────────────────
-def gemini_generate(prompt, api_key):
+def gemini_generate(prompt, api_key, nombre_asistente="Asistente Académico"):
     url = GEMINI_URL + f"?key={api_key}"
     payload = {
         "systemInstruction": {
-            "parts": [{"text": "Eres un asistente del grupo de investigacion GEIPER. Responde SIEMPRE en español, sin excepcion."}]
+            "parts": [{"text": construir_system_prompt(nombre_asistente)}]
         },
         "contents": [
             {"role": "user", "parts": [{"text": prompt}]}
         ],
         "generationConfig": {
-            "maxOutputTokens": 500,
-            "temperature": 0.3
+            "maxOutputTokens": 1500,
+            "temperature": 0.2
         }
     }
     MAX_REINTENTOS = 2
@@ -462,6 +484,25 @@ _PATRON_SOBRE_SEMILLERO = re.compile(
 
 def es_pregunta_sobre_semillero(query):
     return bool(_PATRON_SOBRE_SEMILLERO.search(_normalizar_texto(query)))
+
+
+# ── Hechos verificados sobre la organización del semillero ───────────────────
+# Extraidos directamente del HTML de pages/integrantes.html (no de busqueda
+# web ni RAG sobre PDFs, que no cubren esta informacion de forma confiable).
+# IMPORTANTE: actualizar manualmente este bloque cuando cambien los
+# integrantes o el liderazgo en la pagina real del sitio.
+HECHOS_SEMILLERO = (
+    "Líder del semillero: Laura Dayana Díaz Beltrán (estudiante, investigación en percepción remota).\n"
+    "Profesores vinculados: José Luis Herrera Escorcia, Carlos Germán Ramírez Ramos, "
+    "Maykol Camilo Delgado Correal, Paulo César Coronado Sánchez.\n"
+    "Estudiantes integrantes (además de la líder): Argenis Alexandra Daza Roa, Mayra Ibeth Pérez "
+    "Rodríguez, Roxxane Brigith Rozo Romero, Fabian Enrique Rodríguez Agatón, Laura Natalia Ramírez "
+    "Aguilera, Haessier Joan Ortiz Moncada, Isabel Semanate Rivera, Camilo Arévalo Sánchez, Martín "
+    "Porras Sierra, Marie Anne López Poveda, Juana Valentina León Upegui, Silvana Castillo Meneses, "
+    "Yan Sebastián Muñoz Gamba, Anamaria Zamudio Arias, Johan Smit Pérez Muñoz, Luis Esteban Pinto "
+    "Casique, Daniel Alejandro Afanador Bolívar, Martha Patricia Valbuena Gaona, Sebastian Forero "
+    "Zapata, Brian Stiffenn Luna Bolívar."
+)
 
 
 def buscar_contexto_web(consulta, priorizar_geiper=False):
@@ -662,6 +703,20 @@ def construir_consulta_efectiva(chat_request):
 def status():
     return {"status": "ok", "cloud_ready": bool(groq_token or api_token)}
 
+@app.get("/documentos")
+def documentos(modo: str = "tematico"):
+    """Devuelve la lista de documentos indexados para el asistente dado, para
+    que el frontend pueda mostrar contexto antes de que el usuario pregunte."""
+    if modo == "investigacion":
+        vs, referencias = vectorstore_investigacion, REFERENCIAS_APA_INVESTIGACION
+    else:
+        vs, referencias = vectorstore, REFERENCIAS_APA
+
+    listado = listar_documentos_indexados(vs, referencias)
+    if not listado:
+        return {"documentos": []}
+    return {"documentos": listado.split("\n")}
+
 @app.post("/chat")
 @limiter.limit("10/minute")
 def chat(request: Request, chat_request: ChatRequest):
@@ -684,39 +739,7 @@ def chat(request: Request, chat_request: ChatRequest):
         transcripcion = construir_transcripcion(chat_request.historial)
         consulta_efectiva = construir_consulta_efectiva(chat_request)
 
-        # ── Detección de saludo: respuesta directa sin RAG ni web ────────────
-        es_saludo = chat_request.query.strip().lower().rstrip("!?.") in SALUDOS
-        if es_saludo:
-            if chat_request.mode == "investigacion":
-                saludo_prompt = (
-                    f"Eres el Asistente de Investigación del semillero GEIPER. "
-                    f"El usuario te saludó. Responde con un saludo breve y amigable en español, "
-                    f"y pregúntale sobre qué tema de metodología de investigación, normativa "
-                    f"institucional, trámites de trabajos de grado o estructura de la universidad "
-                    f"desea consultar. Sé conciso, no más de 3 líneas."
-                )
-            else:
-                saludo_prompt = (
-                    f"Eres el Asistente Temático del semillero GEIPER. "
-                    f"El usuario te saludó. Responde con un saludo breve y amigable en español, "
-                    f"y pregúntale sobre cuál de los siguientes temas desea consultar:\n"
-                    f"1. Interfaces conversacionales con SIG (Cai et al., 2005; Wang et al., 2008)\n"
-                    f"2. Modelos de lenguaje para geotecnia (Xu et al., 2025)\n"
-                    f"Sé conciso, no más de 3 líneas."
-                )
-            if groq_token:
-                try:
-                    respuesta = groq_generate(saludo_prompt, groq_token)
-                    return {"response": respuesta}
-                except HTTPException:
-                    raise
-                except Exception as e:
-                    logger.warning(f"Groq fallo en saludo: {e}")
-            if api_token:
-                respuesta = gemini_generate(saludo_prompt, api_token)
-                return {"response": respuesta}
-
-        # ── Selecciona el índice y las referencias según el asistente activo ─
+        # ── Selecciona el índice, referencias y nombre según el asistente activo ─
         if chat_request.mode == "investigacion":
             vectorstore_activo   = vectorstore_investigacion
             referencias_activas  = REFERENCIAS_APA_INVESTIGACION
@@ -725,6 +748,36 @@ def chat(request: Request, chat_request: ChatRequest):
             vectorstore_activo   = vectorstore
             referencias_activas  = REFERENCIAS_APA
             nombre_asistente     = "Asistente Temático"
+
+        # ── Detección de saludo: respuesta directa sin RAG ni web ────────────
+        es_saludo = chat_request.query.strip().lower().rstrip("!?.") in SALUDOS
+        if es_saludo:
+            if chat_request.mode == "investigacion":
+                saludo_prompt = (
+                    f"El usuario te saludó. Responde con un saludo breve y amigable en español, "
+                    f"y pregúntale sobre qué tema de metodología de investigación, normativa "
+                    f"institucional, trámites de trabajos de grado o estructura de la universidad "
+                    f"desea consultar. Sé conciso, no más de 3 líneas."
+                )
+            else:
+                saludo_prompt = (
+                    f"El usuario te saludó. Responde con un saludo breve y amigable en español, "
+                    f"y pregúntale sobre cuál de los siguientes temas desea consultar:\n"
+                    f"1. Interfaces conversacionales con SIG (Cai et al., 2005; Wang et al., 2008)\n"
+                    f"2. Modelos de lenguaje para geotecnia (Xu et al., 2025)\n"
+                    f"Sé conciso, no más de 3 líneas."
+                )
+            if groq_token:
+                try:
+                    respuesta = groq_generate(saludo_prompt, groq_token, nombre_asistente)
+                    return {"response": respuesta}
+                except HTTPException:
+                    raise
+                except Exception as e:
+                    logger.warning(f"Groq fallo en saludo: {e}")
+            if api_token:
+                respuesta = gemini_generate(saludo_prompt, api_token, nombre_asistente)
+                return {"response": respuesta}
 
         # ── "¿Qué documentos tienes?": se responde directo, sin pasar por el LLM ─
         if es_pregunta_de_listado(chat_request.query):
@@ -747,9 +800,23 @@ def chat(request: Request, chat_request: ChatRequest):
         contexto_docs = buscar_contexto_documentos(
             vectorstore_activo, referencias_activas, chat_request.query, consulta_efectiva
         )
-        contexto_web = buscar_contexto_web(
-            consulta_efectiva, priorizar_geiper=es_pregunta_sobre_semillero(chat_request.query)
-        )
+
+        pregunta_sobre_semillero = es_pregunta_sobre_semillero(chat_request.query)
+
+        contexto_web = buscar_contexto_web(consulta_efectiva, priorizar_geiper=pregunta_sobre_semillero)
+
+        if pregunta_sobre_semillero:
+            # Hechos verificados directamente de la pagina propia: mas confiable
+            # que RAG (los PDFs no cubren esto) o busqueda web abierta (poco
+            # confiable para este dato). Se formatea como fuente web para
+            # aprovechar el mismo mecanismo de cita con link real.
+            bloque_hechos = (
+                "[Fuente web: Integrantes — Semillero GEIPER — "
+                "https://geiperud.github.io/pages/integrantes.html]\n"
+                f"{HECHOS_SEMILLERO}"
+            )
+            contexto_web = f"{bloque_hechos}\n\n---\n\n{contexto_web}" if contexto_web else bloque_hechos
+
         user_prompt = construir_prompt_conversacional(contexto_docs, contexto_web, transcripcion, chat_request.query)
 
         # ── Generar respuesta (Groq primero, Gemini fallback) ─────────────────
@@ -757,7 +824,7 @@ def chat(request: Request, chat_request: ChatRequest):
         if groq_token:
             try:
                 logger.info(f"Enviando a Groq (Llama 3.3 70B) (modo: {chat_request.mode})")
-                respuesta = groq_generate(user_prompt, groq_token)
+                respuesta = groq_generate(user_prompt, groq_token, nombre_asistente)
                 logger.info("Respuesta recibida de Groq.")
             except HTTPException:
                 raise
@@ -768,7 +835,7 @@ def chat(request: Request, chat_request: ChatRequest):
             if not api_token:
                 raise HTTPException(status_code=500, detail="Servicio temporalmente no disponible.")
             logger.info(f"Enviando a Gemini fallback (modo: {chat_request.mode})")
-            respuesta = gemini_generate(user_prompt, api_token)
+            respuesta = gemini_generate(user_prompt, api_token, nombre_asistente)
             logger.info("Respuesta recibida de Gemini.")
 
         # ── Formatear el pie de respuesta (Referencias / Fuentes web) ────────

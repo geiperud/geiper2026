@@ -209,6 +209,36 @@
   padding-left: 20px;
 }
 
+/* Tablas generadas por markdown dentro de las respuestas del bot */
+.message-content table {
+  border-collapse: collapse;
+  width: 100%;
+  margin: 12px 0;
+  font-size: 0.9rem;
+  overflow-x: auto;
+  display: block;
+}
+.message-content table thead {
+  background: var(--azul-medio, #1e40af);
+}
+.message-content table th {
+  color: #fff;
+  font-weight: 600;
+  text-align: left;
+  padding: 8px 12px;
+  border: 1px solid var(--azul-medio, #1e40af);
+}
+.message-content table td {
+  padding: 8px 12px;
+  border: 1px solid #d1d5db;
+}
+.message-content table tbody tr:nth-child(even) {
+  background: rgba(0, 0, 0, 0.03);
+}
+.message-content table tbody tr:hover {
+  background: rgba(30, 64, 175, 0.06);
+}
+
 .message.user-message {
   align-self: flex-end;
   flex-direction: row-reverse;

@@ -102,6 +102,26 @@ document.addEventListener('DOMContentLoaded', () => {
     historial = [];
     currentBotTitle.innerHTML = botsConfig[currentMode].title;
     addMessage(botsConfig[currentMode].greeting, 'bot', true);
+    mostrarContextoDocumentos();
+  }
+
+  async function mostrarContextoDocumentos() {
+    try {
+      const res = await fetch(`${API_BASE}/documentos?modo=${currentMode}`);
+      if (!res.ok) return;
+      const data = await res.json();
+      if (data.documentos && data.documentos.length > 0) {
+        const lista = data.documentos.join('\n');
+        addMessage(
+          `Ahora mismo tengo acceso a estos documentos en esta conversación:\n\n${lista}\n\n¿Sobre cuál te gustaría empezar?`,
+          'bot'
+        );
+      }
+    } catch (error) {
+      // Si falla (servidor dormido, sin conexion), simplemente no se muestra
+      // el contexto -- no se interrumpe el uso del chat por esto.
+      console.warn('No se pudo cargar el contexto de documentos:', error);
+    }
   }
 
   function addMessage(text, sender, isHtml = false) {
