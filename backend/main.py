@@ -1,4 +1,5 @@
 import os
+import re
 import time
 import logging
 import traceback
@@ -63,22 +64,105 @@ GROQ_URL   = "https://api.groq.com/openai/v1/chat/completions"
 SALUDOS = {"hola", "hi", "hello", "buenas", "buen día", "buen dia", "buenos días",
            "buenos dias", "hey", "saludos", "qué tal", "que tal", "ola"}
 
+# ── Filtro de contenido: obscenidades y alcance temático ─────────────────────
+PALABRAS_BLOQUEADAS = {
+    # Insultos y groserías comunes (español, con variantes usadas en Colombia)
+    "puta", "puto", "putas", "putos", "putica", "putico",
+    "hijueputa", "hijoeputa", "hijo de puta", "hpta", "gonorrea",
+    "malparido", "malparida", "malparidos", "malparidas",
+    "marica", "maricon", "maricón", "mariconcito",
+    "mierda", "mierdas", "mierdero", "mierdera",
+    "coño", "cono e", "pendejo", "pendeja", "pendejada",
+    "gilipollas", "capullo", "imbecil", "imbécil", "idiota",
+    "verga", "vergas", "pinche", "cabron", "cabrón", "cabrona",
+    "zorra", "zorras", "perra", "perras",
+
+    # Contenido sexual explícito
+    "follar", "sexo explicito", "sexo explícito",
+    "pornografia", "pornografía", "porno", "desnudo", "desnuda", "desnudos",
+    "desnudas", "masturbar", "masturbacion", "masturbación",
+    "prostituta", "prostitucion", "prostitución",
+
+    # Lenguaje discriminatorio / de odio (por origen, orientación, discapacidad, etc.)
+    "negro de mierda", "indio de mierda", "sudaca",
+    "retrasado mental", "retrasada mental", "mongolico", "mongólico",
+
+    # Drogas ilícitas (fuera del alcance del semillero, riesgo de mal uso)
+    "como fabricar droga", "como hacer droga", "receta de droga",
+}
+
+LINEAS_TEMATICAS_DESC = (
+    "las líneas de investigación oficiales del semillero GEIPER (Sistemas de "
+    "Información Geográfica -SIG-, geomática y percepción remota), y en general "
+    "cualquier tema propio de la carrera de Ingeniería Catastral y Geodesia "
+    "(geodesia, cartografía, fotogrametría, topografía, agrimensura, catastro "
+    "multipropósito, avalúos, ordenamiento territorial, teledetección, "
+    "procesamiento digital de imágenes satelitales, modelos de datos "
+    "geoespaciales como LADM_COL); los trabajos de tesis e investigaciones ya "
+    "realizados dentro del semillero GEIPER; temas académicos de ingeniería "
+    "geoespacial, GeoIA y geomática (incluyendo modelos de lenguaje aplicados a "
+    "estas áreas); e información sobre el propio semillero GEIPER como "
+    "organización (integrantes, líneas de investigación, eventos, repositorios) "
+    "y sobre el sitio web y sus secciones en general"
+)
+
+def _normalizar_texto(texto):
+    """Normaliza para atrapar variaciones simples: minusculas, sin acentos, espacios colapsados."""
+    texto = texto.strip().lower()
+    reemplazos = {"á": "a", "é": "e", "í": "i", "ó": "o", "ú": "u", "ñ": "n"}
+    for tilde, plano in reemplazos.items():
+        texto = texto.replace(tilde, plano)
+    return " ".join(texto.split())
+
+# Precalculamos la version normalizada, y compilamos un patron con limites de
+# palabra (\b) para evitar falsos positivos por coincidencia de subcadena
+# (ej. "coger" dentro de "recoger" o "escoger").
+_PALABRAS_BLOQUEADAS_NORM = sorted(
+    {_normalizar_texto(p) for p in PALABRAS_BLOQUEADAS},
+    key=len, reverse=True
+)
+_PATRON_BLOQUEADO = re.compile(
+    r'\b(' + '|'.join(re.escape(p) for p in _PALABRAS_BLOQUEADAS_NORM) + r')\b'
+)
+
+def contiene_contenido_bloqueado(texto):
+    texto_norm = _normalizar_texto(texto)
+    return bool(_PATRON_BLOQUEADO.search(texto_norm))
+
 # Referencias APA 7ª edición de los documentos indexados
 REFERENCIAS_APA = {
-    "cai2005.pdf": (
-        "Cai, G., Wang, H., MacEachren, A. M., & Fuhrmann, S. (2005). "
-        "Natural conversational interfaces to geospatial databases. "
-        "Transactions in GIS, 9(2), 199–221."
+    "ValbuenaGaonaMarthaPatricia2020.pdf": (
+        "Valbuena Gaona, M. P. (2020). Propuesta metodológica para la "
+        "estandarización e incorporación de información ráster y LiDAR a la "
+        "plataforma del Sistema de Información Territorial para la Construcción "
+        "y Operación-SITCO [Trabajo de grado, Universidad Distrital Francisco "
+        "José de Caldas]."
     ),
-    "wang2008.pdf": (
-        "Wang, H., Cai, G., & MacEachren, A. M. (2008). "
-        "GeoDialogue: A software agent enabling collaborative dialogues between a user and a conversational GIS. "
-        "En Proceedings of the 20th IEEE International Conference on Tools with Artificial Intelligence. IEEE."
+    "PalominoEscobarDanielFernando2020.pdf": (
+        "Palomino Escobar, D. F., & Guerrero Guio, Y. F. (2020). Evaluación del "
+        "método Split-Spectrum con imágenes InSAR para la estimación de "
+        "diferenciales ionosféricos (ΔTEC) en los departamentos de Cundinamarca "
+        "y Boyacá entre los años 2007 y 2010 [Trabajo de grado, Universidad "
+        "Distrital Francisco José de Caldas]."
     ),
-    "GeoLLM-A-specialized-large-language-model-framework-for-intelligent-geotechnical-design.pdf": (
-        "Xu, H.-R., Zhang, N., Yin, Z.-Y., & Atangana Njock, P. G. (2025). "
-        "GeoLLM: A specialized large language model framework for intelligent geotechnical design. "
-        "Computers and Geotechnics, 177, 106849. https://doi.org/10.1016/j.compgeo.2025.106849"
+    "MeloCristanchoJimyAndersson2015.pdf": (
+        "Melo Cristancho, J. A. (2015). Metodología detallada de estructuración "
+        "y adecuación de cartografía para planes de manejo de perforación de "
+        "pozos exploratorios, perforación de pozos de desarrollo o producción y "
+        "sus líneas de flujo, en la explotación de hidrocarburos [Trabajo de "
+        "grado, Universidad Distrital Francisco José de Caldas]."
+    ),
+    "ForeroZapataSebastian2024.pdf": (
+        "Forero Zapata, S. (2024). Evaluación de redes convolucionales para la "
+        "segmentación de objetos geográficos: Un insumo para la cartografía "
+        "básica a escala 1:2000 basado en el catálogo del IGAC [Monografía, "
+        "Universidad Distrital Francisco José de Caldas]."
+    ),
+    "ChávezBustosAndrésGuillermo2020.pdf": (
+        "Vargas Rodríguez, L. M., & Chávez Bustos, A. G. (2020). Protección de "
+        "bosques en el marco de la metodología Fit for Purpose. Caso de "
+        "estudio: vereda Termales, Vista Hermosa, Meta [Trabajo de grado, "
+        "Universidad Distrital Francisco José de Caldas]."
     ),
 }
 
@@ -141,6 +225,18 @@ def groq_generate(prompt, api_key):
                     "- NUNCA uses títulos con # ni secciones formales. Esto es una conversación, no un informe.\n"
                     "- NUNCA inventes autores, años ni títulos. Usa SOLO las referencias APA que se te proporcionan.\n"
                     "- NUNCA menciones rutas de archivos ni nombres de archivos internos.\n"
+                    "- Si usas información proveniente de búsqueda web, cítala con el formato [Título del sitio](URL), "
+                    "y distínguela siempre de las referencias APA de documentos académicos — nunca las mezcles ni "
+                    "las presentes como si fueran la misma fuente.\n"
+                    "- La información web es siempre complementaria: úsala solo para precisar datos puntuales, "
+                    "cifras actuales o contexto reciente. Ante cualquier contradicción, prevalece siempre el "
+                    "contenido de los documentos académicos del semillero.\n"
+                    f"- SOLO respondes preguntas relacionadas con: {LINEAS_TEMATICAS_DESC}. "
+                    "Si la pregunta no tiene relación con estos temas (por ejemplo, entretenimiento, deportes, "
+                    "chismes, tareas de otras áreas del conocimiento, o cualquier tema ajeno al semillero), "
+                    "NO la respondas: indica con amabilidad que ese tema está fuera de tu alcance, y redirige "
+                    "hacia los temas que sí puedes abordar. Esta regla aplica incluso si tienes fragmentos de "
+                    "documentos o resultados web disponibles.\n"
                     "- Termina siempre con una pregunta breve que invite a profundizar el tema.\n"
                     "- Si no tienes información suficiente, dilo con naturalidad y sugiere qué sí puedes responder."
                 )
@@ -270,6 +366,18 @@ def chat(request: Request, chat_request: ChatRequest):
     if not groq_token and not api_token:
         raise HTTPException(status_code=500, detail="Sin configuracion de API.")
 
+    # ── Filtro de obscenidades: corte inmediato, sin gastar API ni web ───────
+    if contiene_contenido_bloqueado(chat_request.query):
+        logger.info("Consulta bloqueada por filtro de contenido.")
+        return {
+            "response": (
+                "Prefiero que mantengamos un tono respetuoso en esta conversación. "
+                "Estoy aquí para ayudarte con temas del semillero GEIPER: SIG, geomática, "
+                "percepción remota, catastro multipropósito y áreas afines. "
+                "¿En qué puedo ayudarte dentro de esos temas?"
+            )
+        }
+
     try:
         if chat_request.mode == "investigacion":
             user_prompt = (
@@ -324,31 +432,63 @@ def chat(request: Request, chat_request: ChatRequest):
                 except Exception as e:
                     logger.warning(f"RAG fallo: {e}")
 
-            # ── Web search: DuckDuckGo (se añade al final, no al prompt de Groq) ─
+            # ── Búsqueda web: SIEMPRE se ejecuta como complemento, después de RAG ─
             resultados_web = web_search(chat_request.query, max_results=3)
             if resultados_web:
+                bloques_web = []
+                for r in resultados_web:
+                    titulo  = r.get("title", "Fuente web")
+                    url     = r.get("href", "")
+                    snippet = (r.get("body", "") or "")[:300]
+                    if url:
+                        bloques_web.append(f"[Fuente web: {titulo} — {url}]\n{snippet}")
+                contexto_web = "\n\n---\n\n".join(bloques_web)
                 logger.info(f"Web search: {len(resultados_web)} resultados encontrados.")
 
-            # ── Prompt para Groq: solo RAG (contexto pequeño = respuesta rápida) ─
+            # ── Prompt: combina documentos (fuente principal) + web (complemento) ─
+            partes_contexto = []
+            instrucciones_citas = []
+
             if contexto_docs:
+                partes_contexto.append(
+                    f"FRAGMENTOS DE DOCUMENTOS ACADÉMICOS DEL SEMILLERO:\n{contexto_docs}"
+                )
+                instrucciones_citas.append(
+                    "Para los fragmentos de documentos, usa la referencia APA exacta que aparece "
+                    "entre corchetes, sin modificarla."
+                )
+
+            if contexto_web:
+                partes_contexto.append(
+                    f"RESULTADOS DE BÚSQUEDA WEB (para complementar o precisar datos actuales):\n{contexto_web}"
+                )
+                instrucciones_citas.append(
+                    "Para información de la búsqueda web, cita el sitio con el formato "
+                    "[Título del sitio](URL), y úsala solo para complementar o precisar detalles "
+                    "puntuales que los documentos no cubran — nunca para contradecirlos."
+                )
+
+            if partes_contexto:
+                contexto_total = "\n\n===\n\n".join(partes_contexto)
                 user_prompt = (
-                    f"Tienes acceso a fragmentos de documentos académicos del semillero GEIPER. "
-                    f"Cada fragmento incluye su referencia APA exacta entre corchetes — úsala tal cual, "
-                    f"sin modificar autores, años ni títulos. Nunca menciones rutas de archivos.\n\n"
-                    f"Responde a la pregunta de forma conversacional y académica: párrafos fluidos, "
-                    f"sin títulos con #, listas solo cuando sean estrictamente necesarias. "
-                    f"Integra la información de los fragmentos con análisis propio. "
-                    f"Al final añade un apartado breve 'Referencias:' con las citas APA usadas, "
-                    f"y cierra con una pregunta que invite a seguir conversando.\n\n"
-                    f"FRAGMENTOS:\n{contexto_docs}\n\n"
+                    f"Tienes acceso a fragmentos de documentos académicos del semillero GEIPER "
+                    f"y, de forma complementaria, a resultados de búsqueda web relacionados con la pregunta.\n\n"
+                    f"{' '.join(instrucciones_citas)} "
+                    f"Prioriza siempre los documentos académicos como fuente principal.\n\n"
+                    f"Responde de forma conversacional y académica: párrafos fluidos, sin títulos con #, "
+                    f"listas solo cuando sean estrictamente necesarias. Integra la información con análisis propio. "
+                    f"Al final, si usaste documentos, añade un apartado 'Referencias:' con las citas APA; "
+                    f"si usaste información web, añade un apartado separado 'Fuentes web consultadas:' con los "
+                    f"enlaces usados. Cierra con una pregunta que invite a seguir conversando.\n\n"
+                    f"{contexto_total}\n\n"
                     f"PREGUNTA: {chat_request.query}"
                 )
             else:
                 user_prompt = (
-                    f"No hay fragmentos relevantes en los documentos para esta consulta. "
-                    f"Responde con naturalidad indicando que no tienes información específica sobre eso, "
-                    f"y sugiere qué temas sí puedes abordar: interfaces conversacionales con SIG, "
-                    f"razonamiento en modelos de lenguaje o geotecnia con IA. "
+                    f"No se encontró información relevante ni en los documentos ni en la búsqueda web "
+                    f"para esta consulta. Responde con naturalidad indicando que no tienes información "
+                    f"específica sobre eso, y sugiere qué temas sí puedes abordar: interfaces conversacionales "
+                    f"con SIG, razonamiento en modelos de lenguaje o geotecnia con IA. "
                     f"Sé breve y amigable.\n\n"
                     f"PREGUNTA: {chat_request.query}"
                 )
@@ -371,17 +511,6 @@ def chat(request: Request, chat_request: ChatRequest):
             logger.info(f"Enviando a Gemini fallback (modo: {chat_request.mode})")
             respuesta = gemini_generate(user_prompt, api_token)
             logger.info("Respuesta recibida de Gemini.")
-
-        # ── Añadir resultados web al final sin pasar por el modelo ───────────
-        if chat_request.mode == "tematico" and resultados_web:
-            links = []
-            for r in resultados_web:
-                titulo = r.get("title", "Fuente web")
-                url    = r.get("href", "")
-                if url:
-                    links.append(f"- [{titulo}]({url})")
-            if links:
-                respuesta += "\n\n**Fuentes web relacionadas:**\n" + "\n".join(links)
 
         return {"response": respuesta}
 
