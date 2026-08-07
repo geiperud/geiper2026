@@ -33,11 +33,13 @@ document.addEventListener('DOMContentLoaded', () => {
   const botsConfig = {
     tematico: {
       title: '<i class="fa-solid fa-book-open-reader"></i> Asistente Temático',
-      greeting: '¡Hola! Soy el <strong>Asistente Temático</strong> del semillero GEIPER. Puedo resolver dudas sobre nuestros documentos o buscar información en la web. ¿En qué te ayudo?'
+      greeting: '¡Hola! Soy el <strong>Asistente Temático</strong> del semillero GEIPER. Puedo resolver dudas sobre nuestros documentos o buscar información en la web. ¿En qué te ayudo?',
+      offerMessage: 'Respondo principalmente preguntas relacionadas con los trabajos de grado e investigaciones desarrolladas en el marco del semillero GEIPER. Estos son los documentos a los que tengo acceso en esta conversación.'
     },
     investigacion: {
       title: '<i class="fa-solid fa-magnifying-glass-chart"></i> Asistente de Investigación',
-      greeting: 'Saludos, soy el <strong>Asistente de Investigación</strong>. Conozco a fondo la estructura de la universidad y sus enfoques investigativos. ¿Qué deseas saber?'
+      greeting: 'Saludos, soy el <strong>Asistente de Investigación</strong>. Conozco a fondo la estructura de la universidad y sus enfoques investigativos. ¿Qué deseas saber?',
+      offerMessage: 'Mi especialidad son las resoluciones de grado, la normativa de investigación y la estructura de escritura académica. Documentos disponibles en esta conversación:'
     }
   };
 
@@ -132,13 +134,13 @@ document.addEventListener('DOMContentLoaded', () => {
     contentDiv.className = 'message-content';
 
     const p = document.createElement('p');
-    p.textContent = 'Por cierto, si te sirve, puedo mostrarte la lista de documentos a los que tengo acceso en esta conversación.';
+    p.textContent = botsConfig[currentMode].offerMessage;
     contentDiv.appendChild(p);
 
     const btn = document.createElement('button');
     btn.type = 'button';
     btn.className = 'offer-docs-btn';
-    btn.textContent = 'Sí, muéstrame';
+    btn.textContent = 'Ver documentos';
     btn.addEventListener('click', () => {
       btn.disabled = true;
       btn.textContent = 'Mostrando...';
