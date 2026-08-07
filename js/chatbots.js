@@ -19,6 +19,9 @@ document.addEventListener('DOMContentLoaded', () => {
   // Se reinicia al cambiar de asistente o al limpiar el chat.
   let historial = [];
   const MAX_TURNOS_HISTORIAL = 6; // 3 intercambios (usuario + bot)
+  // Controla si ya se le ofrecio al usuario ver el listado de documentos
+  // (se ofrece una sola vez, despues del primer intercambio de cada conversacion)
+  let listadoDocumentosOfrecido = false;
   // URL del backend: usa variable global, o detecta producción vs local
   const API_BASE = window.GEIPER_API_URL ||
                    (window.location.hostname === 'geiperud.github.io'
@@ -86,6 +89,14 @@ document.addEventListener('DOMContentLoaded', () => {
       if (historial.length > MAX_TURNOS_HISTORIAL) {
         historial = historial.slice(-MAX_TURNOS_HISTORIAL);
       }
+
+      // Despues del PRIMER intercambio de la conversacion, se ofrece (no se
+      // impone) ver el listado de documentos -- solo se muestra si el usuario
+      // lo pide con el boton.
+      if (!listadoDocumentosOfrecido && historial.length === 2) {
+        listadoDocumentosOfrecido = true;
+        addOfferMessage();
+      }
     } catch (error) {
       removeElement(typingId);
       addErrorMessage();
@@ -100,9 +111,46 @@ document.addEventListener('DOMContentLoaded', () => {
   function resetChat() {
     chatMessages.innerHTML = '';
     historial = [];
+    listadoDocumentosOfrecido = false;
     currentBotTitle.innerHTML = botsConfig[currentMode].title;
     addMessage(botsConfig[currentMode].greeting, 'bot', true);
-    mostrarContextoDocumentos();
+  }
+
+  function addOfferMessage() {
+    const msgDiv = document.createElement('div');
+    msgDiv.className = 'message bot-message';
+
+    const avatar = document.createElement('div');
+    avatar.className = 'message-avatar';
+    const img = document.createElement('img');
+    img.src = '../assets/images/Logo_GEIPER.png';
+    img.alt = 'Bot';
+    avatar.appendChild(img);
+    msgDiv.appendChild(avatar);
+
+    const contentDiv = document.createElement('div');
+    contentDiv.className = 'message-content';
+
+    const p = document.createElement('p');
+    p.textContent = 'Por cierto, si te sirve, puedo mostrarte la lista de documentos a los que tengo acceso en esta conversación.';
+    contentDiv.appendChild(p);
+
+    const btn = document.createElement('button');
+    btn.type = 'button';
+    btn.className = 'offer-docs-btn';
+    btn.textContent = 'Sí, muéstrame';
+    btn.addEventListener('click', () => {
+      btn.disabled = true;
+      btn.textContent = 'Mostrando...';
+      mostrarContextoDocumentos().then(() => {
+        btn.remove();
+      });
+    });
+    contentDiv.appendChild(btn);
+
+    msgDiv.appendChild(contentDiv);
+    chatMessages.appendChild(msgDiv);
+    chatMessages.scrollTop = chatMessages.scrollHeight;
   }
 
   async function mostrarContextoDocumentos() {

@@ -3,6 +3,7 @@ import re
 import time
 import logging
 import traceback
+import unicodedata
 import requests
 from typing import List
 from fastapi import FastAPI, HTTPException, Request, Response
@@ -157,6 +158,24 @@ def es_pregunta_de_listado(query):
     return bool(_PATRON_LISTAR_DOCS.search(_normalizar_texto(query)))
 
 
+def _normalizar_nombre_archivo(nombre):
+    """Normaliza tildes/eñes a forma NFC. Un mismo archivo puede llegar con
+    codificacion Unicode distinta (NFC vs NFD) segun por donde haya pasado
+    (Windows, Colab, GitHub), y eso rompe comparaciones exactas de texto
+    aunque el nombre se vea identico a simple vista."""
+    return unicodedata.normalize("NFC", nombre or "")
+
+
+def obtener_referencia_apa(referencias_dict, nombre_archivo):
+    """Busca la cita APA de un archivo, robusto a diferencias de codificación
+    Unicode en tildes/eñes. Si no la encuentra, devuelve el nombre tal cual."""
+    nombre_norm = _normalizar_nombre_archivo(nombre_archivo)
+    for clave, valor in referencias_dict.items():
+        if _normalizar_nombre_archivo(clave) == nombre_norm:
+            return valor
+    return nombre_archivo
+
+
 def listar_documentos_indexados(vectorstore_local, referencias_apa):
     """Enumera, directamente desde el índice, los documentos realmente indexados."""
     if vectorstore_local is None:
@@ -169,7 +188,7 @@ def listar_documentos_indexados(vectorstore_local, referencias_apa):
                 fuentes.add(fuente)
         if not fuentes:
             return None
-        lineas = [f"- {referencias_apa.get(fuente, fuente)}" for fuente in sorted(fuentes)]
+        lineas = [f"- {obtener_referencia_apa(referencias_apa, fuente)}" for fuente in sorted(fuentes)]
         return "\n".join(lineas)
     except Exception as e:
         logger.warning(f"No se pudo listar documentos indexados: {e}")
@@ -471,7 +490,7 @@ def buscar_contexto_documentos(vectorstore_local, referencias_apa, query_actual,
         fuentes_log = []
         for doc, score in relevantes:
             fuente = os.path.basename(doc.metadata.get("source", "documento"))
-            apa = referencias_apa.get(fuente, fuente)
+            apa = obtener_referencia_apa(referencias_apa, fuente)
             fuentes_log.append(f"{fuente} (score:{score:.2f})")
             bloques.append(f"[Referencia APA: {apa}]\n{doc.page_content[:500]}")
         logger.info(f"RAG: {len(relevantes)} fragmentos relevantes: {', '.join(fuentes_log)}")
@@ -824,17 +843,21 @@ def chat(request: Request, chat_request: ChatRequest):
                     )
                 }
 
-        # ── Primero documentos (fuente principal), web como complemento fluido ─
-        # El orden de ejecucion ya garantiza que los documentos se consultan
-        # antes que la web. La prioridad real (documentos > web) la aplica el
-        # modelo via las instrucciones del prompt, no un bloqueo binario aqui,
-        # para que la web siga pudiendo aportar datos puntuales o actuales
-        # incluso cuando los documentos ya respondieron parte de la pregunta.
-        contexto_docs = buscar_contexto_documentos(
-            vectorstore_activo, referencias_activas, chat_request.query, consulta_efectiva
-        )
-
         pregunta_sobre_semillero = es_pregunta_sobre_semillero(chat_request.query)
+
+        # ── Primero documentos (fuente principal), web como complemento fluido ─
+        # Excepcion: si la pregunta es sobre el semillero mismo (lider, mision,
+        # lineas oficiales, etc.), se omite el RAG por completo. Los hechos del
+        # sitio (mas abajo) ya responden esto de forma confiable, y buscar en
+        # los PDFs para este tipo de pregunta solo arriesga traer coincidencias
+        # falsas (fragmentos irrelevantes que coinciden por palabras sueltas)
+        # que terminarian citandose sin venir a cuento.
+        if pregunta_sobre_semillero:
+            contexto_docs = ""
+        else:
+            contexto_docs = buscar_contexto_documentos(
+                vectorstore_activo, referencias_activas, chat_request.query, consulta_efectiva
+            )
 
         contexto_web = buscar_contexto_web(consulta_efectiva, priorizar_geiper=pregunta_sobre_semillero)
 
