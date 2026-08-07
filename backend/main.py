@@ -307,6 +307,54 @@ def web_search(query, max_results=3):
         return []
 
 
+# ── Post-procesamiento del pie de respuesta (Referencias / Fuentes web) ──────
+_PATRON_SECCION_PIE = re.compile(
+    r'\n*\**\s*(Referencias:|Fuentes web consultadas:)\s*\**\s*\n?'
+    r'(.*?)(?=\n\**\s*(?:Referencias:|Fuentes web consultadas:)\s*\**|\Z)',
+    re.DOTALL
+)
+
+_PATRONES_SECCION_VACIA = [
+    re.compile(r'(?i)^\s*no se (han )?utiliz\w*\s'),
+    re.compile(r'(?i)^\s*no se encontr[oó]\s'),
+    re.compile(r'(?i)^\s*no hay\s'),
+    re.compile(r'(?i)^\s*ningun[oa]?\.?\s*$'),
+]
+
+_PATRON_LINK_MD = re.compile(r'\[([^\]]+)\]\((https?://[^\)\s]+)\)')
+
+
+def _seccion_esta_vacia(contenido):
+    contenido = contenido.strip()
+    if not contenido:
+        return True
+    return any(p.match(contenido) for p in _PATRONES_SECCION_VACIA)
+
+
+def formatear_pie_respuesta(texto):
+    """
+    Post-procesa las secciones 'Referencias:' y 'Fuentes web consultadas:'
+    generadas por el modelo:
+      - Si el modelo indico que no se uso nada, la seccion se elimina por
+        completo (no se muestra "No se utilizaron...").
+      - Si hay contenido real, se envuelve en <small><em> (fuente pequeña,
+        cursiva) y los links en formato markdown se convierten a <a> reales.
+    """
+    def procesar(match):
+        etiqueta = match.group(1)
+        contenido = match.group(2).strip()
+
+        if _seccion_esta_vacia(contenido):
+            return ""
+
+        contenido_html = _PATRON_LINK_MD.sub(
+            r'<a href="\2" target="_blank" rel="noopener">\1</a>', contenido
+        )
+        return f'\n\n<small><em><strong>{etiqueta}</strong> {contenido_html}</em></small>'
+
+    return _PATRON_SECCION_PIE.sub(procesar, texto).strip()
+
+
 def init_services():
     global vectorstore, api_token, groq_token
 
@@ -416,8 +464,8 @@ def chat(request: Request, chat_request: ChatRequest):
             # ── RAG: documentos indexados ────────────────────────────────────
             if vectorstore is not None:
                 try:
-                    docs_scores = vectorstore.similarity_search_with_score(chat_request.query, k=3)
-                    relevantes  = [(doc, score) for doc, score in docs_scores if score < 1.2]
+                    docs_scores = vectorstore.similarity_search_with_score(chat_request.query, k=5)
+                    relevantes  = [(doc, score) for doc, score in docs_scores if score < 1.6]
                     if relevantes:
                         bloques = []
                         for doc, score in relevantes:
@@ -455,7 +503,8 @@ def chat(request: Request, chat_request: ChatRequest):
                 )
                 instrucciones_citas.append(
                     "Para los fragmentos de documentos, usa la referencia APA exacta que aparece "
-                    "entre corchetes, sin modificarla."
+                    "entre corchetes, sin modificarla. Si alguno de los fragmentos no es realmente "
+                    "relevante para responder la pregunta, ignóralo por completo y no lo cites."
                 )
 
             if contexto_web:
@@ -477,9 +526,14 @@ def chat(request: Request, chat_request: ChatRequest):
                     f"Prioriza siempre los documentos académicos como fuente principal.\n\n"
                     f"Responde de forma conversacional y académica: párrafos fluidos, sin títulos con #, "
                     f"listas solo cuando sean estrictamente necesarias. Integra la información con análisis propio. "
-                    f"Al final, si usaste documentos, añade un apartado 'Referencias:' con las citas APA; "
-                    f"si usaste información web, añade un apartado separado 'Fuentes web consultadas:' con los "
-                    f"enlaces usados. Cierra con una pregunta que invite a seguir conversando.\n\n"
+                    f"Cierra tu explicación con una pregunta breve que invite a seguir conversando. "
+                    f"DESPUÉS de esa pregunta, y solo al final de todo el mensaje, agrega dos apartados en "
+                    f"texto plano (sin negrita, sin asteriscos): 'Referencias:' seguido de las citas APA, y "
+                    f"'Fuentes web consultadas:' seguido de los enlaces en formato [Título](URL). Estos dos "
+                    f"apartados SIEMPRE deben ser lo último del mensaje, nunca antes de la pregunta de cierre. "
+                    f"IMPORTANTE: si no usaste documentos, OMITE por completo el apartado 'Referencias:' "
+                    f"— no lo escribas ni indiques que no se usó nada. Lo mismo aplica para "
+                    f"'Fuentes web consultadas:' si no usaste ninguna fuente web: simplemente no la incluyas.\n\n"
                     f"{contexto_total}\n\n"
                     f"PREGUNTA: {chat_request.query}"
                 )
@@ -511,6 +565,10 @@ def chat(request: Request, chat_request: ChatRequest):
             logger.info(f"Enviando a Gemini fallback (modo: {chat_request.mode})")
             respuesta = gemini_generate(user_prompt, api_token)
             logger.info("Respuesta recibida de Gemini.")
+
+        # ── Formatear el pie de respuesta (Referencias / Fuentes web) ────────
+        if chat_request.mode == "tematico":
+            respuesta = formatear_pie_respuesta(respuesta)
 
         return {"response": respuesta}
 
