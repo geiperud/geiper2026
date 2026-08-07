@@ -636,6 +636,12 @@ HECHOS_SEMILLERO = (
     "espectrales.\n"
     "  4. Detección de cambios en objetos y fenómenos geográficos — modelado "
     "territorial, evaluación de riesgos y análisis geoespacial.\n"
+    "  5. Infraestructuras de datos espaciales y estandarización — estandarización "
+    "e interoperabilidad de información geoespacial (ráster, LiDAR, modelos de "
+    "datos como LADM_COL) para su integración en plataformas territoriales.\n"
+    "  6. Cartografía aplicada a la gestión de recursos y ordenamiento territorial "
+    "— estructuración y adecuación de cartografía para la gestión de recursos "
+    "naturales, catastro multipropósito y planificación del territorio.\n"
     "Contacto: geiper@udistrital.edu.co, Instagram/redes @semillerogeiper.\n"
     "La líder del semillero (mujer) es Laura Dayana Díaz Beltrán (estudiante, investigación en percepción remota).\n"
     "Profesores vinculados: José Luis Herrera Escorcia, Carlos Germán Ramírez Ramos, "
@@ -942,8 +948,8 @@ def chat(request: Request, chat_request: ChatRequest):
                 saludo_prompt = (
                     f"El usuario te saludó. Responde con un saludo breve y amigable en español, "
                     f"y pregúntale sobre cuál de los siguientes temas desea consultar:\n"
-                    f"1. Interfaces conversacionales con SIG (Cai et al., 2005; Wang et al., 2008)\n"
-                    f"2. Modelos de lenguaje para geotecnia (Xu et al., 2025)\n"
+                    f"1. Percepción remota\n"
+                    f"2. Geomática\n"
                     f"Sé conciso, no más de 3 líneas."
                 )
             if groq_token:
