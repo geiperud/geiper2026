@@ -103,12 +103,16 @@ LINEAS_TEMATICAS_DESC = (
     "geoespaciales como LADM_COL); los trabajos de tesis e investigaciones ya "
     "realizados dentro del semillero GEIPER; temas académicos de ingeniería "
     "geoespacial, GeoIA y geomática (incluyendo modelos de lenguaje aplicados a "
-    "estas áreas); metodología de la investigación, normativa y procedimientos "
-    "de la Oficina de Investigaciones de la Universidad Distrital Francisco "
-    "José de Caldas, formatos y trámites de trabajos de grado, y estructura "
-    "organizativa de la universidad; e información sobre el propio semillero "
-    "GEIPER como organización (integrantes, líneas de investigación, eventos, "
-    "repositorios) y sobre el sitio web y sus secciones en general"
+    "estas áreas); metodología de la investigación, resoluciones y acuerdos de "
+    "grado actualizados de la Facultad de Ingeniería, normativa y procedimientos "
+    "de la ODI (Oficina de Investigaciones) de la Universidad Distrital Francisco "
+    "José de Caldas incluyendo convocatorias de financiación para proyectos o "
+    "estancias de investigación, formatos y trámites de trabajos de grado, "
+    "estructura organizativa de la universidad, y apoyo en la estructuración de "
+    "artículos académicos, ensayos y escritura académica en general; e "
+    "información sobre el propio semillero GEIPER como organización (integrantes, "
+    "líneas de investigación, eventos, repositorios) y sobre el sitio web y sus "
+    "secciones en general"
 )
 
 def _normalizar_texto(texto):
@@ -253,49 +257,52 @@ class GoogleEmbeddingsREST(Embeddings):
 
 
 # ── LLM Groq (Llama 3.3 70B) vía API REST (primario) ────────────────────────
+_PROMPTS_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "prompts")
+_ARCHIVOS_PROMPT = {
+    "Asistente Temático": "system_tematico.txt",
+    "Asistente de Investigación": "system_investigacion.txt",
+}
+_PROMPT_CACHE = {}
+
+
+def _cargar_plantilla_prompt(nombre_asistente):
+    archivo = _ARCHIVOS_PROMPT.get(nombre_asistente, "system_tematico.txt")
+    if archivo in _PROMPT_CACHE:
+        return _PROMPT_CACHE[archivo]
+    ruta = os.path.join(_PROMPTS_DIR, archivo)
+    try:
+        with open(ruta, "r", encoding="utf-8") as f:
+            contenido = f.read()
+        _PROMPT_CACHE[archivo] = contenido
+        return contenido
+    except Exception as e:
+        logger.warning(f"No se pudo cargar la plantilla de prompt '{archivo}': {e}")
+        return None
+
+
 def construir_system_prompt(nombre_asistente):
     """
     System prompt compartido por Groq y Gemini (evita que el respaldo de
-    Gemini pierda las reglas al fallar Groq). Incluye el rol/identidad
-    definido para ambos asistentes del semillero GEIPER.
+    Gemini pierda las reglas al fallar Groq). Se carga desde un archivo .txt
+    editable en backend/prompts/ — uno por asistente — para que el rol, el
+    tono y las reglas se puedan ajustar sin tocar el código Python.
     """
+    plantilla = _cargar_plantilla_prompt(nombre_asistente)
+    if plantilla:
+        try:
+            return plantilla.format(
+                nombre_asistente=nombre_asistente,
+                lineas_tematicas=LINEAS_TEMATICAS_DESC,
+            )
+        except Exception as e:
+            logger.warning(f"Error formateando la plantilla de prompt: {e}")
+
+    # Respaldo minimo por si el archivo .txt no existe o falla al cargar,
+    # para que el servicio nunca se caiga por esto.
     return (
-        f"Eres el {nombre_asistente} del semillero de investigación GEIPER "
-        f"(Universidad Distrital Francisco José de Caldas). Te presentas siempre "
-        f"con ese nombre funcional — nunca inventas un nombre propio distinto.\n\n"
-        f"IDENTIDAD Y TONO: tu personalidad combina dos cosas a la vez — eres cercano y "
-        f"motivador, como un compañero de semillero con más experiencia que quiere ver "
-        f"crecer a quien pregunta, pero sin perder nunca el rigor técnico y la precisión "
-        f"de un asesor académico. Ni tan informal que pierdas seriedad, ni tan formal que "
-        f"te sientas distante.\n\n"
-        f"Tu estilo es el de un investigador que explica temas a un colega: claro, fluido, "
-        f"riguroso pero cercano.\n\n"
-        f"NORMAS ABSOLUTAS:\n"
-        f"- Responde SIEMPRE en español.\n"
-        f"- Escribe en párrafos fluidos y naturales. Usa listas SOLO para enumerar elementos puntuales.\n"
-        f"- Cuando la respuesta incluya datos tabulares (puntajes, comparaciones, listas de "
-        f"elementos con varios atributos), preséntalos en una tabla markdown real (con | y "
-        f"encabezados), no en listas ni párrafos — el chat las muestra con formato de tabla.\n"
-        f"- NUNCA uses títulos con # ni secciones formales. Esto es una conversación, no un informe.\n"
-        f"- NUNCA inventes autores, años ni títulos. Usa SOLO las referencias APA que se te proporcionan.\n"
-        f"- NUNCA menciones rutas de archivos ni nombres de archivos internos.\n"
-        f"- Si usas información proveniente de búsqueda web, cítala con el formato [Título del sitio](URL), "
-        f"y distínguela siempre de las referencias APA de documentos académicos — nunca las mezcles ni "
-        f"las presentes como si fueran la misma fuente.\n"
-        f"- La información web es siempre complementaria: úsala solo para precisar datos puntuales, "
-        f"cifras actuales o contexto reciente. Ante cualquier contradicción, prevalece siempre el "
-        f"contenido de los documentos académicos del semillero.\n"
-        f"- SOLO respondes preguntas relacionadas con: {LINEAS_TEMATICAS_DESC}. "
-        f"Si la pregunta no tiene relación con estos temas (por ejemplo, entretenimiento, deportes, "
-        f"chismes, tareas de otras áreas del conocimiento, o cualquier tema ajeno al semillero), "
-        f"NO la respondas: indica con amabilidad que ese tema está fuera de tu alcance, y redirige "
-        f"hacia los temas que sí puedes abordar. Esta regla aplica incluso si tienes fragmentos de "
-        f"documentos o resultados web disponibles.\n"
-        f"- Termina siempre con una pregunta breve que invite a profundizar el tema.\n"
-        f"- Si no tienes información suficiente sobre algo, NUNCA te limites a decir 'no tengo esa "
-        f"información' y detenerte ahí. Reformula la respuesta alrededor de lo que sí sabes que esté "
-        f"relacionado, y ofrece alternativas o temas cercanos que sí puedas abordar, para mantener la "
-        f"conversación fluida y útil."
+        f"Eres el {nombre_asistente} del semillero de investigación GEIPER. "
+        f"Responde siempre en español, con rigor académico y tono cercano. "
+        f"Solo respondes temas relacionados con: {LINEAS_TEMATICAS_DESC}."
     )
 
 
@@ -474,10 +481,12 @@ def buscar_contexto_documentos(vectorstore_local, referencias_apa, query_actual,
         return ""
 
 
-# ── Detección de preguntas sobre el semillero mismo (líder, integrantes, etc.) ─
+# ── Detección de preguntas sobre el semillero mismo o el sitio ──────────────
 _PATRON_SOBRE_SEMILLERO = re.compile(
-    r'\b(semillero|geiper)\b|\blider(azgo)?\b|\bintegrantes?\b|\bmiembros?\b|'
-    r'\bdirector(a)?\b|\bcoordinador(a)?\b|\bequipo\b',
+    r'\b(semillero|geiper|nide)\b|\blider(azgo)?\b|\bintegrantes?\b|\bmiembros?\b|'
+    r'\bdirector(a)?\b|\bcoordinador(a)?\b|\bequipo\b|\bmision\b|\bvision\b|'
+    r'\bhistoria del semillero\b|\bcuando (se )?fundo\b|\bminciencias\b|'
+    r'\bque es geiper\b|\bsobre geiper\b|\blineas de investigacion (activas|oficiales|del semillero)\b',
     re.IGNORECASE
 )
 
@@ -486,12 +495,36 @@ def es_pregunta_sobre_semillero(query):
     return bool(_PATRON_SOBRE_SEMILLERO.search(_normalizar_texto(query)))
 
 
-# ── Hechos verificados sobre la organización del semillero ───────────────────
-# Extraidos directamente del HTML de pages/integrantes.html (no de busqueda
-# web ni RAG sobre PDFs, que no cubren esta informacion de forma confiable).
-# IMPORTANTE: actualizar manualmente este bloque cuando cambien los
-# integrantes o el liderazgo en la pagina real del sitio.
+# ── Hechos verificados sobre el semillero y el sitio web ─────────────────────
+# Extraidos directamente del HTML real del sitio (index.html, pages/lineas.html,
+# pages/integrantes.html) -- no de busqueda web ni RAG sobre PDFs, que no
+# cubren esta informacion de forma confiable.
+# IMPORTANTE: actualizar manualmente este bloque cuando cambie el contenido
+# real de esas paginas.
 HECHOS_SEMILLERO = (
+    "Nombre completo: GEIPER = Grupo Especializado en Investigación en Percepción "
+    "Remota y Sistemas de Información Geográfica.\n"
+    "Adscrito a: Universidad Distrital Francisco José de Caldas, Facultad de "
+    "Ingeniería, programa de Ingeniería Catastral y Geodesia, Bogotá, Colombia.\n"
+    "Pertenece al grupo de investigación NIDE, avalado por MinCiencias con "
+    "calificación A. Activo desde 2007.\n"
+    "Misión: espacio creado para estudiantes, docentes y egresados que buscan "
+    "formarse como investigadores a través de la generación, concreción y "
+    "aprovechamiento de sus ideas de investigación, fortaleciendo las líneas de "
+    "trabajo del Grupo de Investigación e impactando positivamente a la comunidad.\n"
+    "Visión (al 2026): ser un referente nacional e internacional en investigación, "
+    "impulsando iniciativas alineadas con RedCOLSI, desarrollando habilidades "
+    "interdisciplinarias, liderazgo y actitudes proactivas en sus miembros.\n"
+    "Líneas de investigación oficiales:\n"
+    "  1. Procesamiento digital y análisis de imágenes — procesamiento de imágenes "
+    "pasivas y activas de percepción remota para monitoreo y análisis territorial.\n"
+    "  2. Implementación de modelos de GeoIA — aplicaciones de inteligencia "
+    "artificial para detección de cambios en la superficie terrestre.\n"
+    "  3. Análisis espacial — análisis avanzado de imágenes satelitales y firmas "
+    "espectrales.\n"
+    "  4. Detección de cambios en objetos y fenómenos geográficos — modelado "
+    "territorial, evaluación de riesgos y análisis geoespacial.\n"
+    "Contacto: geiper@udistrital.edu.co, Instagram/redes @semillerogeiper.\n"
     "Líder del semillero: Laura Dayana Díaz Beltrán (estudiante, investigación en percepción remota).\n"
     "Profesores vinculados: José Luis Herrera Escorcia, Carlos Germán Ramírez Ramos, "
     "Maykol Camilo Delgado Correal, Paulo César Coronado Sánchez.\n"
@@ -806,13 +839,15 @@ def chat(request: Request, chat_request: ChatRequest):
         contexto_web = buscar_contexto_web(consulta_efectiva, priorizar_geiper=pregunta_sobre_semillero)
 
         if pregunta_sobre_semillero:
-            # Hechos verificados directamente de la pagina propia: mas confiable
-            # que RAG (los PDFs no cubren esto) o busqueda web abierta (poco
-            # confiable para este dato). Se formatea como fuente web para
-            # aprovechar el mismo mecanismo de cita con link real.
+            # Hechos verificados directamente de las paginas propias del sitio
+            # (index, lineas, integrantes): mas confiable que RAG (los PDFs no
+            # cubren esto) o busqueda web abierta (poco confiable para este
+            # dato, ya que DuckDuckGo no tiene bien indexado el sitio actual).
+            # Se formatea como fuente web para aprovechar el mismo mecanismo
+            # de cita con link real.
             bloque_hechos = (
-                "[Fuente web: Integrantes — Semillero GEIPER — "
-                "https://geiperud.github.io/pages/integrantes.html]\n"
+                "[Fuente web: Sitio oficial del semillero GEIPER — "
+                "https://geiperud.github.io/]\n"
                 f"{HECHOS_SEMILLERO}"
             )
             contexto_web = f"{bloque_hechos}\n\n---\n\n{contexto_web}" if contexto_web else bloque_hechos
