@@ -69,36 +69,40 @@ class GoogleEmbeddingsREST(Embeddings):
             f"https://generativelanguage.googleapis.com/v1beta/models/"
             f"{self.model}:embedContent?key={self.api_key}"
         )
+        self.reintentos_429 = 0
 
-    def _embed_one(self, text):
+    def _embed_one(self, text, task_type):
         payload = {
             "model": f"models/{self.model}",
-            "content": {"parts": [{"text": text}]}
+            "content": {"parts": [{"text": text}]},
+            "taskType": task_type,
         }
-        for intento in range(3):
-            try:
-                resp = requests.post(self.base_url, json=payload, timeout=30)
-                resp.raise_for_status()
-                return resp.json()["embedding"]["values"]
-            except Exception as e:
-                if intento < 2:
-                    time.sleep(2)
-                else:
-                    if hasattr(e, 'response') and e.response is not None:
-                        print(f"ERROR detalle: {e.response.text}")
-                    raise e
+        espera = 20
+        for intento in range(6):
+            resp = requests.post(self.base_url, json=payload, timeout=30)
+            if resp.status_code == 429:
+                self.reintentos_429 += 1
+                retry_after = resp.headers.get("Retry-After")
+                pausa = int(retry_after) if retry_after else espera
+                print(f"  Limite de la API alcanzado, esperando {pausa}s...")
+                time.sleep(pausa)
+                espera = min(espera * 2, 120)
+                continue
+            resp.raise_for_status()
+            return resp.json()["embedding"]["values"]
+        raise Exception("No se pudo obtener el embedding tras varios intentos (rate limit persistente)")
 
     def embed_documents(self, texts):
         embeddings = []
         for i, text in enumerate(texts):
             if i % 20 == 0:
                 print(f"  Procesando fragmento {i+1}/{len(texts)}...")
-            embeddings.append(self._embed_one(text))
-            time.sleep(0.1)
+            embeddings.append(self._embed_one(text, "RETRIEVAL_DOCUMENT"))
+            time.sleep(1.5)
         return embeddings
 
     def embed_query(self, text):
-        return self._embed_one(text)
+        return self._embed_one(text, "RETRIEVAL_QUERY")
 
 
 # ── 1. Cargar documentos (todos los formatos) ────────────────────────────────

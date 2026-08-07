@@ -92,10 +92,11 @@ class GoogleEmbeddingsREST(Embeddings):
         self.api_key = api_key
         self.url     = EMBED_URL + f"?key={api_key}"
 
-    def _embed_one(self, text):
+    def _embed_one(self, text, task_type):
         payload = {
             "model": f"models/{EMBED_MODEL}",
-            "content": {"parts": [{"text": text}]}
+            "content": {"parts": [{"text": text}]},
+            "taskType": task_type,
         }
         for intento in range(3):
             try:
@@ -111,12 +112,12 @@ class GoogleEmbeddingsREST(Embeddings):
     def embed_documents(self, texts):
         result = []
         for text in texts:
-            result.append(self._embed_one(text))
+            result.append(self._embed_one(text, "RETRIEVAL_DOCUMENT"))
             time.sleep(0.05)
         return result
 
     def embed_query(self, text):
-        return self._embed_one(text)
+        return self._embed_one(text, "RETRIEVAL_QUERY")
 
 
 # ── LLM Groq (Llama 3.3 70B) vía API REST (primario) ────────────────────────
