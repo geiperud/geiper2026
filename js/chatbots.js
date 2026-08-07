@@ -15,6 +15,10 @@ document.addEventListener('DOMContentLoaded', () => {
   const serverStatus = document.getElementById('serverStatus');
 
   let currentMode = 'tematico'; // modos válidos: 'tematico', 'investigacion'
+  // Memoria de conversacion: ventana deslizante de los ultimos intercambios.
+  // Se reinicia al cambiar de asistente o al limpiar el chat.
+  let historial = [];
+  const MAX_TURNOS_HISTORIAL = 6; // 3 intercambios (usuario + bot)
   // URL del backend: usa variable global, o detecta producción vs local
   const API_BASE = window.GEIPER_API_URL ||
                    (window.location.hostname === 'geiperud.github.io'
@@ -69,6 +73,19 @@ document.addEventListener('DOMContentLoaded', () => {
       const responseText = await fetchFromBackend(prompt, currentMode);
       removeElement(typingId);
       addMessage(responseText, 'bot');
+
+      // Registrar el intercambio en el historial (ventana deslizante).
+      // Se limpia el HTML del pie de citas y se trunca, para no ensuciar
+      // el contexto que se le manda al modelo ni exceder el limite del backend.
+      const respuestaLimpia = responseText
+        .replace(/<[^>]+>/g, '')
+        .trim()
+        .slice(0, 2000);
+      historial.push({ role: 'user', content: prompt.slice(0, 2000) });
+      historial.push({ role: 'assistant', content: respuestaLimpia });
+      if (historial.length > MAX_TURNOS_HISTORIAL) {
+        historial = historial.slice(-MAX_TURNOS_HISTORIAL);
+      }
     } catch (error) {
       removeElement(typingId);
       addErrorMessage();
@@ -82,6 +99,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
   function resetChat() {
     chatMessages.innerHTML = '';
+    historial = [];
     currentBotTitle.innerHTML = botsConfig[currentMode].title;
     addMessage(botsConfig[currentMode].greeting, 'bot', true);
   }
@@ -197,7 +215,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const res = await fetch(API_ENDPOINT, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ query, mode })
+      body: JSON.stringify({ query, mode, historial })
     });
 
     if (!res.ok) {

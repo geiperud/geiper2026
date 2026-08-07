@@ -4,6 +4,7 @@ import time
 import logging
 import traceback
 import requests
+from typing import List
 from fastapi import FastAPI, HTTPException, Request, Response
 try:
     from duckduckgo_search import DDGS
@@ -53,6 +54,7 @@ app.add_middleware(
 )
 
 FAISS_DIR = "faiss_index"
+FAISS_DIR_INVESTIGACION = "faiss_index_investigacion"
 GEMINI_MODEL = "gemini-2.0-flash"
 EMBED_MODEL  = "gemini-embedding-001"
 GEMINI_URL   = f"https://generativelanguage.googleapis.com/v1beta/models/{GEMINI_MODEL}:generateContent"
@@ -101,9 +103,12 @@ LINEAS_TEMATICAS_DESC = (
     "geoespaciales como LADM_COL); los trabajos de tesis e investigaciones ya "
     "realizados dentro del semillero GEIPER; temas académicos de ingeniería "
     "geoespacial, GeoIA y geomática (incluyendo modelos de lenguaje aplicados a "
-    "estas áreas); e información sobre el propio semillero GEIPER como "
-    "organización (integrantes, líneas de investigación, eventos, repositorios) "
-    "y sobre el sitio web y sus secciones en general"
+    "estas áreas); metodología de la investigación, normativa y procedimientos "
+    "de la Oficina de Investigaciones de la Universidad Distrital Francisco "
+    "José de Caldas, formatos y trámites de trabajos de grado, y estructura "
+    "organizativa de la universidad; e información sobre el propio semillero "
+    "GEIPER como organización (integrantes, líneas de investigación, eventos, "
+    "repositorios) y sobre el sitio web y sus secciones en general"
 )
 
 def _normalizar_texto(texto):
@@ -166,7 +171,13 @@ REFERENCIAS_APA = {
     ),
 }
 
+# Referencias de los documentos del Asistente de Investigación (metodología,
+# normativa institucional). Se completa igual que REFERENCIAS_APA cuando
+# tengas los PDFs reales en GEIPER_Documentos_Investigacion.
+REFERENCIAS_APA_INVESTIGACION = {}
+
 vectorstore = None
+vectorstore_investigacion = None
 api_token   = None
 groq_token   = None
 
@@ -355,8 +366,109 @@ def formatear_pie_respuesta(texto):
     return _PATRON_SECCION_PIE.sub(procesar, texto).strip()
 
 
+def buscar_contexto_documentos(vectorstore_local, referencias_apa, consulta):
+    """Busca en el indice FAISS dado y arma el bloque de contexto con citas APA."""
+    if vectorstore_local is None:
+        return ""
+    try:
+        docs_scores = vectorstore_local.similarity_search_with_score(consulta, k=5)
+        relevantes = [(doc, score) for doc, score in docs_scores if score < 1.6]
+        if not relevantes:
+            logger.info("RAG: ningún fragmento superó el umbral de relevancia.")
+            return ""
+        bloques = []
+        fuentes_log = []
+        for doc, score in relevantes:
+            fuente = os.path.basename(doc.metadata.get("source", "documento"))
+            apa = referencias_apa.get(fuente, fuente)
+            fuentes_log.append(f"{fuente} (score:{score:.2f})")
+            bloques.append(f"[Referencia APA: {apa}]\n{doc.page_content[:500]}")
+        logger.info(f"RAG: {len(relevantes)} fragmentos relevantes: {', '.join(fuentes_log)}")
+        return "\n\n---\n\n".join(bloques)
+    except Exception as e:
+        logger.warning(f"RAG falló: {e}")
+        return ""
+
+
+def buscar_contexto_web(consulta):
+    """Busca en la web (DuckDuckGo) y arma el bloque de contexto complementario."""
+    resultados_web = web_search(consulta, max_results=3)
+    if not resultados_web:
+        return ""
+    bloques_web = []
+    for r in resultados_web:
+        titulo = r.get("title", "Fuente web")
+        url = r.get("href", "")
+        snippet = (r.get("body", "") or "")[:300]
+        if url:
+            bloques_web.append(f"[Fuente web: {titulo} — {url}]\n{snippet}")
+    if bloques_web:
+        logger.info(f"Web search: {len(resultados_web)} resultados encontrados.")
+    return "\n\n---\n\n".join(bloques_web)
+
+
+def construir_prompt_conversacional(contexto_docs, contexto_web, transcripcion, query):
+    """
+    Arma el prompt final combinando documentos (fuente principal) + web
+    (complemento), con las instrucciones de cita correspondientes. Se usa
+    igual para el Asistente Temático y el Asistente de Investigación —
+    cada uno le pasa su propio contexto ya buscado en su propio índice.
+    """
+    partes_contexto = []
+    instrucciones_citas = []
+
+    if contexto_docs:
+        partes_contexto.append(f"FRAGMENTOS DE DOCUMENTOS DEL SEMILLERO:\n{contexto_docs}")
+        instrucciones_citas.append(
+            "Para los fragmentos de documentos, usa la referencia APA exacta que aparece "
+            "entre corchetes, sin modificarla. Si alguno de los fragmentos no es realmente "
+            "relevante para responder la pregunta, ignóralo por completo y no lo cites."
+        )
+
+    if contexto_web:
+        partes_contexto.append(
+            f"RESULTADOS DE BÚSQUEDA WEB (para complementar o precisar datos actuales):\n{contexto_web}"
+        )
+        instrucciones_citas.append(
+            "Para información de la búsqueda web, cita el sitio con el formato "
+            "[Título del sitio](URL), y úsala solo para complementar o precisar detalles "
+            "puntuales que los documentos no cubran — nunca para contradecirlos."
+        )
+
+    if partes_contexto:
+        contexto_total = "\n\n===\n\n".join(partes_contexto)
+        return (
+            f"Tienes acceso a fragmentos de documentos del semillero GEIPER "
+            f"y, de forma complementaria, a resultados de búsqueda web relacionados con la pregunta.\n\n"
+            f"{' '.join(instrucciones_citas)} "
+            f"Prioriza siempre los documentos como fuente principal.\n\n"
+            f"Responde de forma conversacional y académica: párrafos fluidos, sin títulos con #, "
+            f"listas solo cuando sean estrictamente necesarias. Integra la información con análisis propio. "
+            f"Cierra tu explicación con una pregunta breve que invite a seguir conversando. "
+            f"DESPUÉS de esa pregunta, y solo al final de todo el mensaje, agrega dos apartados en "
+            f"texto plano (sin negrita, sin asteriscos): 'Referencias:' seguido de las citas APA, y "
+            f"'Fuentes web consultadas:' seguido de los enlaces en formato [Título](URL). Estos dos "
+            f"apartados SIEMPRE deben ser lo último del mensaje, nunca antes de la pregunta de cierre. "
+            f"IMPORTANTE: si no usaste documentos, OMITE por completo el apartado 'Referencias:' "
+            f"— no lo escribas ni indiques que no se usó nada. Lo mismo aplica para "
+            f"'Fuentes web consultadas:' si no usaste ninguna fuente web: simplemente no la incluyas.\n\n"
+            f"{transcripcion}"
+            f"{contexto_total}\n\n"
+            f"PREGUNTA: {query}"
+        )
+
+    return (
+        f"No se encontró información relevante ni en los documentos ni en la búsqueda web "
+        f"para esta consulta. Responde con naturalidad indicando que no tienes información "
+        f"específica sobre eso, y sugiere qué temas sí puedes abordar dentro de tu especialidad. "
+        f"Sé breve y amigable.\n\n"
+        f"{transcripcion}"
+        f"PREGUNTA: {query}"
+    )
+
+
 def init_services():
-    global vectorstore, api_token, groq_token
+    global vectorstore, vectorstore_investigacion, api_token, groq_token
 
     groq_token  = os.environ.get("GROQ_API_KEY", "")
     if groq_token:
@@ -382,27 +494,76 @@ def init_services():
         logger.warning("GOOGLE_API_KEY no configurada: no se puede cargar FAISS (embeddings via Gemini REST).")
         return
 
+    embeddings = GoogleEmbeddingsREST(api_key=api_token)
+
+    # ── Índice del Asistente Temático ─────────────────────────────────────
     if os.path.exists(FAISS_DIR):
-      try:
-        embeddings = GoogleEmbeddingsREST(api_key=api_token)
-        vectorstore = FAISS.load_local(
-            FAISS_DIR,
-            embeddings,
-            allow_dangerous_deserialization=True
-        )
-        logger.info("BD Vectorial FAISS cargada (embeddings Gemini via REST, sin modelo local).")
-      except Exception as e:
-        logger.error(f"Error cargando FAISS: {e}")
+        try:
+            vectorstore = FAISS.load_local(
+                FAISS_DIR, embeddings, allow_dangerous_deserialization=True
+            )
+            logger.info("BD Vectorial FAISS (Temático) cargada.")
+        except Exception as e:
+            logger.error(f"Error cargando FAISS (Temático): {e}")
     else:
-        logger.warning(f"No se encontro la carpeta '{FAISS_DIR}'. El RAG no tendra documentos.")
+        logger.warning(f"No se encontró la carpeta '{FAISS_DIR}'. El Asistente Temático no tendrá documentos.")
+
+    # ── Índice del Asistente de Investigación ─────────────────────────────
+    if os.path.exists(FAISS_DIR_INVESTIGACION):
+        try:
+            vectorstore_investigacion = FAISS.load_local(
+                FAISS_DIR_INVESTIGACION, embeddings, allow_dangerous_deserialization=True
+            )
+            logger.info("BD Vectorial FAISS (Investigación) cargada.")
+        except Exception as e:
+            logger.error(f"Error cargando FAISS (Investigación): {e}")
+    else:
+        logger.info(
+            f"No se encontró la carpeta '{FAISS_DIR_INVESTIGACION}'. "
+            "El Asistente de Investigación aún no tiene índice (normal hasta que lo generes)."
+        )
 
 @app.on_event("startup")
 def on_startup():
     init_services()
 
+class Turno(BaseModel):
+    role: str = Field(pattern=r"^(user|assistant)$")
+    content: str = Field(min_length=1, max_length=2000)
+
 class ChatRequest(BaseModel):
     query: str = Field(min_length=1, max_length=2000)
     mode: str = Field(pattern=r"^(investigacion|tematico)$")
+    # Ventana deslizante: el frontend solo manda los ultimos 3 intercambios
+    # (6 turnos). Esto acota el tamaño de cada peticion sin importar que tan
+    # larga sea la conversacion completa en pantalla.
+    historial: List[Turno] = Field(default_factory=list, max_length=6)
+
+
+def construir_transcripcion(historial):
+    """Convierte el historial reciente en texto plano para dar contexto al LLM."""
+    if not historial:
+        return ""
+    lineas = []
+    for turno in historial:
+        etiqueta = "Usuario" if turno.role == "user" else "Asistente"
+        lineas.append(f"{etiqueta}: {turno.content}")
+    return "HISTORIAL RECIENTE DE LA CONVERSACIÓN (para contexto, no la repitas):\n" + "\n".join(lineas) + "\n\n"
+
+
+def construir_consulta_efectiva(chat_request):
+    """
+    Combina el ultimo turno del usuario con la pregunta actual, para que las
+    preguntas de seguimiento con pronombres ('lo', 'eso', 'ese tema') sigan
+    encontrando contexto relevante al buscar en documentos y en la web.
+    """
+    ultimo_turno_usuario = next(
+        (t.content for t in reversed(chat_request.historial) if t.role == "user"),
+        None
+    )
+    if ultimo_turno_usuario:
+        return f"{ultimo_turno_usuario} {chat_request.query}"
+    return chat_request.query
 
 @app.get("/status")
 def status():
@@ -427,125 +588,52 @@ def chat(request: Request, chat_request: ChatRequest):
         }
 
     try:
-        if chat_request.mode == "investigacion":
-            user_prompt = (
-                f"Eres el Asistente de Investigacion del grupo GEIPER. "
-                f"Responde en español de forma profesional.\n\n"
-                f"Pregunta: {chat_request.query}"
-            )
-        else:
-            # ── Detección de saludo: respuesta directa sin RAG ni web ────────
-            es_saludo = chat_request.query.strip().lower().rstrip("!?.") in SALUDOS
-            if es_saludo:
-                user_prompt = (
-                    f"Eres el Asistente Académico del semillero GEIPER. "
+        transcripcion = construir_transcripcion(chat_request.historial)
+        consulta_efectiva = construir_consulta_efectiva(chat_request)
+
+        # ── Detección de saludo: respuesta directa sin RAG ni web ────────────
+        es_saludo = chat_request.query.strip().lower().rstrip("!?.") in SALUDOS
+        if es_saludo:
+            if chat_request.mode == "investigacion":
+                saludo_prompt = (
+                    f"Eres el Asistente de Investigación del semillero GEIPER. "
+                    f"El usuario te saludó. Responde con un saludo breve y amigable en español, "
+                    f"y pregúntale sobre qué tema de metodología de investigación, normativa "
+                    f"institucional, trámites de trabajos de grado o estructura de la universidad "
+                    f"desea consultar. Sé conciso, no más de 3 líneas."
+                )
+            else:
+                saludo_prompt = (
+                    f"Eres el Asistente Temático del semillero GEIPER. "
                     f"El usuario te saludó. Responde con un saludo breve y amigable en español, "
                     f"y pregúntale sobre cuál de los siguientes temas desea consultar:\n"
                     f"1. Interfaces conversacionales con SIG (Cai et al., 2005; Wang et al., 2008)\n"
                     f"2. Modelos de lenguaje para geotecnia (Xu et al., 2025)\n"
                     f"Sé conciso, no más de 3 líneas."
                 )
-                if groq_token:
-                    try:
-                        respuesta = groq_generate(user_prompt, groq_token)
-                        return {"response": respuesta}
-                    except HTTPException:
-                        raise
-                    except Exception as e:
-                        logger.warning(f"Groq fallo en saludo: {e}")
-                if api_token:
-                    respuesta = gemini_generate(user_prompt, api_token)
-                    return {"response": respuesta}
-
-            contexto_docs = ""
-            contexto_web  = ""
-            fuentes_log   = []
-
-            # ── RAG: documentos indexados ────────────────────────────────────
-            if vectorstore is not None:
+            if groq_token:
                 try:
-                    docs_scores = vectorstore.similarity_search_with_score(chat_request.query, k=5)
-                    relevantes  = [(doc, score) for doc, score in docs_scores if score < 1.6]
-                    if relevantes:
-                        bloques = []
-                        for doc, score in relevantes:
-                            fuente = os.path.basename(doc.metadata.get("source", "documento"))
-                            apa    = REFERENCIAS_APA.get(fuente, fuente)
-                            fuentes_log.append(f"{fuente} (score:{score:.2f})")
-                            bloques.append(f"[Referencia APA: {apa}]\n{doc.page_content[:500]}")
-                        contexto_docs = "\n\n---\n\n".join(bloques)
-                        logger.info(f"RAG: {len(relevantes)} fragmentos relevantes: {', '.join(fuentes_log)}")
-                    else:
-                        logger.info("RAG: ningún fragmento superó el umbral de relevancia.")
+                    respuesta = groq_generate(saludo_prompt, groq_token)
+                    return {"response": respuesta}
+                except HTTPException:
+                    raise
                 except Exception as e:
-                    logger.warning(f"RAG fallo: {e}")
+                    logger.warning(f"Groq fallo en saludo: {e}")
+            if api_token:
+                respuesta = gemini_generate(saludo_prompt, api_token)
+                return {"response": respuesta}
 
-            # ── Búsqueda web: SIEMPRE se ejecuta como complemento, después de RAG ─
-            resultados_web = web_search(chat_request.query, max_results=3)
-            if resultados_web:
-                bloques_web = []
-                for r in resultados_web:
-                    titulo  = r.get("title", "Fuente web")
-                    url     = r.get("href", "")
-                    snippet = (r.get("body", "") or "")[:300]
-                    if url:
-                        bloques_web.append(f"[Fuente web: {titulo} — {url}]\n{snippet}")
-                contexto_web = "\n\n---\n\n".join(bloques_web)
-                logger.info(f"Web search: {len(resultados_web)} resultados encontrados.")
+        # ── Selecciona el índice y las referencias según el asistente activo ─
+        if chat_request.mode == "investigacion":
+            vectorstore_activo   = vectorstore_investigacion
+            referencias_activas  = REFERENCIAS_APA_INVESTIGACION
+        else:
+            vectorstore_activo   = vectorstore
+            referencias_activas  = REFERENCIAS_APA
 
-            # ── Prompt: combina documentos (fuente principal) + web (complemento) ─
-            partes_contexto = []
-            instrucciones_citas = []
-
-            if contexto_docs:
-                partes_contexto.append(
-                    f"FRAGMENTOS DE DOCUMENTOS ACADÉMICOS DEL SEMILLERO:\n{contexto_docs}"
-                )
-                instrucciones_citas.append(
-                    "Para los fragmentos de documentos, usa la referencia APA exacta que aparece "
-                    "entre corchetes, sin modificarla. Si alguno de los fragmentos no es realmente "
-                    "relevante para responder la pregunta, ignóralo por completo y no lo cites."
-                )
-
-            if contexto_web:
-                partes_contexto.append(
-                    f"RESULTADOS DE BÚSQUEDA WEB (para complementar o precisar datos actuales):\n{contexto_web}"
-                )
-                instrucciones_citas.append(
-                    "Para información de la búsqueda web, cita el sitio con el formato "
-                    "[Título del sitio](URL), y úsala solo para complementar o precisar detalles "
-                    "puntuales que los documentos no cubran — nunca para contradecirlos."
-                )
-
-            if partes_contexto:
-                contexto_total = "\n\n===\n\n".join(partes_contexto)
-                user_prompt = (
-                    f"Tienes acceso a fragmentos de documentos académicos del semillero GEIPER "
-                    f"y, de forma complementaria, a resultados de búsqueda web relacionados con la pregunta.\n\n"
-                    f"{' '.join(instrucciones_citas)} "
-                    f"Prioriza siempre los documentos académicos como fuente principal.\n\n"
-                    f"Responde de forma conversacional y académica: párrafos fluidos, sin títulos con #, "
-                    f"listas solo cuando sean estrictamente necesarias. Integra la información con análisis propio. "
-                    f"Cierra tu explicación con una pregunta breve que invite a seguir conversando. "
-                    f"DESPUÉS de esa pregunta, y solo al final de todo el mensaje, agrega dos apartados en "
-                    f"texto plano (sin negrita, sin asteriscos): 'Referencias:' seguido de las citas APA, y "
-                    f"'Fuentes web consultadas:' seguido de los enlaces en formato [Título](URL). Estos dos "
-                    f"apartados SIEMPRE deben ser lo último del mensaje, nunca antes de la pregunta de cierre. "
-                    f"IMPORTANTE: si no usaste documentos, OMITE por completo el apartado 'Referencias:' "
-                    f"— no lo escribas ni indiques que no se usó nada. Lo mismo aplica para "
-                    f"'Fuentes web consultadas:' si no usaste ninguna fuente web: simplemente no la incluyas.\n\n"
-                    f"{contexto_total}\n\n"
-                    f"PREGUNTA: {chat_request.query}"
-                )
-            else:
-                user_prompt = (
-                    f"No se encontró información relevante ni en los documentos ni en la búsqueda web "
-                    f"para esta consulta. Responde con naturalidad indicando que no tienes información "
-                    f"específica sobre eso, y sugiere qué temas sí puedes abordar: interfaces conversacionales "
-                    f"con SIG, razonamiento en modelos de lenguaje o geotecnia con IA. "
-                    f"Sé breve y amigable.\n\n"
-                    f"PREGUNTA: {chat_request.query}"
-                )
+        contexto_docs = buscar_contexto_documentos(vectorstore_activo, referencias_activas, consulta_efectiva)
+        contexto_web  = buscar_contexto_web(consulta_efectiva)
+        user_prompt   = construir_prompt_conversacional(contexto_docs, contexto_web, transcripcion, chat_request.query)
 
         # ── Generar respuesta (Groq primero, Gemini fallback) ─────────────────
         respuesta = None
@@ -567,8 +655,7 @@ def chat(request: Request, chat_request: ChatRequest):
             logger.info("Respuesta recibida de Gemini.")
 
         # ── Formatear el pie de respuesta (Referencias / Fuentes web) ────────
-        if chat_request.mode == "tematico":
-            respuesta = formatear_pie_respuesta(respuesta)
+        respuesta = formatear_pie_respuesta(respuesta)
 
         return {"response": respuesta}
 
