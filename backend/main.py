@@ -134,6 +134,43 @@ def contiene_contenido_bloqueado(texto):
     texto_norm = _normalizar_texto(texto)
     return bool(_PATRON_BLOQUEADO.search(texto_norm))
 
+
+# ── Detección de preguntas tipo "¿qué documentos tienes?" ────────────────────
+# Estas preguntas NUNCA se pueden responder bien con busqueda semantica: ningun
+# fragmento de un PDF dice "estos son todos los documentos indexados" -- esa es
+# informacion sobre el sistema, no contenido de los documentos. Se responden
+# aparte, enumerando directamente el indice, sin pasar por el LLM.
+_PATRON_LISTAR_DOCS = re.compile(
+    r'(que|cuales?)\s+(documentos?|pdfs?|archivos?)|'
+    r'sobre que (documentos?|archivos?|informacion)|'
+    r'listad?o? de documentos|'
+    r'que (tienes|conoces) (indexado|cargado|disponible)',
+    re.IGNORECASE
+)
+
+
+def es_pregunta_de_listado(query):
+    return bool(_PATRON_LISTAR_DOCS.search(_normalizar_texto(query)))
+
+
+def listar_documentos_indexados(vectorstore_local, referencias_apa):
+    """Enumera, directamente desde el índice, los documentos realmente indexados."""
+    if vectorstore_local is None:
+        return None
+    try:
+        fuentes = set()
+        for doc in vectorstore_local.docstore._dict.values():
+            fuente = os.path.basename(doc.metadata.get("source", ""))
+            if fuente:
+                fuentes.add(fuente)
+        if not fuentes:
+            return None
+        lineas = [f"- {referencias_apa.get(fuente, fuente)}" for fuente in sorted(fuentes)]
+        return "\n".join(lineas)
+    except Exception as e:
+        logger.warning(f"No se pudo listar documentos indexados: {e}")
+        return None
+
 # Referencias APA 7ª edición de los documentos indexados
 REFERENCIAS_APA = {
     "ValbuenaGaonaMarthaPatricia2020.pdf": (
@@ -655,9 +692,23 @@ def chat(request: Request, chat_request: ChatRequest):
         if chat_request.mode == "investigacion":
             vectorstore_activo   = vectorstore_investigacion
             referencias_activas  = REFERENCIAS_APA_INVESTIGACION
+            nombre_asistente     = "Asistente de Investigación"
         else:
             vectorstore_activo   = vectorstore
             referencias_activas  = REFERENCIAS_APA
+            nombre_asistente     = "Asistente Temático"
+
+        # ── "¿Qué documentos tienes?": se responde directo, sin pasar por el LLM ─
+        if es_pregunta_de_listado(chat_request.query):
+            listado = listar_documentos_indexados(vectorstore_activo, referencias_activas)
+            if listado:
+                return {
+                    "response": (
+                        f"Estos son los documentos que tengo indexados actualmente como "
+                        f"{nombre_asistente}:\n\n{listado}\n\n"
+                        f"¿Sobre cuál de ellos quieres que profundicemos?"
+                    )
+                }
 
         # ── Primero documentos (fuente principal), web como complemento fluido ─
         # El orden de ejecucion ya garantiza que los documentos se consultan
