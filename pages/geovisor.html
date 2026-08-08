@@ -1057,6 +1057,7 @@ let activeProject  = null;
 let activeLayerId  = null;
 let currentFilter  = 'todos';
 let vectorLayer    = null;
+let colombiaBorderLayer = null;
 let map, osmLayer, satLayer, view;
 let toastTimer     = null;
 
@@ -1081,9 +1082,22 @@ function initMap() {
     maxZoom: 19
   });
 
+  /* Borde nacional de Colombia (capa de referencia, siempre por encima de los basemaps) */
+  colombiaBorderLayer = new ol.layer.Vector({
+    source: new ol.source.Vector({
+      url: '../data/colombia_border.geojson',
+      format: new ol.format.GeoJSON()
+    }),
+    style: new ol.style.Style({
+      stroke: new ol.style.Stroke({ color: '#FFCC00', width: 2 }),
+      fill: null
+    }),
+    zIndex: 1
+  });
+
   map = new ol.Map({
     target: 'map',
-    layers: [osmLayer, satLayer],
+    layers: [osmLayer, satLayer, colombiaBorderLayer],
     view: view,
     controls: []
   });
@@ -1145,7 +1159,10 @@ function initMap() {
       popup.style.left = pixel[0] + 'px';
       popup.style.top  = pixel[1] + 'px';
       popup.style.display = 'block';
-    }, { hitTolerance: 8 });
+    }, {
+      hitTolerance: 8,
+      layerFilter: function (layer) { return layer !== colombiaBorderLayer; }
+    });
 
     if (!found) {
       document.getElementById('geoPopup').style.display = 'none';
