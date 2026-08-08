@@ -931,12 +931,12 @@ html, body {
         <!-- Tab: Mapa base -->
         <div class="bp-tab-content" id="tab-mapabase" style="display:none;">
           <label class="bp-bm-option">
-            <input type="radio" name="basemap" value="osm" checked>
+            <input type="radio" name="basemap" value="osm">
             <div class="bp-bm-thumb osm"></div>
             OpenStreetMap
           </label>
           <label class="bp-bm-option">
-            <input type="radio" name="basemap" value="sat">
+            <input type="radio" name="basemap" value="sat" checked>
             <div class="bp-bm-thumb sat"></div>
             Satélite
           </label>
@@ -961,93 +961,92 @@ html, body {
 
 <script>
 /* ══════════════════════════════════════════════
-   DATOS DE PROYECTOS
+   DATOS DE PROYECTOS (trabajos de grado reales — GEIPER / NIDE)
+   Nota: sin geometrías/capas propias (son documentos, no datasets
+   georreferenciados); "extent" define el encuadre al abrir la tarjeta.
+   Enlace provisional al RIUD general — se reemplaza por el enlace
+   directo de cada trabajo cuando esté disponible.
    ══════════════════════════════════════════════ */
+const RIUD_URL = 'https://repository.udistrital.edu.co/';
+
 const PROJECTS = [
   {
     id: 1,
-    nombre: 'Monitoreo de cobertura vegetal — Amazonia colombiana',
-    cat: 'pr',
-    catLabel: 'Percepción Remota',
-    año: 2023,
-    sensor: 'Landsat 8 OLI/TIRS',
-    escala: '1:100.000',
-    crs: 'EPSG:4326',
-    autor: 'GEIPER — UD',
-    extent: [-74.5, -1.5, -69.0, 2.5],
-    capas: [
-      { id: 'cobveg_bosque',   nombre: 'Bosque denso',        color: '#166534', visible: true },
-      { id: 'cobveg_degra',    nombre: 'Áreas degradadas',    color: '#dc2626', visible: true },
-      { id: 'cobveg_agua',     nombre: 'Cuerpos de agua',     color: '#2563eb', visible: true }
-    ],
-    features: [
-      {
-        type: 'Feature', layer: 'cobveg_bosque',
-        properties: { 'Cobertura': 'Bosque denso', 'Área (ha)': '42.800', 'NDVI medio': '0.82', 'Imagen': 'LC08_L2SP_2023', 'Estado': 'Conservado' },
-        geometry: { type: 'Polygon', coordinates: [[[-73.2,-0.8],[-72.5,-0.8],[-72.5,-0.2],[-73.2,-0.2],[-73.2,-0.8]]] }
-      },
-      {
-        type: 'Feature', layer: 'cobveg_degra',
-        properties: { 'Cobertura': 'Bosque degradado', 'Área (ha)': '6.340', 'NDVI medio': '0.41', 'Causa': 'Deforestación', 'Año detección': '2022' },
-        geometry: { type: 'Polygon', coordinates: [[[-72.0,0.2],[-71.3,0.2],[-71.3,0.8],[-72.0,0.8],[-72.0,0.2]]] }
-      },
-      {
-        type: 'Feature', layer: 'cobveg_agua',
-        properties: { 'Nombre': 'Río Vaupés', 'Longitud (km)': '1.120', 'Ancho medio (m)': '320', 'Cuenca': 'Amazonas' },
-        geometry: { type: 'LineString', coordinates: [[-73.0,1.0],[-72.0,0.5],[-71.0,0.0],[-70.0,-0.5],[-69.5,-1.0]] }
-      },
-      {
-        type: 'Feature', layer: 'cobveg_bosque',
-        properties: { 'Cobertura': 'Bosque húmedo tropical', 'Área (ha)': '18.200', 'NDVI medio': '0.87', 'Imagen': 'LC08_L2SP_2023', 'Estado': 'Primario' },
-        geometry: { type: 'Polygon', coordinates: [[[-71.5,1.5],[-70.8,1.5],[-70.8,2.2],[-71.5,2.2],[-71.5,1.5]]] }
-      }
-    ]
+    nombre: 'Protección de bosques en el marco de la metodología Fit for Purpose. Caso de estudio: vereda Termales, Vista Hermosa, Meta',
+    cat: 'cat',
+    catLabel: 'Catastro',
+    año: 2020,
+    sensor: 'Landsat (análisis multitemporal 1988–2018) · Metodología FFP',
+    escala: 'Predial',
+    crs: 'MAGNA-SIRGAS',
+    autor: 'Vargas Rodríguez, L. M. & Chávez Bustos, A. G.',
+    url: RIUD_URL,
+    ubicacion: 'Vereda Termales, Vista Hermosa, Meta',
+    extent: [-73.95, 2.95, -73.55, 3.35],
+    capas: [],
+    features: []
   },
   {
     id: 2,
-    nombre: 'Análisis multitemporal NDVI — Orinoquia',
+    nombre: 'Evaluación de redes convolucionales para la segmentación de objetos geográficos: un insumo para la cartografía básica a escala 1:2000 basado en el catálogo del IGAC',
     cat: 'pr',
     catLabel: 'Percepción Remota',
     año: 2024,
-    sensor: 'Sentinel-2 MSI',
-    escala: '1:50.000',
-    crs: 'EPSG:4326',
-    autor: 'GEIPER — UD',
-    extent: [-73.5, 4.0, -68.0, 7.5],
-    capas: [
-      { id: 'ndvi_alto',   nombre: 'NDVI alto (> 0.6)',    color: '#15803d', visible: true },
-      { id: 'ndvi_medio',  nombre: 'NDVI medio (0.3–0.6)', color: '#ca8a04', visible: true },
-      { id: 'ndvi_bajo',   nombre: 'NDVI bajo (< 0.3)',    color: '#dc2626', visible: true },
-      { id: 'puntos_ref',  nombre: 'Puntos de referencia', color: '#7c3aed', visible: true }
-    ],
-    features: [
-      {
-        type: 'Feature', layer: 'ndvi_alto',
-        properties: { 'Clase NDVI': 'Alta vegetación', 'Valor medio': '0.74', 'Área (km²)': '3.820', 'Periodo': 'Ene–Mar 2024', 'Cobertura': 'Sabana arbolada' },
-        geometry: { type: 'Polygon', coordinates: [[[-72.5,5.2],[-71.8,5.2],[-71.8,6.0],[-72.5,6.0],[-72.5,5.2]]] }
-      },
-      {
-        type: 'Feature', layer: 'ndvi_medio',
-        properties: { 'Clase NDVI': 'Vegetación media', 'Valor medio': '0.47', 'Área (km²)': '2.140', 'Periodo': 'Ene–Mar 2024', 'Cobertura': 'Pastizales' },
-        geometry: { type: 'Polygon', coordinates: [[[-71.5,4.5],[-70.8,4.5],[-70.8,5.2],[-71.5,5.2],[-71.5,4.5]]] }
-      },
-      {
-        type: 'Feature', layer: 'ndvi_bajo',
-        properties: { 'Clase NDVI': 'Vegetación escasa', 'Valor medio': '0.18', 'Área (km²)': '580', 'Periodo': 'Ene–Mar 2024', 'Cobertura': 'Suelo desnudo / quemas' },
-        geometry: { type: 'Polygon', coordinates: [[[-70.5,6.0],[-69.8,6.0],[-69.8,6.8],[-70.5,6.8],[-70.5,6.0]]] }
-      },
-      {
-        type: 'Feature', layer: 'puntos_ref',
-        properties: { 'ID punto': 'OR-001', 'Latitud': '5.4820', 'Longitud': '-72.1234', 'NDVI campo': '0.71', 'Fecha visita': '2024-02-14' },
-        geometry: { type: 'Point', coordinates: [-72.1234, 5.4820] }
-      },
-      {
-        type: 'Feature', layer: 'puntos_ref',
-        properties: { 'ID punto': 'OR-002', 'Latitud': '6.2150', 'Longitud': '-70.3410', 'NDVI campo': '0.19', 'Fecha visita': '2024-02-16' },
-        geometry: { type: 'Point', coordinates: [-70.3410, 6.2150] }
-      }
-    ]
+    sensor: 'UNet · DeepLabV3 · LinkNet (Transfer Learning)',
+    escala: '1:2.000',
+    crs: 'MAGNA-SIRGAS',
+    autor: 'Forero Zapata, S.',
+    url: RIUD_URL,
+    ubicacion: 'Arbeláez, La Mesa y Tocancipá, Cundinamarca',
+    extent: [-74.75, 4.05, -73.75, 5.15],
+    capas: [],
+    features: []
   },
+  {
+    id: 3,
+    nombre: 'Metodología detallada de estructuración y adecuación de cartografía para planes de manejo de perforación de pozos exploratorios, perforación de pozos de desarrollo o producción y sus líneas de flujo, en la explotación de hidrocarburos',
+    cat: 'sig',
+    catLabel: 'SIG',
+    año: 2015,
+    sensor: 'Geodatabase (GDB) · Plan de Manejo Ambiental',
+    escala: 'N/A',
+    crs: 'MAGNA-SIRGAS / GRS80',
+    autor: 'Melo Cristancho, J. A.',
+    url: RIUD_URL,
+    ubicacion: 'Sin área geográfica delimitada (metodología general)',
+    extent: [-77.5, 1.0, -71.5, 9.5],
+    capas: [],
+    features: []
+  },
+  {
+    id: 4,
+    nombre: 'Propuesta metodológica para la estandarización e incorporación de información ráster y LiDAR a la plataforma del Sistema de Información Territorial para la Construcción y Operación—SITCO',
+    cat: 'sig',
+    catLabel: 'SIG',
+    año: 2020,
+    sensor: 'LiDAR · Ortofotomosaicos · Metadatos NTC 4611',
+    escala: 'N/A',
+    crs: 'N/A',
+    autor: 'Valbuena Gaona, M. P.',
+    url: RIUD_URL,
+    ubicacion: 'Sin área geográfica delimitada (metodología general)',
+    extent: [-77.5, 1.0, -71.5, 9.5],
+    capas: [],
+    features: []
+  },
+];
+
+/* ══════════════════════════════════════════════
+   MARCADORES DE UBICACIÓN EN EL MAPA
+   Solo los trabajos con área geográfica definida en el título
+   reciben marcador. Cada marcador abre un popup con el nombre
+   del trabajo como hipervínculo (por ahora, al RIUD general).
+   ══════════════════════════════════════════════ */
+const PROJECT_MARKERS = [
+  { proyectoId: 1, lugar: 'Vereda Termales, Vista Hermosa (Meta)', coords: [-73.7625, 3.1486] },
+  { proyectoId: 2, lugar: 'Arbeláez (Cundinamarca)',  coords: [-74.4200, 4.2700] },
+  { proyectoId: 2, lugar: 'La Mesa (Cundinamarca)',   coords: [-74.4625, 4.6303] },
+  { proyectoId: 2, lugar: 'Tocancipá (Cundinamarca)', coords: [-73.9167, 4.9667] },
 ];
 
 /* ══════════════════════════════════════════════
@@ -1058,6 +1057,7 @@ let activeLayerId  = null;
 let currentFilter  = 'todos';
 let vectorLayer    = null;
 let colombiaBorderLayer = null;
+let projectMarkersLayer = null;
 let map, osmLayer, satLayer, view;
 let toastTimer     = null;
 
@@ -1065,19 +1065,21 @@ let toastTimer     = null;
    INIT MAP
    ══════════════════════════════════════════════ */
 function initMap() {
-  osmLayer = new ol.layer.Tile({ source: new ol.source.OSM() });
+  osmLayer = new ol.layer.Tile({ source: new ol.source.OSM(), visible: false });
 
   satLayer = new ol.layer.Tile({
     source: new ol.source.XYZ({
       url: 'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',
       attributions: 'Tiles &copy; Esri'
     }),
-    visible: false
+    visible: true
   });
 
+  /* Vista inicial: encuadre de todo el país (Colombia continental) */
+  const COLOMBIA_EXTENT_LONLAT = [-78.990935, -4.298187, -66.876326, 12.437303];
   view = new ol.View({
     center: ol.proj.fromLonLat([-74.0721, 4.7110]),
-    zoom: 11,
+    zoom: 5,
     minZoom: 4,
     maxZoom: 19
   });
@@ -1095,9 +1097,35 @@ function initMap() {
     zIndex: 1
   });
 
+  /* Marcadores de ubicación de los trabajos de grado con área geográfica definida */
+  const markerFeatures = PROJECT_MARKERS.map(function (m) {
+    const proj = PROJECTS.find(p => p.id === m.proyectoId);
+    const feat = new ol.Feature({
+      geometry: new ol.geom.Point(ol.proj.fromLonLat(m.coords))
+    });
+    feat.set('isProjectMarker', true);
+    feat.set('nombre', proj.nombre);
+    feat.set('autor', proj.autor);
+    feat.set('lugar', m.lugar);
+    feat.set('url', proj.url);
+    return feat;
+  });
+
+  projectMarkersLayer = new ol.layer.Vector({
+    source: new ol.source.Vector({ features: markerFeatures }),
+    style: new ol.style.Style({
+      image: new ol.style.Circle({
+        radius: 8,
+        fill:   new ol.style.Fill({ color: '#dc2626' }),
+        stroke: new ol.style.Stroke({ color: '#ffffff', width: 2 })
+      })
+    }),
+    zIndex: 3
+  });
+
   map = new ol.Map({
     target: 'map',
-    layers: [osmLayer, satLayer, colombiaBorderLayer],
+    layers: [osmLayer, satLayer, colombiaBorderLayer, projectMarkersLayer],
     view: view,
     controls: []
   });
@@ -1139,21 +1167,36 @@ function initMap() {
         pixel = map.getPixelFromCoordinate(ctr);
       }
 
-      /* Título del popup */
-      const layerName = activeProject
-        ? (activeProject.capas.find(c => c.id === props['__layer']) || { nombre: 'Feature' }).nombre
-        : 'Atributos';
-      document.getElementById('popupTitle').textContent = layerName;
-
-      /* Tabla de atributos */
       const table = document.getElementById('popupTable');
       table.innerHTML = '';
-      Object.entries(props).forEach(function ([k, v]) {
-        if (k === '__layer' || k === 'geometry') return;
+
+      if (props.isProjectMarker) {
+        /* ── Popup de marcador de trabajo de grado: nombre como hipervínculo ── */
+        document.getElementById('popupTitle').textContent = props.lugar;
         const row = document.createElement('tr');
-        row.innerHTML = '<td>' + escHtml(k) + '</td><td>' + escHtml(String(v)) + '</td>';
+        const cell = document.createElement('td');
+        cell.colSpan = 2;
+        cell.innerHTML =
+          '<a href="' + escHtml(props.url) + '" target="_blank" rel="noopener noreferrer" style="color:#1D9E75;font-weight:600;">' +
+            escHtml(props.nombre) +
+          '</a><br><span style="color:#64748b;font-size:11px;">' + escHtml(props.autor) + '</span>';
+        row.appendChild(cell);
         table.appendChild(row);
-      });
+      } else {
+        /* Título del popup */
+        const layerName = activeProject
+          ? (activeProject.capas.find(c => c.id === props['__layer']) || { nombre: 'Feature' }).nombre
+          : 'Atributos';
+        document.getElementById('popupTitle').textContent = layerName;
+
+        /* Tabla de atributos */
+        Object.entries(props).forEach(function ([k, v]) {
+          if (k === '__layer' || k === 'geometry') return;
+          const row = document.createElement('tr');
+          row.innerHTML = '<td>' + escHtml(k) + '</td><td>' + escHtml(String(v)) + '</td>';
+          table.appendChild(row);
+        });
+      }
 
       /* Posicionar popup */
       popup.style.left = pixel[0] + 'px';
@@ -1443,9 +1486,13 @@ function initUI() {
     view.animate({ zoom: view.getZoom() - 1, duration: 250 });
   });
 
-  /* Volver a Bogotá */
+  /* Volver a la vista de Colombia completa */
   document.getElementById('btnColombia').addEventListener('click', function () {
-    view.animate({ center: ol.proj.fromLonLat([-74.0721, 4.7110]), zoom: 11, duration: 600 });
+    const colExt3857 = ol.proj.transformExtent(
+      [-78.990935, -4.298187, -66.876326, 12.437303],
+      'EPSG:4326', 'EPSG:3857'
+    );
+    view.fit(colExt3857, { padding: [30, 30, 30, 30], duration: 600 });
 
     /* Limpiar proyecto activo */
     activeProject = null;
@@ -1584,8 +1631,16 @@ window.addEventListener('load', function () {
   initMap();
   initUI();
   renderProjectList();
-  /* Forzar recálculo de dimensiones tras render completo del flex layout */
-  setTimeout(function () { map.updateSize(); }, 100);
+  /* Forzar recálculo de dimensiones tras render completo del flex layout,
+     y encuadrar la vista inicial a todo el país */
+  setTimeout(function () {
+    map.updateSize();
+    const colExt3857 = ol.proj.transformExtent(
+      [-78.990935, -4.298187, -66.876326, 12.437303],
+      'EPSG:4326', 'EPSG:3857'
+    );
+    view.fit(colExt3857, { padding: [30, 30, 30, 30] });
+  }, 100);
   window.addEventListener('resize', function () { map.updateSize(); });
 });
 </script>
