@@ -47,8 +47,8 @@ html, body {
    SIDEBAR IZQUIERDA
    ════════════════════════════════════════════ */
 .geo-sidebar {
-  width: 300px;
-  min-width: 300px;
+  width: 380px;
+  min-width: 380px;
   background: #ffffff;
   border-right: 1px solid #e2e8f0;
   box-shadow: 2px 0 8px rgba(0,0,0,0.05);
@@ -111,54 +111,100 @@ html, body {
   box-shadow: 0 0 0 3px rgba(29,158,117,0.1);
 }
 
-/* Chips de filtro */
-.geo-chips {
-  display: flex;
-  gap: 4px;
-  flex-wrap: wrap;
-}
-
-.geo-chip {
-  padding: 4px 10px;
-  font-size: 11px;
-  font-weight: 500;
-  font-family: 'Montserrat', sans-serif;
-  background: #f8fafc;
-  border: 1px solid #e2e8f0;
-  border-radius: 20px;
-  color: #64748b;
-  cursor: pointer;
-  transition: all 0.15s;
-}
-
-.geo-chip:hover {
-  border-color: #1D9E75;
-  color: #0F6E56;
-}
-
-.geo-chip.active {
-  background: #1D9E75;
-  border-color: #1D9E75;
-  color: #ffffff;
-}
-
-/* Lista de proyectos */
+/* Lista de proyectos (agrupados por línea de investigación) */
 .geo-proj-list {
   flex: 1;
   overflow-y: auto;
-  padding: 8px;
+  padding: 10px;
   display: flex;
   flex-direction: column;
-  gap: 4px;
+  gap: 8px;
 }
 
 .geo-proj-list::-webkit-scrollbar { width: 4px; }
 .geo-proj-list::-webkit-scrollbar-track { background: transparent; }
 .geo-proj-list::-webkit-scrollbar-thumb { background: #e2e8f0; border-radius: 4px; }
 
-/* Tarjeta de proyecto */
+/* Cabecera de línea de investigación (colapsable) */
+.geo-linea-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  text-align: left;
+  padding: 12px 14px;
+  border-radius: 10px;
+  border: 1px solid transparent;
+  cursor: pointer;
+  transition: all 0.15s;
+  font-family: 'Montserrat', sans-serif;
+}
+
+.geo-linea-left {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+}
+
+.geo-linea-dot {
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.geo-linea-name {
+  font-size: 13px;
+  font-weight: 600;
+  line-height: 1.35;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+}
+
+.geo-linea-right {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-shrink: 0;
+  margin-left: 8px;
+}
+
+.geo-linea-count {
+  font-size: 10px;
+  font-weight: 600;
+  padding: 1px 7px;
+  border-radius: 10px;
+  background: rgba(255,255,255,0.55);
+}
+
+.geo-linea-chevron {
+  font-size: 14px;
+  transition: transform 0.15s;
+}
+.geo-linea-chevron.open { transform: rotate(180deg); }
+
+/* Panel expandido con las tarjetas de proyectos de esa línea */
+.geo-linea-projects {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 6px 0 2px 14px;
+}
+
+.geo-linea-empty {
+  font-size: 12px;
+  color: #94a3b8;
+  padding: 6px 12px 2px;
+  font-style: italic;
+}
+
+/* Tarjeta de proyecto individual */
 .geo-proj-card {
-  padding: 10px 12px;
+  padding: 11px 13px;
   background: #f8fafc;
   border: 1px solid #e2e8f0;
   border-left: 3px solid transparent;
@@ -168,47 +214,35 @@ html, body {
 }
 
 .geo-proj-card:hover {
-  background: #f0fdf4;
-  border-color: #bbf7d0;
-  border-left-color: #1D9E75;
+  background: #f8fafc;
+  border-color: #e2e8f0;
+  filter: brightness(0.97);
 }
 
 .geo-proj-card.active {
-  background: #f0fdf4;
-  border-color: #86efac;
-  border-left-color: #1D9E75;
+  background: #ffffff;
+  box-shadow: 0 0 0 1px currentColor inset;
 }
 
 .geo-proj-name {
-  font-size: 12px;
+  font-size: 13px;
   font-weight: 600;
   color: #1e293b;
   line-height: 1.4;
-  margin-bottom: 6px;
+  margin-bottom: 5px;
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
 }
 
 .geo-proj-meta {
-  display: flex;
-  align-items: center;
-  gap: 5px;
-  flex-wrap: wrap;
+  font-size: 11px;
+  color: #64748b;
+  line-height: 1.4;
 }
-
-.geo-badge-cat {
-  font-size: 9px;
-  font-weight: 600;
-  padding: 2px 7px;
-  border-radius: 10px;
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
-}
-
-.geo-badge-cat.pr  { background: #dcfce7; color: #166534; }
-.geo-badge-cat.sig { background: #dbeafe; color: #1e40af; }
-.geo-badge-cat.cat { background: #fef9c3; color: #854d0e; }
 
 .geo-proj-year {
-  font-size: 10px;
   color: #94a3b8;
 }
 
@@ -291,8 +325,8 @@ html, body {
   padding: 10px 14px;
   pointer-events: none;
   transition: opacity 0.2s;
-  min-width: 180px;
-  max-width: 280px;
+  min-width: 200px;
+  max-width: 340px;
 }
 
 .geo-badge.hidden { opacity: 0; }
@@ -301,12 +335,17 @@ html, body {
   font-size: 13px;
   font-weight: 700;
   color: #0F6E56;
-  line-height: 1.3;
+  line-height: 1.35;
   margin-bottom: 4px;
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
 }
 
 .geo-badge-sub {
-  font-size: 10px;
+  font-size: 10.5px;
+  font-weight: 500;
   color: #64748b;
   line-height: 1.4;
 }
@@ -832,22 +871,15 @@ html, body {
         <i class="fa-solid fa-magnifying-glass"></i>
         <input type="text" id="searchInput" placeholder="Buscar proyecto...">
       </div>
-      <!-- Chips de filtro -->
-      <div class="geo-chips">
-        <button class="geo-chip active" data-filter="todos">Todos</button>
-        <button class="geo-chip" data-filter="sig">SIG</button>
-        <button class="geo-chip" data-filter="pr">PR</button>
-        <button class="geo-chip" data-filter="cat">Catastro</button>
-      </div>
     </div>
 
-    <!-- Lista de proyectos -->
+    <!-- Lista de líneas de investigación (acordeón) -->
     <div class="geo-proj-list" id="projectList"></div>
 
     <!-- Pie de sidebar -->
     <div class="geo-sidebar-footer">
       <i class="fa-solid fa-circle-info"></i>
-      <span id="footerCount">7 proyectos · 3 categorías</span>
+      <span id="footerCount">4 proyectos · 6 líneas de investigación</span>
     </div>
   </aside>
 
@@ -919,6 +951,10 @@ html, body {
         <!-- Tab: Metadatos -->
         <div class="bp-tab-content" id="tab-metadatos" style="display:none;">
           <table class="bp-meta-table" id="bpMetaTable"></table>
+          <a class="bp-dl-all" id="bpVerDocumento" href="#" target="_blank" rel="noopener noreferrer" style="display:flex;text-decoration:none;margin-top:12px;">
+            <i class="fa-solid fa-arrow-up-right-from-square"></i>
+            Ver documento completo
+          </a>
         </div>
         <!-- Tab: Descargas -->
         <div class="bp-tab-content" id="tab-descargas" style="display:none;">
@@ -969,12 +1005,22 @@ html, body {
    ══════════════════════════════════════════════ */
 const RIUD_URL = 'https://repository.udistrital.edu.co/';
 
+/* Líneas de investigación reales de GEIPER (pages/lineas.html), cada
+   una con un color propio que se reutiliza en tarjetas y marcadores */
+const LINEAS = [
+  { id: 'procesamiento', nombre: 'Procesamiento digital y análisis de imágenes', color: '#2563eb' },
+  { id: 'geoia',          nombre: 'Implementación de modelos de GeoIA', color: '#7c3aed' },
+  { id: 'espacial',       nombre: 'Análisis espacial', color: '#d97706' },
+  { id: 'cambios',        nombre: 'Detección de Cambios en Objetos y Fenómenos Geográficos', color: '#1D9E75' },
+  { id: 'ide',            nombre: 'Infraestructuras de Datos Espaciales y Estandarización', color: '#be185d' },
+  { id: 'cartografia',    nombre: 'Cartografía Aplicada a la Gestión de Recursos y Ordenamiento Territorial', color: '#dc2626' },
+];
+
 const PROJECTS = [
   {
     id: 1,
     nombre: 'Protección de bosques en el marco de la metodología Fit for Purpose. Caso de estudio: vereda Termales, Vista Hermosa, Meta',
-    cat: 'cat',
-    catLabel: 'Catastro',
+    lineaId: 'cambios',
     año: 2020,
     sensor: 'Landsat (análisis multitemporal 1988–2018) · Metodología FFP',
     escala: 'Predial',
@@ -989,8 +1035,7 @@ const PROJECTS = [
   {
     id: 2,
     nombre: 'Evaluación de redes convolucionales para la segmentación de objetos geográficos: un insumo para la cartografía básica a escala 1:2000 basado en el catálogo del IGAC',
-    cat: 'pr',
-    catLabel: 'Percepción Remota',
+    lineaId: 'geoia',
     año: 2024,
     sensor: 'UNet · DeepLabV3 · LinkNet (Transfer Learning)',
     escala: '1:2.000',
@@ -1005,8 +1050,7 @@ const PROJECTS = [
   {
     id: 3,
     nombre: 'Metodología detallada de estructuración y adecuación de cartografía para planes de manejo de perforación de pozos exploratorios, perforación de pozos de desarrollo o producción y sus líneas de flujo, en la explotación de hidrocarburos',
-    cat: 'sig',
-    catLabel: 'SIG',
+    lineaId: 'cartografia',
     año: 2015,
     sensor: 'Geodatabase (GDB) · Plan de Manejo Ambiental',
     escala: 'N/A',
@@ -1021,8 +1065,7 @@ const PROJECTS = [
   {
     id: 4,
     nombre: 'Propuesta metodológica para la estandarización e incorporación de información ráster y LiDAR a la plataforma del Sistema de Información Territorial para la Construcción y Operación—SITCO',
-    cat: 'sig',
-    catLabel: 'SIG',
+    lineaId: 'ide',
     año: 2020,
     sensor: 'LiDAR · Ortofotomosaicos · Metadatos NTC 4611',
     escala: 'N/A',
@@ -1039,8 +1082,10 @@ const PROJECTS = [
 /* ══════════════════════════════════════════════
    MARCADORES DE UBICACIÓN EN EL MAPA
    Solo los trabajos con área geográfica definida en el título
-   reciben marcador. Cada marcador abre un popup con el nombre
-   del trabajo como hipervínculo (por ahora, al RIUD general).
+   reciben marcador, coloreado según la línea de investigación
+   a la que pertenece su proyecto. Cada marcador abre un popup
+   con el nombre del trabajo como hipervínculo (por ahora, al
+   RIUD general).
    ══════════════════════════════════════════════ */
 const PROJECT_MARKERS = [
   { proyectoId: 1, lugar: 'Vereda Termales, Vista Hermosa (Meta)', coords: [-73.7625, 3.1486] },
@@ -1054,7 +1099,7 @@ const PROJECT_MARKERS = [
    ══════════════════════════════════════════════ */
 let activeProject  = null;
 let activeLayerId  = null;
-let currentFilter  = 'todos';
+let openLineaId    = null;
 let vectorLayer    = null;
 let colombiaBorderLayer = null;
 let projectMarkersLayer = null;
@@ -1099,7 +1144,8 @@ function initMap() {
 
   /* Marcadores de ubicación de los trabajos de grado con área geográfica definida */
   const markerFeatures = PROJECT_MARKERS.map(function (m) {
-    const proj = PROJECTS.find(p => p.id === m.proyectoId);
+    const proj  = PROJECTS.find(p => p.id === m.proyectoId);
+    const linea = LINEAS.find(l => l.id === proj.lineaId);
     const feat = new ol.Feature({
       geometry: new ol.geom.Point(ol.proj.fromLonLat(m.coords))
     });
@@ -1108,18 +1154,22 @@ function initMap() {
     feat.set('autor', proj.autor);
     feat.set('lugar', m.lugar);
     feat.set('url', proj.url);
+    feat.set('lineaColor', linea ? linea.color : '#dc2626');
+    feat.set('lineaNombre', linea ? linea.nombre : '');
     return feat;
   });
 
   projectMarkersLayer = new ol.layer.Vector({
     source: new ol.source.Vector({ features: markerFeatures }),
-    style: new ol.style.Style({
-      image: new ol.style.Circle({
-        radius: 8,
-        fill:   new ol.style.Fill({ color: '#dc2626' }),
-        stroke: new ol.style.Stroke({ color: '#ffffff', width: 2 })
-      })
-    }),
+    style: function (feature) {
+      return new ol.style.Style({
+        image: new ol.style.Circle({
+          radius: 6,
+          fill:   new ol.style.Fill({ color: feature.get('lineaColor') }),
+          stroke: new ol.style.Stroke({ color: '#ffffff', width: 1.5 })
+        })
+      });
+    },
     zIndex: 3
   });
 
@@ -1177,7 +1227,10 @@ function initMap() {
         const cell = document.createElement('td');
         cell.colSpan = 2;
         cell.innerHTML =
-          '<a href="' + escHtml(props.url) + '" target="_blank" rel="noopener noreferrer" style="color:#1D9E75;font-weight:600;">' +
+          '<span style="display:inline-block;font-size:10px;font-weight:600;padding:2px 8px;border-radius:10px;margin-bottom:6px;background:' + escHtml(props.lineaColor) + '22;color:' + escHtml(props.lineaColor) + ';">' +
+            escHtml(props.lineaNombre) +
+          '</span><br>' +
+          '<a href="' + escHtml(props.url) + '" target="_blank" rel="noopener noreferrer" style="color:#1e293b;font-weight:600;font-size:13px;line-height:1.4;">' +
             escHtml(props.nombre) +
           '</a><br><span style="color:#64748b;font-size:11px;">' + escHtml(props.autor) + '</span>';
         row.appendChild(cell);
@@ -1229,16 +1282,18 @@ function escHtml(str) {
 function loadProject(proj) {
   activeProject = proj;
   activeLayerId = proj.capas.length ? proj.capas[0].id : null;
+  openLineaId   = proj.lineaId;
 
   /* Ocultar popup */
   document.getElementById('geoPopup').style.display = 'none';
 
   /* Badge */
+  const linea = LINEAS.find(l => l.id === proj.lineaId);
   const badge = document.getElementById('geoBadge');
   badge.classList.remove('hidden');
   document.getElementById('badgeTitle').textContent = proj.nombre;
   document.getElementById('badgeSub').textContent =
-    proj.catLabel + ' · ' + proj.sensor + ' · ' + proj.año;
+    (linea ? linea.nombre : '') + ' · ' + proj.sensor + ' · ' + proj.año;
 
   /* Renderizar features */
   renderProjectFeatures(proj);
@@ -1340,6 +1395,23 @@ function renderPanel(proj) {
 
   document.getElementById('bpProjName').textContent = proj.nombre;
 
+  const hasCapas = proj.capas.length > 0;
+  const linea = LINEAS.find(l => l.id === proj.lineaId);
+
+  /* Los trabajos de grado son documentos, no datasets con capas propias:
+     se ocultan las pestañas "Capas" y "Descargas" cuando no aplican, y
+     se muestra "Metadatos" por defecto para no dejar espacios vacíos. */
+  const tabCapasBtn = document.querySelector('.bp-tab[data-tab="capas"]');
+  const tabDescargasBtn = document.querySelector('.bp-tab[data-tab="descargas"]');
+  tabCapasBtn.style.display = hasCapas ? '' : 'none';
+  tabDescargasBtn.style.display = hasCapas ? '' : 'none';
+
+  document.querySelectorAll('.bp-tab').forEach(function (t) { t.classList.remove('active'); });
+  document.querySelectorAll('.bp-tab-content').forEach(function (c) { c.style.display = 'none'; });
+  const defaultTab = hasCapas ? 'capas' : 'metadatos';
+  document.querySelector('.bp-tab[data-tab="' + defaultTab + '"]').classList.add('active');
+  document.getElementById('tab-' + defaultTab).style.display = 'flex';
+
   /* ── TAB CAPAS ── */
   const ll = document.getElementById('bpLayerList');
   ll.innerHTML = '';
@@ -1372,13 +1444,23 @@ function renderPanel(proj) {
   document.getElementById('bpOpacityVal').textContent = slider.value + '%';
 
   /* ── TAB METADATOS ── */
-  document.getElementById('bpMetaTable').innerHTML =
-    '<tr><td>Autor</td><td>' + escHtml(proj.autor) + '</td></tr>' +
-    '<tr><td>Año</td><td>' + proj.año + '</td></tr>' +
-    '<tr><td>Sensor</td><td>' + escHtml(proj.sensor) + '</td></tr>' +
-    '<tr><td>Escala</td><td>' + escHtml(proj.escala) + '</td></tr>' +
-    '<tr><td>CRS</td><td>' + escHtml(proj.crs) + '</td></tr>' +
-    '<tr><td>Categoría</td><td>' + escHtml(proj.catLabel) + '</td></tr>';
+  const metaRows = [
+    { label: 'Autor', value: proj.autor },
+    { label: 'Año', value: proj.año },
+    { label: 'Línea de investigación', value: linea ? linea.nombre : '', color: linea ? linea.color : null },
+    { label: 'Ubicación', value: proj.ubicacion },
+    { label: 'Metodología', value: proj.sensor },
+    { label: 'Escala', value: proj.escala },
+    { label: 'CRS', value: proj.crs }
+  ].filter(function (r) { return r.value && r.value !== 'N/A'; });
+
+  document.getElementById('bpMetaTable').innerHTML = metaRows.map(function (r) {
+    const valueHtml = r.color
+      ? '<span style="display:inline-flex;align-items:center;gap:6px;"><span style="width:8px;height:8px;border-radius:50%;background:' + r.color + ';flex-shrink:0;"></span>' + escHtml(String(r.value)) + '</span>'
+      : escHtml(String(r.value));
+    return '<tr><td>' + r.label + '</td><td>' + valueHtml + '</td></tr>';
+  }).join('');
+  document.getElementById('bpVerDocumento').href = proj.url;
 
   /* ── TAB DESCARGAS ── */
   const dl = document.getElementById('bpDownloadList');
@@ -1410,42 +1492,84 @@ function renderPanel(proj) {
    LISTA DE PROYECTOS (sidebar)
    ══════════════════════════════════════════════ */
 function renderProjectList() {
-  const query  = document.getElementById('searchInput').value.toLowerCase().trim();
-  const list   = document.getElementById('projectList');
+  const query = document.getElementById('searchInput').value.toLowerCase().trim();
+  const list  = document.getElementById('projectList');
   list.innerHTML = '';
 
-  const filtered = PROJECTS.filter(function (p) {
-    const matchCat  = currentFilter === 'todos' || p.cat === currentFilter;
-    const matchText = !query ||
-      p.nombre.toLowerCase().includes(query) ||
-      p.catLabel.toLowerCase().includes(query) ||
-      String(p.año).includes(query) ||
-      p.sensor.toLowerCase().includes(query);
-    return matchCat && matchText;
-  });
+  /* Con búsqueda activa, solo se abren automáticamente las líneas con
+     coincidencias; sin búsqueda, se respeta la línea que el usuario
+     tenga abierta manualmente (openLineaId). */
+  LINEAS.forEach(function (linea) {
+    const proyectosLinea = PROJECTS.filter(function (p) {
+      if (p.lineaId !== linea.id) return false;
+      if (!query) return true;
+      return p.nombre.toLowerCase().includes(query) ||
+             p.autor.toLowerCase().includes(query) ||
+             String(p.año).includes(query);
+    });
 
-  filtered.forEach(function (proj) {
-    const card = document.createElement('div');
-    card.className = 'geo-proj-card' + (activeProject && activeProject.id === proj.id ? ' active' : '');
-    card.dataset.id = proj.id;
+    if (query && proyectosLinea.length === 0) return; /* oculta líneas sin coincidencias al buscar */
 
-    const badgeClass = proj.cat;
-    card.innerHTML =
-      '<div class="geo-proj-name">' + escHtml(proj.nombre) + '</div>' +
-      '<div class="geo-proj-meta">' +
-        '<span class="geo-badge-cat ' + badgeClass + '">' + escHtml(proj.catLabel) + '</span>' +
-        '<span class="geo-proj-year">' + proj.año + '</span>' +
+    const isOpen = query ? true : (openLineaId === linea.id);
+
+    const header = document.createElement('button');
+    header.className = 'geo-linea-header';
+    header.style.background = linea.color + '15';
+    header.style.color = linea.color;
+    header.dataset.lineaId = linea.id;
+    header.innerHTML =
+      '<div class="geo-linea-left">' +
+        '<span class="geo-linea-dot" style="background:' + linea.color + ';"></span>' +
+        '<span class="geo-linea-name">' + escHtml(linea.nombre) + '</span>' +
+      '</div>' +
+      '<div class="geo-linea-right">' +
+        '<span class="geo-linea-count">' + proyectosLinea.length + '</span>' +
+        '<i class="fa-solid fa-chevron-down geo-linea-chevron' + (isOpen ? ' open' : '') + '"></i>' +
       '</div>';
+    header.addEventListener('click', function () {
+      openLineaId = (openLineaId === linea.id) ? null : linea.id;
+      renderProjectList();
+    });
+    list.appendChild(header);
 
-    card.addEventListener('click', function () { loadProject(proj); });
-    list.appendChild(card);
+    if (isOpen) {
+      const panel = document.createElement('div');
+      panel.className = 'geo-linea-projects';
+
+      if (proyectosLinea.length === 0) {
+        const empty = document.createElement('div');
+        empty.className = 'geo-linea-empty';
+        empty.textContent = 'Sin trabajos publicados aún en esta línea.';
+        panel.appendChild(empty);
+      } else {
+        proyectosLinea.forEach(function (proj) {
+          const card = document.createElement('div');
+          card.className = 'geo-proj-card' + (activeProject && activeProject.id === proj.id ? ' active' : '');
+          card.style.borderLeftColor = linea.color;
+          if (activeProject && activeProject.id === proj.id) card.style.color = linea.color;
+          card.dataset.id = proj.id;
+          card.innerHTML =
+            '<div class="geo-proj-name">' + escHtml(proj.nombre) + '</div>' +
+            '<div class="geo-proj-meta">' + escHtml(proj.autor) + ' · <span class="geo-proj-year">' + proj.año + '</span></div>';
+          card.addEventListener('click', function () { loadProject(proj); });
+          panel.appendChild(card);
+        });
+      }
+      list.appendChild(panel);
+    }
   });
 
   /* Contador en footer */
-  const cats = new Set(filtered.map(p => p.cat));
+  const totalMatch = LINEAS.reduce(function (acc, linea) {
+    return acc + PROJECTS.filter(function (p) {
+      if (p.lineaId !== linea.id) return false;
+      if (!query) return true;
+      return p.nombre.toLowerCase().includes(query) || p.autor.toLowerCase().includes(query) || String(p.año).includes(query);
+    }).length;
+  }, 0);
   document.getElementById('footerCount').textContent =
-    filtered.length + ' proyecto' + (filtered.length !== 1 ? 's' : '') +
-    ' · ' + cats.size + ' categoría' + (cats.size !== 1 ? 's' : '');
+    totalMatch + ' proyecto' + (totalMatch !== 1 ? 's' : '') +
+    ' · ' + LINEAS.length + ' líneas de investigación';
 }
 
 /* ══════════════════════════════════════════════
@@ -1465,16 +1589,6 @@ function showToast(msg) {
    INICIALIZAR UI
    ══════════════════════════════════════════════ */
 function initUI() {
-  /* Chips de filtro */
-  document.querySelectorAll('.geo-chip').forEach(function (chip) {
-    chip.addEventListener('click', function () {
-      document.querySelectorAll('.geo-chip').forEach(c => c.classList.remove('active'));
-      chip.classList.add('active');
-      currentFilter = chip.dataset.filter;
-      renderProjectList();
-    });
-  });
-
   /* Buscador */
   document.getElementById('searchInput').addEventListener('keyup', renderProjectList);
 
