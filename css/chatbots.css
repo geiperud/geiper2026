@@ -134,6 +134,12 @@
   color: #0f172a;
 }
 
+.chat-header-actions {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
 .clear-chat-btn {
   background: none;
   border: none;

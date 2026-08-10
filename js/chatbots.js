@@ -12,13 +12,19 @@ document.addEventListener('DOMContentLoaded', () => {
   const botOptions = document.querySelectorAll('.bot-option');
   const currentBotTitle = document.getElementById('currentBotTitle');
   const clearChatBtn = document.getElementById('clearChatBtn');
+  const downloadChatBtn = document.getElementById('downloadChatBtn');
   const serverStatus = document.getElementById('serverStatus');
 
   let currentMode = 'tematico'; // modos válidos: 'tematico', 'investigacion'
-  // Memoria de conversacion: ventana deslizante de los ultimos intercambios.
-  // Se reinicia al cambiar de asistente o al limpiar el chat.
+  // Memoria de conversacion: ventana deslizante de los ultimos intercambios,
+  // usada UNICAMENTE para pasarle contexto al modelo (se trunca y limpia).
   let historial = [];
   const MAX_TURNOS_HISTORIAL = 6; // 3 intercambios (usuario + bot)
+  // Registro COMPLETO de la conversacion actual, sin truncar ni limpiar,
+  // pensado para que la persona pueda descargarla como soporte/evidencia
+  // (ej. taller de validacion, anexos del capitulo de evaluacion).
+  // Se reinicia junto con el chat (resetChat), igual que 'historial'.
+  let conversacionCompleta = [];
   // Controla si ya se le ofrecio al usuario ver el listado de documentos
   // (se ofrece una sola vez, despues del primer intercambio de cada conversacion)
   let listadoDocumentosOfrecido = false;
@@ -62,6 +68,7 @@ document.addEventListener('DOMContentLoaded', () => {
   });
 
   clearChatBtn.addEventListener('click', resetChat);
+  downloadChatBtn.addEventListener('click', descargarConversacion);
 
   chatForm.addEventListener('submit', async (e) => {
     e.preventDefault();
@@ -78,6 +85,10 @@ document.addEventListener('DOMContentLoaded', () => {
       const responseText = await fetchFromBackend(prompt, currentMode);
       removeElement(typingId);
       addMessage(responseText, 'bot');
+
+      const ahora = new Date();
+      conversacionCompleta.push({ role: 'user', text: prompt, timestamp: ahora });
+      conversacionCompleta.push({ role: 'bot', text: responseText.replace(/<[^>]+>/g, '').trim(), timestamp: ahora });
 
       // Registrar el intercambio en el historial (ventana deslizante).
       // Se limpia el HTML del pie de citas y se trunca, para no ensuciar
@@ -113,6 +124,7 @@ document.addEventListener('DOMContentLoaded', () => {
   function resetChat() {
     chatMessages.innerHTML = '';
     historial = [];
+    conversacionCompleta = [];
     listadoDocumentosOfrecido = false;
     currentBotTitle.innerHTML = botsConfig[currentMode].title;
     addMessage(botsConfig[currentMode].greeting, 'bot', true);
@@ -215,6 +227,48 @@ document.addEventListener('DOMContentLoaded', () => {
     msgDiv.appendChild(contentDiv);
     chatMessages.appendChild(msgDiv);
     scrollBottom();
+  }
+
+  function descargarConversacion() {
+    if (conversacionCompleta.length === 0) {
+      alert('Todavía no hay ningún intercambio en esta conversación para descargar.');
+      return;
+    }
+
+    const nombreBot = botsConfig[currentMode].title.replace(/<[^>]+>/g, '').trim();
+    const fechaGeneracion = new Date().toLocaleString('es-CO');
+
+    const lineas = [];
+    lineas.push('SEMILLERO DE INVESTIGACIÓN GEIPER');
+    lineas.push(`Conversación con: ${nombreBot}`);
+    lineas.push(`Generado el: ${fechaGeneracion}`);
+    lineas.push('='.repeat(60));
+    lineas.push('');
+
+    conversacionCompleta.forEach(turno => {
+      const etiqueta = turno.role === 'user' ? 'USUARIO' : nombreBot.toUpperCase();
+      const hora = turno.timestamp.toLocaleString('es-CO');
+      lineas.push(`[${hora}] ${etiqueta}:`);
+      lineas.push(turno.text);
+      lineas.push('');
+      lineas.push('-'.repeat(60));
+      lineas.push('');
+    });
+
+    const contenido = lineas.join('\n');
+    const blob = new Blob([contenido], { type: 'text/plain;charset=utf-8' });
+    const url = URL.createObjectURL(blob);
+
+    const marcaTiempo = new Date().toISOString().replace(/[:.]/g, '-');
+    const nombreArchivo = `geiper_${currentMode}_${marcaTiempo}.txt`;
+
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = nombreArchivo;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    URL.revokeObjectURL(url);
   }
 
   function addErrorMessage() {

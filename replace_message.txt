@@ -1,0 +1,1 @@
+regex:\n*Co-Authored-By: Claude[^\n]*==>

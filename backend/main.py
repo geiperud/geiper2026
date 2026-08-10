@@ -719,7 +719,20 @@ def construir_prompt_conversacional(contexto_docs, contexto_web, transcripcion, 
             "completo y no la menciones. Si entre los resultados web hay varias fuentes, prioriza las "
             "más serias y confiables (artículos académicos, revistas especializadas, libros, sitios "
             "institucionales o gubernamentales) sobre fuentes genéricas. Cuando sí la uses, cita el "
-            "sitio con el formato [Título del sitio](URL), y nunca la uses para contradecir a los documentos."
+            "sitio con el formato [Título del sitio](URL), y nunca la uses para contradecir a los documentos. "
+            "IMPORTANTE: si mencionas un curso, empresa, institución o programa específico por nombre "
+            "propio, ese nombre debe aparecer literalmente en uno de estos resultados web, con su URL "
+            "citada — nunca nombres una entidad externa concreta que no esté en esta lista de resultados."
+        )
+    else:
+        instrucciones_citas.append(
+            "No se obtuvieron resultados de búsqueda web reales para esta consulta (la búsqueda no "
+            "encontró nada o falló). Por lo tanto, NO menciones cursos, empresas, instituciones, "
+            "misiones ni programas externos específicos por nombre propio, y NO afirmes haber "
+            "'encontrado información en internet' o en el sitio de alguna organización — eso sería "
+            "presentar como verificado algo que no lo es. Responde solo con lo que sí esté en los "
+            "fragmentos de documentos, o en términos generales sin nombres propios ni datos puntuales "
+            "no verificables."
         )
 
     if partes_contexto:
@@ -730,7 +743,10 @@ def construir_prompt_conversacional(contexto_docs, contexto_web, transcripcion, 
             f"{' '.join(instrucciones_citas)} "
             f"Prioriza siempre los documentos como fuente principal.\n\n"
             f"Responde de forma conversacional y académica: párrafos fluidos, sin títulos con #, "
-            f"listas solo cuando sean estrictamente necesarias. Integra la información con análisis propio. "
+            f"listas solo cuando sean estrictamente necesarias — EXCEPTO si el usuario pidió "
+            f"explícitamente una lista, listado o enumeración (ej. 'lista los integrantes', 'haz un "
+            f"listado de...'), en cuyo caso responde con viñetas o numeración real en markdown, no en "
+            f"prosa. Integra la información con análisis propio. "
             f"Cierra tu explicación con una pregunta breve que invite a seguir conversando. "
             f"DESPUÉS de esa pregunta, y solo al final de todo el mensaje, agrega dos apartados en "
             f"texto plano (sin negrita, sin asteriscos): 'Referencias:' seguido de las citas APA, y "
