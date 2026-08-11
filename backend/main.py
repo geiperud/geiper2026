@@ -1158,9 +1158,11 @@ def chat(request: Request, chat_request: ChatRequest):
                 try:
                     respuesta = groq_generate(saludo_prompt, groq_token, nombre_asistente)
                     return {"response": respuesta}
-                except HTTPException:
-                    raise
                 except Exception as e:
+                    # Antes, un HTTPException (ej. 429 de Groq saturado) se
+                    # relanzaba directo al usuario sin darle oportunidad al
+                    # respaldo de Gemini de abajo. Ahora CUALQUIER falla de
+                    # Groq (429, error de red, lo que sea) cae al respaldo.
                     logger.warning(f"Groq fallo en saludo: {e}")
             if api_token:
                 respuesta = gemini_generate(saludo_prompt, api_token, nombre_asistente)
@@ -1260,10 +1262,12 @@ def chat(request: Request, chat_request: ChatRequest):
                 logger.info(f"Enviando a Groq (Llama 3.3 70B) (modo: {chat_request.mode})")
                 respuesta = groq_generate(user_prompt, groq_token, nombre_asistente)
                 logger.info("Respuesta recibida de Groq.")
-            except HTTPException:
-                raise
             except Exception as e:
-                logger.warning(f"Groq fallo, intentando con Gemini: {e}")
+                # Antes, un HTTPException (ej. 429 de Groq saturado) se
+                # relanzaba directo al usuario sin darle oportunidad al
+                # respaldo de Gemini de abajo. Ahora CUALQUIER falla de
+                # Groq (429, error de red, lo que sea) cae al respaldo.
+                logger.warning(f"Groq falló, intentando con Gemini: {e}")
 
         if respuesta is None:
             if not api_token:
