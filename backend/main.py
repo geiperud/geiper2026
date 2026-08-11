@@ -5,6 +5,7 @@ import logging
 import traceback
 import unicodedata
 import requests
+import numpy as np
 from typing import List
 from fastapi import FastAPI, HTTPException, Request, Response
 try:
@@ -544,9 +545,65 @@ def formatear_pie_respuesta(texto, referencias_validas=None):
     return _PATRON_SECCION_PIE.sub(procesar, texto).strip()
 
 
+# Umbral de similitud coseno para aceptar un fragmento de documento como
+# relevante. Rango real: -1 (opuesto) a 1 (idéntico). 0.70 es un punto de
+# partida razonable para embeddings de recuperación (gemini-embedding-001
+# con taskType RETRIEVAL_DOCUMENT/RETRIEVAL_QUERY): en la práctica, un
+# fragmento genuinamente relevante suele caer en 0.70+, uno tangencial en
+# 0.50-0.65, y algo sin relación real por debajo de eso. Se deja como
+# constante para poder subirlo o bajarlo sin tocar el resto del código.
+# IMPORTANTE: hay que calibrarlo con datos reales — cada llamada deja un log
+# "RAG: candidatos evaluados" con la similitud de TODOS los candidatos
+# (pasen o no el umbral); revisa esos logs en Render tras un rato de uso
+# real y ajusta este número si hace falta (ver explicación completa aparte).
+UMBRAL_SIMILITUD_COSENO = 0.70
+
+
+def _buscar_con_similitud_coseno(vectorstore_local, consulta, k=8):
+    """
+    Busca los k vecinos más cercanos en el índice FAISS y devuelve, para cada
+    uno, la similitud coseno REAL entre la consulta y el fragmento — no la
+    distancia euclidiana cruda que devuelve FAISS por defecto.
+
+    Por qué hace falta esto: el índice se construye con FAISS.from_documents(),
+    que usa por defecto un IndexFlatL2 (distancia euclidiana) y NO normaliza
+    los vectores de gemini-embedding-001 antes de guardarlos. Eso vuelve el
+    "score" original una distancia euclidiana cruda, sin un límite superior
+    fijo e interpretable — de ahí que el umbral anterior (score < 1.6) dejara
+    pasar prácticamente cualquier fragmento.
+
+    Esta función reconstruye el vector original de cada resultado directamente
+    desde el índice (index.reconstruct), normaliza ese vector y el de la
+    consulta a longitud 1, y calcula la similitud coseno real entre ambos:
+    coseno = (consulta · doc) / (‖consulta‖ · ‖doc‖), que siempre cae en el
+    rango [-1, 1] y es directamente comparable entre búsquedas.
+    """
+    query_vec = np.array(vectorstore_local._embed_query(consulta), dtype="float32")
+    norma_query = np.linalg.norm(query_vec) or 1.0
+    query_norm = query_vec / norma_query
+
+    _, indices = vectorstore_local.index.search(np.array([query_vec], dtype="float32"), k)
+
+    resultados = []
+    for idx in indices[0]:
+        if idx == -1:
+            continue
+        doc_vec = np.array(vectorstore_local.index.reconstruct(int(idx)), dtype="float32")
+        norma_doc = np.linalg.norm(doc_vec) or 1.0
+        doc_norm = doc_vec / norma_doc
+        similitud_coseno = float(np.dot(query_norm, doc_norm))
+
+        docstore_id = vectorstore_local.index_to_docstore_id[int(idx)]
+        doc = vectorstore_local.docstore.search(docstore_id)
+        resultados.append((doc, similitud_coseno))
+
+    return resultados
+
+
 def buscar_contexto_documentos(vectorstore_local, referencias_apa, query_actual, consulta_efectiva):
     """
-    Busca en el índice FAISS dado y arma el bloque de contexto con citas APA.
+    Busca en el índice FAISS dado y arma el bloque de contexto con citas APA,
+    filtrando por similitud coseno real (ver UMBRAL_SIMILITUD_COSENO).
 
     Prueba DOS versiones de la búsqueda: la pregunta tal cual la escribió el
     usuario, y la version combinada con el turno anterior (consulta_efectiva).
@@ -554,9 +611,15 @@ def buscar_contexto_documentos(vectorstore_local, referencias_apa, query_actual,
     perjudicadas por quedar mezcladas con contexto previo no relacionado,
     mientras que preguntas ambiguas con pronombres ("¿lo menciona algun
     trabajo?") siguen beneficiándose de la combinación.
+
+    Devuelve una tupla (contexto_texto, mejor_similitud). mejor_similitud es
+    la similitud coseno del fragmento más relevante encontrado (0.0 si no se
+    encontró nada por encima del umbral) -- se usa más adelante para decidir
+    si vale la pena además buscar en la web, o si el RAG ya respondió tan
+    bien que buscar en la web sería redundante.
     """
     if vectorstore_local is None:
-        return ""
+        return "", 0.0
     try:
         candidatos = {}
         consultas_a_probar = [query_actual]
@@ -564,33 +627,46 @@ def buscar_contexto_documentos(vectorstore_local, referencias_apa, query_actual,
             consultas_a_probar.append(consulta_efectiva)
 
         for consulta in consultas_a_probar:
-            docs_scores = vectorstore_local.similarity_search_with_score(consulta, k=5)
-            for doc, score in docs_scores:
+            docs_similitudes = _buscar_con_similitud_coseno(vectorstore_local, consulta, k=8)
+            for doc, similitud in docs_similitudes:
                 clave = f"{doc.metadata.get('source', '')}|{doc.metadata.get('page', '')}|{doc.page_content[:50]}"
-                if clave not in candidatos or score < candidatos[clave][1]:
-                    candidatos[clave] = (doc, score)
+                if clave not in candidatos or similitud > candidatos[clave][1]:
+                    candidatos[clave] = (doc, similitud)
+
+        # Log de TODOS los candidatos evaluados (pasen o no el umbral), para
+        # poder calibrar UMBRAL_SIMILITUD_COSENO con datos reales de producción.
+        if candidatos:
+            resumen_todos = ", ".join(
+                f"{os.path.basename(doc.metadata.get('source', '?'))}:{sim:.2f}"
+                for doc, sim in sorted(candidatos.values(), key=lambda par: -par[1])
+            )
+            logger.info(f"RAG: candidatos evaluados (similitud coseno) -> {resumen_todos}")
 
         relevantes = sorted(
-            [(doc, score) for doc, score in candidatos.values() if score < 1.6],
-            key=lambda par: par[1]
+            [(doc, sim) for doc, sim in candidatos.values() if sim >= UMBRAL_SIMILITUD_COSENO],
+            key=lambda par: -par[1]
         )[:5]
 
         if not relevantes:
-            logger.info("RAG: ningún fragmento superó el umbral de relevancia (en ninguna de las dos consultas).")
-            return ""
+            logger.info(
+                f"RAG: ningún fragmento superó el umbral de similitud coseno "
+                f"({UMBRAL_SIMILITUD_COSENO}) en ninguna de las dos consultas."
+            )
+            return "", 0.0
 
         bloques = []
         fuentes_log = []
-        for doc, score in relevantes:
+        for doc, sim in relevantes:
             fuente = os.path.basename(doc.metadata.get("source", "documento"))
             apa = obtener_referencia_apa(referencias_apa, fuente)
-            fuentes_log.append(f"{fuente} (score:{score:.2f})")
+            fuentes_log.append(f"{fuente} (similitud:{sim:.2f})")
             bloques.append(f"[Referencia APA: {apa}]\n{doc.page_content[:500]}")
         logger.info(f"RAG: {len(relevantes)} fragmentos relevantes: {', '.join(fuentes_log)}")
-        return "\n\n---\n\n".join(bloques)
+        mejor_similitud = relevantes[0][1]
+        return "\n\n---\n\n".join(bloques), mejor_similitud
     except Exception as e:
         logger.warning(f"RAG falló: {e}")
-        return ""
+        return "", 0.0
 
 
 # ── Detección de preguntas sobre el semillero mismo o el sitio ──────────────
@@ -605,6 +681,63 @@ _PATRON_SOBRE_SEMILLERO = re.compile(
 
 def es_pregunta_sobre_semillero(query):
     return bool(_PATRON_SOBRE_SEMILLERO.search(_normalizar_texto(query)))
+
+
+# ── Detección de preguntas personales/emocionales (no académicas) ───────────
+# Estas preguntas NUNCA deben forzar citas de tesis del semillero (buscar
+# empleo, un estado de animo, una relacion personal no tiene nada que ver con
+# cartografia de pozos petroleros o proteccion de bosques). Se detectan para:
+#   1. Saltar el RAG por completo (ver uso en /chat).
+#   2. Preferir la busqueda web como apoyo, si aplica.
+#   3. Pedirle al modelo una respuesta breve y humana, sin el aparataje
+#      academico habitual (ver construir_prompt_conversacional).
+# Es una lista heuristica por patrones, no exhaustiva -- se puede ampliar con
+# el tiempo segun lo que se vea en uso real.
+_PATRON_PERSONAL_EMOCIONAL = re.compile(
+    r'\bno encuentro trabajo\b|\bno consigo (trabajo|empleo)\b|\bbusco trabajo\b|'
+    r'\bbusco empleo\b|\bperdi mi trabajo\b|\bme despidieron\b|'
+    r'\bcomo consigo (trabajo|empleo|novi[oa]|pareja)\b|'
+    # Se admite un intensificador opcional ("muy", "bastante", "tan") entre
+    # el verbo y el adjetivo, para cubrir frases naturales como "estoy MUY
+    # triste" o "me siento BASTANTE mal" -- sin esto, esas variantes tan
+    # comunes no coincidian con el patron.
+    r'\bestoy (muy |bastante |tan )?(triste|mal|deprimid[oa]|estresad[oa]|ansios[oa]|perdid[oa])\b|'
+    r'\bme siento (muy |bastante |tan )?(mal|solo|sola|triste|deprimid[oa]|perdid[oa]|estresad[oa])\b|'
+    r'\btengo ansiedad\b|\bno se que hacer con mi vida\b|\bconsejo de vida\b|'
+    r'\bproblemas? (personales?|de pareja|familiares?)\b|'
+    r'\btermine con mi (pareja|novi[oa])\b|\bme dejo mi (pareja|novi[oa])\b',
+    re.IGNORECASE
+)
+
+
+def es_pregunta_personal_emocional(query):
+    return bool(_PATRON_PERSONAL_EMOCIONAL.search(_normalizar_texto(query)))
+
+
+# Palabras de alerta de crisis/autolesión: si aparecen, NUNCA se acorta la
+# respuesta ni se le pide brevedad al modelo -- una respuesta de crisis
+# necesita poder incluir lineas de ayuda completas, no quedar recortada por
+# una instruccion de "se breve". Se sigue saltando el RAG (no tiene sentido
+# citar tesis de geomatica aqui), pero sin el modo "respuesta_corta".
+_PATRON_POSIBLE_CRISIS = re.compile(
+    r'\bsuicid\w*\b|\bmatarme\b|\bquitarme la vida\b|\bno quiero vivir\b|'
+    r'\bacabar con (mi vida|todo)\b|\bautolesion\w*\b|\bhacerme dano\b|'
+    r'\bcortarme\b|\bya no aguanto\b|\bno vale la pena vivir\b',
+    re.IGNORECASE
+)
+
+
+def es_posible_crisis(query):
+    return bool(_PATRON_POSIBLE_CRISIS.search(_normalizar_texto(query)))
+
+
+# Similitud coseno a partir de la cual el RAG ya respondió tan bien que
+# buscar en la web sería redundante (ver logica de decision en /chat). Se
+# deja mas alto que UMBRAL_SIMILITUD_COSENO (0.70) a proposito: 0.70 ya es
+# "suficiente para citar", pero 0.80 es "tan bueno que no hace falta nada
+# mas". Igual que el otro umbral, es un punto de partida a calibrar con los
+# logs reales de produccion.
+UMBRAL_SALTAR_WEB = 0.80
 
 
 # ── Hechos verificados sobre el semillero y el sitio web ─────────────────────
@@ -656,6 +789,25 @@ HECHOS_SEMILLERO = (
 )
 
 
+def construir_consulta_web(chat_request, consulta_efectiva):
+    """
+    Decide qué texto se le manda a DuckDuckGo. A diferencia del RAG (donde
+    combinar con el turno anterior ayuda a resolver pronombres contra el
+    corpus de tesis), para un motor de búsqueda externo esa combinación es
+    contraproducente: si el turno anterior trataba de un tema distinto,
+    el resultado es una frase de dos temas pegados que no es buscable
+    (ej. "que ha hecho te matare IA"), y DuckDuckGo devuelve resultados sin
+    relación real con lo que se preguntó.
+
+    Por eso, salvo en confirmaciones breves ("sí, dale", donde el mensaje
+    actual por sí solo no dice nada y sí hace falta el contexto), se busca
+    únicamente el mensaje actual, limpio.
+    """
+    if es_confirmacion_breve(chat_request.query) and chat_request.historial:
+        return consulta_efectiva
+    return chat_request.query
+
+
 def buscar_contexto_web(consulta, priorizar_geiper=False):
     """
     Busca en la web (DuckDuckGo) y arma el bloque de contexto complementario.
@@ -689,12 +841,19 @@ def buscar_contexto_web(consulta, priorizar_geiper=False):
 
 
 
-def construir_prompt_conversacional(contexto_docs, contexto_web, transcripcion, query):
+def construir_prompt_conversacional(contexto_docs, contexto_web, transcripcion, query, respuesta_corta=False):
     """
     Arma el prompt final combinando documentos (fuente principal) + web
     (complemento), con las instrucciones de cita correspondientes. Se usa
     igual para el Asistente Temático y el Asistente de Investigación —
     cada uno le pasa su propio contexto ya buscado en su propio índice.
+
+    respuesta_corta=True se usa para preguntas personales/emocionales (ver
+    es_pregunta_personal_emocional): en ese caso contexto_docs normalmente
+    viene vacío a propósito (se salta el RAG para no forzar citas de tesis
+    que no vienen al caso), y se le pide al modelo una respuesta breve y
+    humana en vez del formato académico habitual de varios párrafos con
+    cierre en pregunta de seguimiento.
     """
     partes_contexto = []
     instrucciones_citas = []
@@ -735,28 +894,55 @@ def construir_prompt_conversacional(contexto_docs, contexto_web, transcripcion, 
             "no verificables."
         )
 
+    if respuesta_corta:
+        instrucciones_extension = (
+            "Esta es una pregunta personal o emocional, no una consulta académica del semillero. "
+            "NO fuerces temas de GEIPER, geomática, percepción remota ni SIG si no vienen al caso, y "
+            "NO cites tesis del semillero solo por tener algo que citar — es preferible responder sin "
+            "ninguna referencia académica a forzar una que no aplica de verdad. Responde con calidez, "
+            "cercanía y brevedad: máximo 2-3 párrafos cortos. No cierres con una pregunta de "
+            "seguimiento tipo plantilla — solo hazlo si se siente genuinamente natural."
+        )
+    else:
+        instrucciones_extension = (
+            "Responde de forma conversacional y académica: párrafos fluidos, sin títulos con #, "
+            "listas solo cuando sean estrictamente necesarias — EXCEPTO si el usuario pidió "
+            "explícitamente una lista, listado o enumeración (ej. 'lista los integrantes', 'haz un "
+            "listado de...'), en cuyo caso responde con viñetas o numeración real en markdown, no en "
+            "prosa. Integra la información con análisis propio. "
+            "Cierra tu explicación con una pregunta breve que invite a seguir conversando."
+        )
+
     if partes_contexto:
         contexto_total = "\n\n===\n\n".join(partes_contexto)
         return (
             f"Tienes acceso a fragmentos de documentos del semillero GEIPER "
             f"y, de forma complementaria, a resultados de búsqueda web relacionados con la pregunta.\n\n"
             f"{' '.join(instrucciones_citas)} "
-            f"Prioriza siempre los documentos como fuente principal.\n\n"
-            f"Responde de forma conversacional y académica: párrafos fluidos, sin títulos con #, "
-            f"listas solo cuando sean estrictamente necesarias — EXCEPTO si el usuario pidió "
-            f"explícitamente una lista, listado o enumeración (ej. 'lista los integrantes', 'haz un "
-            f"listado de...'), en cuyo caso responde con viñetas o numeración real en markdown, no en "
-            f"prosa. Integra la información con análisis propio. "
-            f"Cierra tu explicación con una pregunta breve que invite a seguir conversando. "
-            f"DESPUÉS de esa pregunta, y solo al final de todo el mensaje, agrega dos apartados en "
+            f"Prioriza siempre los documentos como fuente principal, salvo que la pregunta sea "
+            f"personal/emocional (ver instrucción de extensión abajo), en cuyo caso los documentos "
+            f"académicos casi nunca aplican.\n\n"
+            f"{instrucciones_extension} "
+            f"DESPUÉS de tu respuesta, y solo al final de todo el mensaje, agrega dos apartados en "
             f"texto plano (sin negrita, sin asteriscos): 'Referencias:' seguido de las citas APA, y "
             f"'Fuentes web consultadas:' seguido de los enlaces en formato [Título](URL). Estos dos "
-            f"apartados SIEMPRE deben ser lo último del mensaje, nunca antes de la pregunta de cierre. "
+            f"apartados SIEMPRE deben ser lo último del mensaje. "
             f"IMPORTANTE: si no usaste documentos, OMITE por completo el apartado 'Referencias:' "
             f"— no lo escribas ni indiques que no se usó nada. Lo mismo aplica para "
             f"'Fuentes web consultadas:' si no usaste ninguna fuente web: simplemente no la incluyas.\n\n"
             f"{transcripcion}"
             f"{contexto_total}\n\n"
+            f"PREGUNTA: {query}"
+        )
+
+    if respuesta_corta:
+        return (
+            f"No se encontró información web específica para esta consulta. "
+            f"{instrucciones_extension} "
+            f"No inventes datos externos, estadísticas ni cifras que no tengas certeza de que sean "
+            f"reales — responde desde el acompañamiento y el sentido común, no desde datos que no "
+            f"tienes.\n\n"
+            f"{transcripcion}"
             f"PREGUNTA: {query}"
         )
 
@@ -993,22 +1179,61 @@ def chat(request: Request, chat_request: ChatRequest):
                 }
 
         pregunta_sobre_semillero = es_pregunta_sobre_semillero(chat_request.query)
+        pregunta_personal = es_pregunta_personal_emocional(chat_request.query)
+        posible_crisis = es_posible_crisis(chat_request.query)
+        # Se pide respuesta breve para preguntas personales/emocionales, EXCEPTO
+        # si hay señales de crisis/autolesión: ahí el modelo necesita poder dar
+        # una respuesta completa (lineas de ayuda, etc.) sin que una
+        # instrucción de "sé breve" se lo impida.
+        respuesta_corta = pregunta_personal and not posible_crisis
 
-        # ── Primero documentos (fuente principal), web como complemento fluido ─
-        # Excepcion: si la pregunta es sobre el semillero mismo (lider, mision,
-        # lineas oficiales, etc.), se omite el RAG por completo. Los hechos del
-        # sitio (mas abajo) ya responden esto de forma confiable, y buscar en
-        # los PDFs para este tipo de pregunta solo arriesga traer coincidencias
-        # falsas (fragmentos irrelevantes que coinciden por palabras sueltas)
-        # que terminarian citandose sin venir a cuento.
-        if pregunta_sobre_semillero:
-            contexto_docs = ""
+        # ── RAG: se omite por completo en dos casos ───────────────────────────
+        # 1. Preguntas sobre el semillero mismo (lider, mision, lineas
+        #    oficiales, etc.): los hechos verificados de mas abajo ya
+        #    responden esto de forma confiable, y buscar en los PDFs solo
+        #    arriesga coincidencias falsas que terminarian citandose sin
+        #    venir a cuento.
+        # 2. Preguntas personales/emocionales (buscar empleo, estado de animo,
+        #    relaciones, o alguna señal de crisis): no tiene sentido forzar
+        #    una cita de una tesis de cartografia de pozos petroleros en una
+        #    pregunta sobre por que alguien no consigue trabajo.
+        if pregunta_sobre_semillero or pregunta_personal or posible_crisis:
+            contexto_docs, mejor_similitud_docs = "", 0.0
         else:
-            contexto_docs = buscar_contexto_documentos(
+            contexto_docs, mejor_similitud_docs = buscar_contexto_documentos(
                 vectorstore_activo, referencias_activas, chat_request.query, consulta_efectiva
             )
 
-        contexto_web = buscar_contexto_web(consulta_efectiva, priorizar_geiper=pregunta_sobre_semillero)
+        # ── Búsqueda web: ya no se dispara en cada mensaje sin condición ─────
+        # Se busca en la web cuando:
+        #   - la pregunta es sobre el semillero mismo (ya existía, se mantiene)
+        #   - es una pregunta personal/emocional (nuevo: aqui es donde SI
+        #     queremos que la web ayude a dar una respuesta util, en vez de
+        #     forzar tesis que no aplican)
+        #   - el RAG no encontró nada relevante (el corpus no cubre el tema:
+        #     la web es exactamente el respaldo pensado para este caso)
+        #   - el RAG encontró algo, pero no tan fuerte como para bastar por
+        #     si solo (por debajo de UMBRAL_SALTAR_WEB)
+        # y se omite solo cuando el RAG ya encontró un fragmento tan bueno
+        # (similitud >= UMBRAL_SALTAR_WEB) que buscar en la web sería
+        # redundante -- ahorra una llamada a DuckDuckGo y evita el riesgo de
+        # que un resultado web de bajo valor distraiga al modelo.
+        debe_buscar_web = (
+            pregunta_sobre_semillero
+            or pregunta_personal
+            or not contexto_docs
+            or mejor_similitud_docs < UMBRAL_SALTAR_WEB
+        )
+
+        if debe_buscar_web:
+            consulta_web = construir_consulta_web(chat_request, consulta_efectiva)
+            contexto_web = buscar_contexto_web(consulta_web, priorizar_geiper=pregunta_sobre_semillero)
+        else:
+            logger.info(
+                f"Búsqueda web omitida: el RAG ya encontró un fragmento con "
+                f"similitud {mejor_similitud_docs:.2f} (>= {UMBRAL_SALTAR_WEB})."
+            )
+            contexto_web = ""
 
         if pregunta_sobre_semillero:
             # Hechos verificados directamente de las paginas propias del sitio
@@ -1024,7 +1249,9 @@ def chat(request: Request, chat_request: ChatRequest):
             )
             contexto_web = f"{bloque_hechos}\n\n---\n\n{contexto_web}" if contexto_web else bloque_hechos
 
-        user_prompt = construir_prompt_conversacional(contexto_docs, contexto_web, transcripcion, chat_request.query)
+        user_prompt = construir_prompt_conversacional(
+            contexto_docs, contexto_web, transcripcion, chat_request.query, respuesta_corta=respuesta_corta
+        )
 
         # ── Generar respuesta (Groq primero, Gemini fallback) ─────────────────
         respuesta = None
