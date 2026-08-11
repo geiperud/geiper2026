@@ -293,15 +293,13 @@ html, body {
 .ol-zoom,
 .ol-attribution { display: none !important; }
 
-/* ScaleLine */
+/* ScaleLine — ahora renderizada DENTRO de #scaleTarget en la barra inferior,
+   en vez de flotar de forma independiente (ol.control.ScaleLine target option) */
 .ol-scale-line {
-  background: rgba(255,255,255,0.85) !important;
-  border: 1px solid #e2e8f0 !important;
-  border-radius: 6px !important;
-  padding: 4px 8px !important;
-  bottom: 30px !important;
-  left: 50% !important;
-  transform: translateX(-50%) !important;
+  position: static !important;
+  background: transparent !important;
+  border: none !important;
+  padding: 0 !important;
   font-size: 10px !important;
   color: #475569 !important;
   font-family: 'Montserrat', sans-serif !important;
@@ -311,7 +309,7 @@ html, body {
   border: 1.5px solid #94a3b8 !important;
   border-top: none !important;
   color: #475569 !important;
-  font-size: 10px !important;
+  font-size: 9.5px !important;
   font-family: 'Montserrat', sans-serif !important;
 }
 
@@ -321,8 +319,7 @@ html, body {
   top: 12px;
   left: 12px;
   z-index: 10;
-  background: rgba(255,255,255,0.96);
-  backdrop-filter: blur(10px);
+  background: rgba(255,255,255,0.82);
   border: 1px solid #e2e8f0;
   border-radius: 10px;
   box-shadow: 0 4px 16px rgba(0,0,0,0.1);
@@ -354,12 +351,18 @@ html, body {
   line-height: 1.4;
 }
 
-/* ── Controles de zoom ────────────────────── */
-.geo-controls {
+/* ── Riel derecho unificado: controles + Turf ── */
+.map-right-rail {
   position: absolute;
   top: 12px;
   right: 12px;
   z-index: 10;
+  display: flex;
+  flex-direction: column;
+  gap: 16px; /* separación proporcional entre grupos */
+}
+
+.geo-controls {
   display: flex;
   flex-direction: column;
   gap: 4px;
@@ -392,37 +395,76 @@ html, body {
   transform: scale(1.05);
 }
 
-/* ── Panel de análisis espacial (Turf.js) ─── */
-.turf-rail {
+.geo-btn.active {
+  background: #f0fdf4;
+  color: #0F6E56;
+  border-color: #86efac;
+}
+
+/* Popover del selector de mapa base */
+.basemap-pop {
   position: absolute;
-  right: 12px;
-  top: 50%;
-  transform: translateY(-50%);
-  z-index: 10;
+  z-index: 11;
+  width: 168px;
+  background: rgba(255,255,255,0.82);
+  border: 1px solid #e2e8f0;
+  border-radius: 10px;
+  box-shadow: 0 8px 28px rgba(0,0,0,0.18);
+  padding: 8px;
+}
+.basemap-pop-title {
+  font-size: 9px; font-weight: 700; letter-spacing: .05em; text-transform: uppercase;
+  color: #94a3b8; margin-bottom: 6px; padding: 0 4px;
+}
+.bm-option {
+  display: flex; align-items: center; gap: 8px;
+  padding: 6px; border-radius: 7px; cursor: pointer;
+  font-size: 11.5px; color: #334155;
+  position: relative;
+}
+.bm-option:hover { background: #f8fafc; }
+.bm-option.active { background: #f0fdf4; color: #0F6E56; font-weight: 600; }
+.bm-thumb { width: 28px; height: 20px; border-radius: 4px; flex-shrink: 0; border: 1.5px solid rgba(0,0,0,0.08); }
+.bm-thumb.osm { background: linear-gradient(135deg,#cfe8d8,#a8d5bb); }
+.bm-thumb.sat { background: linear-gradient(135deg,#2d4a3e,#1a3328); }
+.bm-thumb.blank { background: #f1f5f9; }
+.bm-check { margin-left: auto; color: #0F6E56; font-size: 10px; display: none; }
+.bm-option.active .bm-check { display: inline-block; }
+
+.bm-info-link {
+  display: flex; align-items: center; gap: 6px;
+  margin-top: 6px; padding-top: 8px;
+  border-top: 1px solid #eef1f6;
+  font-size: 10px; color: #94a3b8;
+  text-decoration: none;
+}
+.bm-info-link:hover { color: #0F6E56; }
+
+/* ── Panel de análisis espacial (Turf.js) — MISMO tamaño/estilo que .geo-btn ── */
+.turf-rail {
   display: flex;
   flex-direction: column;
-  gap: 6px;
-  background: rgba(255,255,255,0.96);
-  backdrop-filter: blur(10px);
+  gap: 4px;
+  background: rgba(255,255,255,0.82);
   border: 1px solid #e2e8f0;
-  border-radius: 12px;
-  padding: 8px;
+  border-radius: 10px;
+  padding: 6px;
   box-shadow: 0 4px 16px rgba(0,0,0,0.1);
 }
 
 .turf-btn {
-  width: 36px;
-  height: 36px;
+  width: 34px;
+  height: 34px;
   background: #ffffff;
   border: 1px solid #e2e8f0;
-  border-radius: 9px;
-  box-shadow: 0 1px 3px rgba(0,0,0,0.06);
+  border-radius: 8px;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.08);
   cursor: pointer;
   display: flex;
   align-items: center;
   justify-content: center;
   color: #64748b;
-  font-size: 14px;
+  font-size: 13px;
   transition: all 0.15s;
 }
 
@@ -442,13 +484,10 @@ html, body {
 .turf-panel {
   position: absolute;
   right: 62px;
-  top: 50%;
-  transform: translateY(-50%);
   z-index: 11;
   width: 268px;
   max-width: calc(100% - 90px);
-  background: rgba(255,255,255,0.98);
-  backdrop-filter: blur(10px);
+  background: rgba(255,255,255,0.82);
   border: 1px solid #e2e8f0;
   border-radius: 12px;
   box-shadow: 0 8px 28px rgba(0,0,0,0.14);
@@ -460,6 +499,7 @@ html, body {
 
 .turf-panel-close {
   position: absolute;
+
   top: 8px;
   right: 8px;
   width: 22px;
@@ -547,8 +587,8 @@ html, body {
 .turf-panel-row button:hover { background: #0b543f; }
 
 @media (max-width: 720px) {
-  .turf-rail { right: 8px; }
-  .turf-panel { right: 8px; top: auto; bottom: 64px; transform: none; width: calc(100% - 16px); max-width: none; }
+  .map-right-rail { right: 8px; }
+  .turf-panel { right: 8px; top: auto !important; bottom: 64px; width: calc(100% - 16px); max-width: none; }
 }
 
 /* ── Buscador de municipios ──────────────── */
@@ -566,8 +606,7 @@ html, body {
   display: flex;
   align-items: center;
   gap: 8px;
-  background: rgba(255,255,255,0.96);
-  backdrop-filter: blur(10px);
+  background: rgba(255,255,255,0.82);
   border: 1px solid #e2e8f0;
   border-radius: 10px;
   box-shadow: 0 4px 16px rgba(0,0,0,0.1);
@@ -656,8 +695,7 @@ html, body {
 
 .muni-card {
   position: relative;
-  background: rgba(255,255,255,0.97);
-  backdrop-filter: blur(10px);
+  background: rgba(255,255,255,0.82);
   border: 1px solid #e2e8f0;
   border-radius: 10px;
   box-shadow: 0 4px 16px rgba(0,0,0,0.12);
@@ -701,7 +739,7 @@ html, body {
 .muni-badge-clearall {
   align-self: center;
   border: none;
-  background: rgba(255,255,255,0.95);
+  background: rgba(255,255,255,0.82);
   color: #dc2626;
   font-size: 11px;
   font-weight: 600;
@@ -717,20 +755,43 @@ html, body {
   .muni-badge { left: 8px; transform: none; max-width: calc(100% - 16px); }
 }
 
-/* ── Coordenadas ──────────────────────────── */
-.geo-coords {
+/* ── Barra inferior unificada: escala · proveedor · coordenadas ── */
+.bottom-info-bar {
   position: absolute;
-  bottom: 8px;
-  right: 8px;
+  bottom: 12px;
+  left: 50%;
+  transform: translateX(-50%);
   z-index: 10;
-  background: rgba(255,255,255,0.92);
+  display: flex;
+  align-items: center;
+  background: rgba(255,255,255,0.82);
   border: 1px solid #e2e8f0;
-  border-radius: 4px;
-  padding: 3px 8px;
-  font-family: monospace;
-  font-size: 10px;
+  border-radius: 10px;
+  box-shadow: 0 4px 16px rgba(0,0,0,0.12);
+  padding: 6px 4px;
+  font-size: 11px;
   color: #475569;
-  pointer-events: none;
+  white-space: nowrap;
+  max-width: calc(100% - 24px);
+}
+.bib-section { display: flex; align-items: center; gap: 6px; padding: 0 12px; }
+.bib-sep { width: 1px; align-self: stretch; background: #e2e8f0; }
+
+.bib-provider { color: #64748b; font-size: 10.5px; }
+
+.bib-coords { gap: 8px; }
+.bib-coords-text, #geoCoords { font-size: 11px; color: #334155; font-variant-numeric: tabular-nums; font-family: 'Montserrat', sans-serif; }
+.bib-toggle {
+  display: flex; align-items: center; gap: 3px;
+  background: #f1f5f9; border: none; border-radius: 6px; padding: 3px 7px;
+  font-size: 9.5px; color: #0F6E56; font-weight: 700; cursor: pointer;
+  font-family: 'Montserrat', sans-serif;
+}
+.bib-toggle:hover { background: #e2f5ee; }
+
+@media (max-width: 720px) {
+  .bottom-info-bar { font-size: 10px; padding: 5px 3px; }
+  .bib-section { padding: 0 8px; }
 }
 
 /* ── Popup de atributos ───────────────────── */
@@ -1023,29 +1084,41 @@ html, body {
 .bp-slider { width: 80px; accent-color: #1D9E75; cursor: pointer; }
 .bp-opacity-val { font-size: 10px; color: #1D9E75; font-weight: 600; min-width: 28px; }
 
-.bp-meta-table {
+/* Metadatos: columnas periodísticas (fluye solo, sin cajas ni fondo) */
+.bp-meta-cols {
   width: 100%;
-  border-collapse: collapse;
-  display: grid;
-  grid-template-columns: repeat(6, 1fr);
-  gap: 0 12px;
+  column-count: 3;
+  column-gap: 24px;
 }
 
-.bp-meta-table tr { display: contents; }
+@media (max-width: 900px) {
+  .bp-meta-cols { column-count: 2; }
+}
+@media (max-width: 560px) {
+  .bp-meta-cols { column-count: 1; }
+}
 
-.bp-meta-table td { padding: 2px 0; font-size: 10px; vertical-align: top; }
+.bp-meta-field {
+  break-inside: avoid;
+  margin-bottom: 14px;
+  padding-right: 10px;
+}
 
-.bp-meta-table td:first-child {
+.bp-meta-field .bp-meta-label {
   font-size: 9px;
   text-transform: uppercase;
   letter-spacing: 0.5px;
   color: #94a3b8;
   font-weight: 700;
-  display: block;
-  margin-bottom: 1px;
+  margin-bottom: 2px;
 }
 
-.bp-meta-table td:last-child { color: #334155; font-weight: 500; display: block; }
+.bp-meta-field .bp-meta-value {
+  font-size: 11px;
+  color: #334155;
+  font-weight: 500;
+  line-height: 1.4;
+}
 
 #bpDownloadList {
   display: flex;
@@ -1099,26 +1172,6 @@ html, body {
 }
 
 .bp-dl-all:hover { background: #0F6E56; }
-
-.bp-bm-option {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  padding: 4px 10px;
-  background: #f8fafc;
-  border: 1px solid #e2e8f0;
-  border-radius: 20px;
-  cursor: pointer;
-  font-size: 11px;
-  color: #475569;
-}
-
-.bp-bm-option input[type="radio"] { accent-color: #1D9E75; cursor: pointer; }
-
-.bp-bm-thumb { width: 22px; height: 14px; border-radius: 3px; border: 1px solid #e2e8f0; flex-shrink: 0; }
-.bp-bm-thumb.osm   { background: linear-gradient(135deg, #ddf2d0, #b3d4f5); }
-.bp-bm-thumb.sat   { background: linear-gradient(135deg, #2d4a1e, #1a2d0e); }
-.bp-bm-thumb.blank { background: #f9fafb; }
 
 /* ════════════════════════════════════════════
    TOAST
@@ -1226,17 +1279,50 @@ html, body {
         <div class="geo-badge-sub" id="badgeSub">—</div>
       </div>
 
-      <!-- Controles de zoom -->
-      <div class="geo-controls">
-        <button class="geo-btn" id="btnZoomIn"    title="Acercar">   <i class="fa-solid fa-plus"></i>    </button>
-        <button class="geo-btn" id="btnZoomOut"   title="Alejar">    <i class="fa-solid fa-minus"></i>   </button>
-        <div class="sep"></div>
-        <button class="geo-btn" id="btnColombia"  title="Volver a Bogotá"> <i class="fa-solid fa-house"></i>  </button>
-        <button class="geo-btn" id="btnFullscreen" title="Pantalla completa"> <i class="fa-solid fa-expand" id="fsIcon"></i> </button>
+      <!-- ── Riel derecho unificado: controles del mapa + herramientas Turf ── -->
+      <div class="map-right-rail">
+        <div class="geo-controls">
+          <button class="geo-btn" id="btnZoomIn"    title="Acercar">   <i class="fa-solid fa-plus"></i>    </button>
+          <button class="geo-btn" id="btnZoomOut"   title="Alejar">    <i class="fa-solid fa-minus"></i>   </button>
+          <div class="sep"></div>
+          <button class="geo-btn" id="btnColombia"  title="Volver a Bogotá"> <i class="fa-solid fa-house"></i>  </button>
+          <button class="geo-btn" id="btnFullscreen" title="Pantalla completa"> <i class="fa-solid fa-expand" id="fsIcon"></i> </button>
+          <div class="sep"></div>
+          <button class="geo-btn" id="btnBasemap" title="Mapa base"> <i class="fa-solid fa-layer-group"></i> </button>
+        </div>
+
+        <!-- ── Riel de análisis espacial (Turf.js) ─────────────── -->
+        <div class="turf-rail" id="turfRail">
+          <button class="turf-btn" data-tool="dist"  title="Distancia"><i class="fa-solid fa-ruler"></i></button>
+          <button class="turf-btn" data-tool="area"  title="Área de cobertura"><i class="fa-solid fa-draw-polygon"></i></button>
+          <button class="turf-btn" data-tool="buff"  title="Buffer"><i class="fa-solid fa-circle-notch"></i></button>
+          <button class="turf-btn" data-tool="ctrd"  title="Centroide"><i class="fa-solid fa-crosshairs"></i></button>
+          <button class="turf-btn" data-tool="near"  title="Punto más cercano"><i class="fa-solid fa-location-arrow"></i></button>
+          <button class="turf-btn" data-tool="pip"   title="Punto en polígono"><i class="fa-solid fa-map-pin"></i></button>
+          <button class="turf-btn" data-tool="intx"  title="Intersección"><i class="fa-solid fa-code-compare"></i></button>
+          <button class="turf-btn" data-tool="voro"  title="Voronoi"><i class="fa-solid fa-chess-board"></i></button>
+        </div>
       </div>
 
-      <!-- Coordenadas del cursor -->
-      <div class="geo-coords" id="geoCoords">— ° N &nbsp; — ° W</div>
+      <!-- Popover del selector de mapa base -->
+      <div class="basemap-pop" id="basemapPop" style="display:none;">
+        <div class="basemap-pop-title">Mapa base</div>
+        <label class="bm-option" data-value="osm">
+          <div class="bm-thumb osm"></div> OpenStreetMap
+          <i class="fa-solid fa-check bm-check"></i>
+        </label>
+        <label class="bm-option" data-value="sat">
+          <div class="bm-thumb sat"></div> Satélite (Sentinel-2)
+          <i class="fa-solid fa-check bm-check"></i>
+        </label>
+        <label class="bm-option" data-value="blank">
+          <div class="bm-thumb blank"></div> Sin fondo
+          <i class="fa-solid fa-check bm-check"></i>
+        </label>
+        <a href="mapas-base.html" target="_blank" rel="noopener" class="bm-info-link">
+          <i class="fa-solid fa-circle-info"></i> Ver documentación de fuentes
+        </a>
+      </div>
 
       <!-- Popup de atributos -->
       <div class="geo-popup-container" id="geoPopup">
@@ -1270,18 +1356,6 @@ html, body {
         <button class="muni-badge-clearall" id="muniBadgeClearAll" style="display:none;">Limpiar selección</button>
       </div>
 
-      <!-- ── Riel de análisis espacial (Turf.js) ─────────────── -->
-      <div class="turf-rail" id="turfRail">
-        <button class="turf-btn" data-tool="dist"  title="Distancia"><i class="fa-solid fa-ruler"></i></button>
-        <button class="turf-btn" data-tool="area"  title="Área de cobertura"><i class="fa-solid fa-draw-polygon"></i></button>
-        <button class="turf-btn" data-tool="buff"  title="Buffer"><i class="fa-solid fa-circle-notch"></i></button>
-        <button class="turf-btn" data-tool="ctrd"  title="Centroide"><i class="fa-solid fa-crosshairs"></i></button>
-        <button class="turf-btn" data-tool="near"  title="Punto más cercano"><i class="fa-solid fa-location-arrow"></i></button>
-        <button class="turf-btn" data-tool="pip"   title="Punto en polígono"><i class="fa-solid fa-map-pin"></i></button>
-        <button class="turf-btn" data-tool="intx"  title="Intersección"><i class="fa-solid fa-code-compare"></i></button>
-        <button class="turf-btn" data-tool="voro"  title="Voronoi"><i class="fa-solid fa-chess-board"></i></button>
-      </div>
-
       <!-- Panel de resultado / descripción de la herramienta activa -->
       <div class="turf-panel" id="turfPanel">
         <button class="turf-panel-close" id="turfPanelClose"><i class="fa-solid fa-xmark"></i></button>
@@ -1296,6 +1370,18 @@ html, body {
         <div class="turf-panel-hint" id="turfHint" style="display:none;"></div>
         <div class="turf-panel-result" id="turfResult" style="display:none;"></div>
       </div>
+      <!-- ── Barra inferior unificada: escala · proveedor de mapa base · coordenadas ── -->
+      <div class="bottom-info-bar" id="bottomInfoBar">
+        <div class="bib-section" id="scaleTarget"></div>
+        <div class="bib-sep"></div>
+        <div class="bib-section bib-provider" id="bibProvider">—</div>
+        <div class="bib-sep"></div>
+        <div class="bib-section bib-coords">
+          <span id="geoCoords">— &nbsp; —</span>
+          <button class="bib-toggle" id="bibCoordToggle" title="Cambiar formato de coordenadas">DMS ⇄</button>
+        </div>
+      </div>
+
     </div><!-- /mapCanvas -->
 
     <!-- Panel inferior -->
@@ -1307,7 +1393,6 @@ html, body {
           <button class="bp-tab active" data-tab="capas">Capas</button>
           <button class="bp-tab" data-tab="metadatos">Metadatos</button>
           <button class="bp-tab" data-tab="descargas">Descargas</button>
-          <button class="bp-tab" data-tab="mapabase">Mapa base</button>
         </div>
         <button class="bp-close" id="bpClose" title="Colapsar panel">
           <i class="fa-solid fa-chevron-down"></i>
@@ -1325,7 +1410,7 @@ html, body {
         </div>
         <!-- Tab: Metadatos -->
         <div class="bp-tab-content" id="tab-metadatos" style="display:none;">
-          <table class="bp-meta-table" id="bpMetaTable"></table>
+          <div class="bp-meta-cols" id="bpMetaTable"></div>
           <a class="bp-dl-all" id="bpVerDocumento" href="#" target="_blank" rel="noopener noreferrer" style="display:flex;text-decoration:none;margin-top:12px;">
             <i class="fa-solid fa-arrow-up-right-from-square"></i>
             Ver documento completo
@@ -1338,24 +1423,6 @@ html, body {
             <i class="fa-solid fa-file-zipper"></i>
             Descargar proyecto completo
           </button>
-        </div>
-        <!-- Tab: Mapa base -->
-        <div class="bp-tab-content" id="tab-mapabase" style="display:none;">
-          <label class="bp-bm-option">
-            <input type="radio" name="basemap" value="osm">
-            <div class="bp-bm-thumb osm"></div>
-            OpenStreetMap
-          </label>
-          <label class="bp-bm-option">
-            <input type="radio" name="basemap" value="sat" checked>
-            <div class="bp-bm-thumb sat"></div>
-            Satélite
-          </label>
-          <label class="bp-bm-option">
-            <input type="radio" name="basemap" value="blank">
-            <div class="bp-bm-thumb blank"></div>
-            Sin fondo
-          </label>
         </div>
       </div>
     </div><!-- /bottomPanel -->
@@ -1480,6 +1547,7 @@ let colombiaBorderLayer = null;
 let projectMarkersLayer = null;
 let map, osmLayer, satLayer, view;
 let toastTimer     = null;
+let currentBasemap = 'sat';
 
 /* ══════════════════════════════════════════════
    INIT MAP
@@ -1487,10 +1555,16 @@ let toastTimer     = null;
 function initMap() {
   osmLayer = new ol.layer.Tile({ source: new ol.source.OSM(), visible: false });
 
+  /* Mapa base satelital: Sentinel-2 Cloudless (EOX IT Services GmbH), mosaico
+     construido a partir de datos abiertos Copernicus/ESA — CC BY 4.0.
+     Reemplaza a Esri World Imagery (comercial) para mantener el geovisor
+     100% sobre datos y servicios abiertos. Resolución nativa ~10 m/px. */
+  const SAT_LAYER_YEAR = '2024';
   satLayer = new ol.layer.Tile({
     source: new ol.source.XYZ({
-      url: 'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',
-      attributions: 'Tiles &copy; Esri'
+      url: 'https://tiles.maps.eox.at/wmts/1.0.0/s2cloudless-' + SAT_LAYER_YEAR + '_3857/default/g/{z}/{y}/{x}.jpg',
+      attributions: 'Sentinel-2 cloudless by <a href="https://s2maps.eu" target="_blank" rel="noopener">EOX IT Services GmbH</a> (Contains modified Copernicus Sentinel data ' + SAT_LAYER_YEAR + ')',
+      maxZoom: 14
     }),
     visible: true
   });
@@ -1554,17 +1628,54 @@ function initMap() {
     view: view,
     controls: []
   });
-  map.addControl(new ol.control.ScaleLine({ units: 'metric' }));
+  map.addControl(new ol.control.ScaleLine({
+    units: 'metric',
+    target: document.getElementById('scaleTarget')
+  }));
 
-  /* Coordenadas del cursor */
-  map.on('pointermove', function (evt) {
-    const coord = ol.proj.toLonLat(evt.coordinate);
-    const lon   = Math.abs(coord[0]).toFixed(4);
-    const lat   = Math.abs(coord[1]).toFixed(4);
+  /* Coordenadas del cursor: formato decimal o sexagesimal (DMS), a elección
+     del usuario, recordado entre sesiones vía localStorage. */
+  let coordFormat = localStorage.getItem('geiper_coord_format') || 'decimal';
+  let lastCoord = null;
+
+  function toDMS(deg) {
+    let abs = Math.abs(deg);
+    let d = Math.floor(abs);
+    let mFloat = (abs - d) * 60;
+    let m = Math.floor(mFloat);
+    let s = (mFloat - m) * 60;
+    s = Math.round(s * 10) / 10;
+    if (s >= 60) { s -= 60; m += 1; }
+    if (m >= 60) { m -= 60; d += 1; }
+    return d + '\u00b0' + m + "'" + s.toFixed(1) + '"';
+  }
+
+  function renderCoords(coord) {
     const lonDir = coord[0] >= 0 ? 'E' : 'W';
     const latDir = coord[1] >= 0 ? 'N' : 'S';
-    document.getElementById('geoCoords').textContent =
-      lat + '\u00b0 ' + latDir + '\u00a0\u00a0\u00a0' + lon + '\u00b0 ' + lonDir;
+    const el = document.getElementById('geoCoords');
+    if (coordFormat === 'dms') {
+      el.textContent = toDMS(coord[1]) + latDir + '\u00a0\u00a0' + toDMS(coord[0]) + lonDir;
+    } else {
+      el.textContent = Math.abs(coord[1]).toFixed(4) + '\u00b0 ' + latDir + '\u00a0\u00a0\u00a0' + Math.abs(coord[0]).toFixed(4) + '\u00b0 ' + lonDir;
+    }
+  }
+
+  function updateCoordToggleLabel() {
+    document.getElementById('bibCoordToggle').textContent = coordFormat === 'dms' ? '° ⇄' : 'DMS ⇄';
+  }
+  updateCoordToggleLabel();
+
+  document.getElementById('bibCoordToggle').addEventListener('click', function () {
+    coordFormat = coordFormat === 'dms' ? 'decimal' : 'dms';
+    localStorage.setItem('geiper_coord_format', coordFormat);
+    updateCoordToggleLabel();
+    if (lastCoord) renderCoords(lastCoord);
+  });
+
+  map.on('pointermove', function (evt) {
+    lastCoord = ol.proj.toLonLat(evt.coordinate);
+    renderCoords(lastCoord);
   });
 
   /* Click en feature → popup */
@@ -1839,7 +1950,7 @@ function renderPanel(proj) {
     const valueHtml = r.color
       ? '<span style="display:inline-flex;align-items:center;gap:6px;"><span style="width:8px;height:8px;border-radius:50%;background:' + r.color + ';flex-shrink:0;"></span>' + escHtml(String(r.value)) + '</span>'
       : escHtml(String(r.value));
-    return '<tr><td>' + r.label + '</td><td>' + valueHtml + '</td></tr>';
+    return '<div class="bp-meta-field"><div class="bp-meta-label">' + r.label + '</div><div class="bp-meta-value">' + valueHtml + '</div></div>';
   }).join('');
   document.getElementById('bpVerDocumento').href = proj.url;
 
@@ -2056,14 +2167,53 @@ function initUI() {
     showToast('Preparando ZIP: ' + activeProject.nombre.substring(0, 28) + '...');
   });
 
-  /* ── Selector de mapa base ── */
-  document.querySelectorAll('input[name="basemap"]').forEach(function (radio) {
-    radio.addEventListener('change', function () {
-      osmLayer.setVisible(this.value === 'osm');
-      satLayer.setVisible(this.value === 'sat');
-      document.getElementById('map').style.background = this.value === 'blank' ? '#f9fafb' : '';
+  /* ── Selector global de mapa base (botón + popover) ── */
+  const BASEMAP_LABELS = {
+    osm:   'OpenStreetMap',
+    sat:   'Sentinel-2 Cloudless · EOX/Copernicus',
+    blank: 'Sin mapa base'
+  };
+
+  function setBasemap(value) {
+    currentBasemap = value;
+    osmLayer.setVisible(value === 'osm');
+    satLayer.setVisible(value === 'sat');
+    document.getElementById('map').style.background = value === 'blank' ? '#f9fafb' : '';
+
+    document.querySelectorAll('.bm-option').forEach(function (opt) {
+      opt.classList.toggle('active', opt.dataset.value === value);
     });
+    document.getElementById('bibProvider').textContent = BASEMAP_LABELS[value] || '—';
+  }
+
+  document.querySelectorAll('.bm-option').forEach(function (opt) {
+    opt.addEventListener('click', function () { setBasemap(this.dataset.value); });
   });
+
+  document.getElementById('btnBasemap').addEventListener('click', function (e) {
+    e.stopPropagation();
+    const pop = document.getElementById('basemapPop');
+    const isOpen = pop.style.display === 'block';
+    pop.style.display = isOpen ? 'none' : 'block';
+    this.classList.toggle('active', !isOpen);
+    if (!isOpen) {
+      /* posicionar el popover a la izquierda del botón que lo abrió */
+      const btnRect = this.getBoundingClientRect();
+      const canvasRect = document.getElementById('mapCanvas').getBoundingClientRect();
+      pop.style.top   = (btnRect.top - canvasRect.top) + 'px';
+      pop.style.right = (canvasRect.right - btnRect.left + 8) + 'px';
+    }
+  });
+
+  document.addEventListener('click', function (e) {
+    const pop = document.getElementById('basemapPop');
+    if (pop.style.display === 'block' && !pop.contains(e.target) && e.target.id !== 'btnBasemap') {
+      pop.style.display = 'none';
+      document.getElementById('btnBasemap').classList.remove('active');
+    }
+  });
+
+  setBasemap('sat'); /* estado inicial: satélite, igual que antes */
 
   /* Hamburger menu del navbar */
   (function () {
@@ -2308,6 +2458,16 @@ window.TurfPanel = (function () {
     radiusRow.style.display = t.showRadius ? 'flex' : 'none';
 
     if (t.hint) { hintEl.textContent = t.hint; hintEl.style.display = 'block'; }
+
+    /* Alinear verticalmente el panel con el riel de Turf (que ya no está
+       centrado, sino debajo de los controles del mapa) */
+    const railEl   = document.getElementById('turfRail');
+    const canvasEl = document.getElementById('mapCanvas');
+    if (railEl && canvasEl) {
+      const railRect   = railEl.getBoundingClientRect();
+      const canvasRect = canvasEl.getBoundingClientRect();
+      document.getElementById('turfPanel').style.top = (railRect.top - canvasRect.top) + 'px';
+    }
 
     document.getElementById('turfPanel').classList.add('open');
   }
@@ -2695,7 +2855,7 @@ window.MunicipioSearch = (function () {
         '<button class="muni-card-remove" title="Quitar"><i class="fa-solid fa-xmark"></i></button>' +
         '<div class="muni-card-name">' + escHtml(p.mpio_cnmbr) + '</div>' +
         '<div class="muni-card-depto">' + escHtml(p.dpto_cnmbr) + ' · Depto. DIVIPOLA ' + escHtml(p.dpto_ccdgo) +
-          ' · Municipio ' + escHtml(p.mpio_ccnct) + '</div>' +
+          ' · Mpio. ' + escHtml(p.mpio_ccnct) + '</div>' +
         '<div class="muni-card-area"><i class="fa-solid fa-draw-polygon"></i> ' + fmtKm2(areaKm2) +
           ' &nbsp;·&nbsp; ' + fmtPct(pct) + ' del departamento</div>';
       card.querySelector('.muni-card-remove').addEventListener('click', function (e) {
