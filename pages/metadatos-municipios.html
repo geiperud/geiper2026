@@ -1,0 +1,603 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Metadatos — Capa de Municipios | Geovisor GEIPER</title>
+  <meta name="description" content="Metadatos de la capa de límites municipales empleada en el geovisor del semillero GEIPER: linaje, calidad del dato, referencia espacial y atributos.">
+  <meta name="robots" content="noindex, follow">
+  <link rel="icon" type="image/png" href="../assets/images/Logo_GEIPER.png">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+  <link rel="stylesheet" href="../css/styles.css">
+
+<style>
+.meta-wrap {
+  max-width: 860px;
+  margin: 0 auto;
+  padding: 50px 24px 80px;
+}
+
+.meta-back {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 13px;
+  color: var(--azul-medio);
+  text-decoration: none;
+  margin-bottom: 22px;
+}
+.meta-back:hover { text-decoration: underline; }
+
+.meta-title-block h1 {
+  font-family: 'Playfair Display', serif;
+  font-size: 28px;
+  color: var(--azul-oscuro);
+  margin-bottom: 6px;
+}
+.meta-title-block p {
+  color: var(--gris);
+  font-size: 14px;
+  max-width: 640px;
+}
+
+.meta-download-row {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+  margin: 26px 0 40px;
+}
+.meta-dl-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 18px;
+  border-radius: 8px;
+  border: 1px solid var(--azul-medio);
+  background: var(--blanco);
+  color: var(--azul-medio);
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+.meta-dl-btn:hover { background: var(--azul-medio); color: #fff; }
+
+.meta-section {
+  margin-bottom: 30px;
+  padding-bottom: 28px;
+  border-bottom: 1px solid #e5e9f0;
+}
+.meta-section:last-child { border-bottom: none; }
+
+.meta-section h2 {
+  font-size: 15px;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--azul-oscuro);
+  margin-bottom: 14px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.meta-section h2 i { color: var(--azul-claro); font-size: 13px; }
+
+.meta-field {
+  display: grid;
+  grid-template-columns: 200px 1fr;
+  gap: 12px;
+  padding: 7px 0;
+  font-size: 13.5px;
+  line-height: 1.55;
+  border-bottom: 1px dashed #eef1f6;
+}
+.meta-field:last-child { border-bottom: none; }
+.meta-field dt { color: var(--gris); font-weight: 600; }
+.meta-field dd { color: #1e293b; }
+
+.meta-lineage-list {
+  counter-reset: lineage;
+  list-style: none;
+}
+.meta-lineage-list li {
+  position: relative;
+  padding: 4px 0 4px 30px;
+  font-size: 13.5px;
+  line-height: 1.55;
+  color: #1e293b;
+}
+.meta-lineage-list li::before {
+  counter-increment: lineage;
+  content: counter(lineage);
+  position: absolute;
+  left: 0;
+  top: 4px;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background: var(--azul-medio);
+  color: #fff;
+  font-size: 10.5px;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.meta-code-row {
+  font-family: 'Courier New', monospace;
+  font-size: 12.5px;
+  background: #f5f7fb;
+  border: 1px solid #e5e9f0;
+  border-radius: 6px;
+  padding: 8px 10px;
+  margin: 4px 0;
+  color: #334155;
+}
+
+.meta-attr-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 12.5px;
+}
+.meta-attr-table th {
+  text-align: left;
+  background: var(--azul-oscuro);
+  color: #fff;
+  padding: 8px 10px;
+  font-weight: 600;
+}
+.meta-attr-table td {
+  padding: 7px 10px;
+  border-bottom: 1px solid #eef1f6;
+  color: #1e293b;
+}
+.meta-attr-table code { font-family: 'Courier New', monospace; color: var(--azul-medio); }
+.meta-attr-table tr:nth-child(even) td { background: #f9fafc; }
+
+.meta-caution {
+  background: #fff7ed;
+  border: 1px solid #fed7aa;
+  border-radius: 8px;
+  padding: 12px 14px;
+  font-size: 13px;
+  color: #9a3412;
+  line-height: 1.5;
+}
+.meta-caution i { margin-right: 6px; }
+</style>
+</head>
+<body>
+
+<header>
+  <nav>
+    <a href="../index.html" class="nav-brand"><img src="../assets/images/Logo_GEIPER.png" alt="GEIPER" class="nav-logo-img"><span>GEIPER</span></a>
+    <button class="nav-hamburger" id="navHamburger" aria-label="Abrir menú" aria-expanded="false">
+      <span></span><span></span><span></span>
+    </button>
+    <div class="nav-links" id="navLinks">
+      <a href="../index.html">Inicio</a>
+      <a href="lineas.html">Líneas de investigación</a>
+      <a href="integrantes.html">Integrantes</a>
+      <a href="repositorios.html">Repositorios</a>
+      <a href="geovisor.html">Geovisor</a>
+      <a href="chatbots.html">Asistentes IA</a>
+    </div>
+  </nav>
+</header>
+
+<div class="meta-wrap">
+
+  <a href="geovisor.html" class="meta-back"><i class="fa-solid fa-arrow-left"></i> Volver al geovisor</a>
+
+  <div class="meta-title-block">
+    <h1>Metadatos de la capa: Municipios de Colombia</h1>
+    <p>Ficha técnica de la capa vectorial empleada por el módulo de identificación municipal del geovisor GEIPER. Documenta el linaje completo del procesamiento aplicado sobre la fuente oficial.</p>
+  </div>
+
+  <div class="meta-download-row">
+    <button class="meta-dl-btn" id="btnDlTxt"><i class="fa-solid fa-file-lines"></i> Descargar .txt</button>
+    <button class="meta-dl-btn" id="btnDlXml"><i class="fa-solid fa-file-code"></i> Descargar .xml</button>
+    <button class="meta-dl-btn" id="btnDlJson"><i class="fa-solid fa-file-code"></i> Descargar .json</button>
+  </div>
+
+  <!-- 1. IDENTIFICACIÓN -->
+  <div class="meta-section">
+    <h2><i class="fa-solid fa-id-card"></i> Identificación</h2>
+    <dl>
+      <div class="meta-field"><dt>Título</dt><dd>Municipios de Colombia — capa simplificada para el Geovisor GEIPER</dd></div>
+      <div class="meta-field"><dt>Forma de presentación</dt><dd>Datos vectoriales digitales (polígono), formato TopoJSON</dd></div>
+      <div class="meta-field"><dt>Resumen</dt><dd>Capa de límites municipales de Colombia derivada de la capa oficial "MUNICIPIOS" del Instituto Geográfico Agustín Codazzi (IGAC), reproyectada a WGS84 y generalizada cartográficamente para su uso como capa de referencia interactiva dentro del geovisor del Semillero GEIPER (Universidad Distrital Francisco José de Caldas). Permite identificar los 1.122 municipios del país mediante búsqueda por nombre o selección directa sobre el mapa.</dd></div>
+      <div class="meta-field"><dt>Propósito</dt><dd>Contextualizar los trabajos de grado del semillero dentro de la división político-administrativa vigente (DIVIPOLA), sin comprometer el rendimiento del sitio estático.</dd></div>
+      <div class="meta-field"><dt>Palabras clave</dt><dd>municipios, división político-administrativa, DIVIPOLA, límites municipales, Colombia, GEIPER</dd></div>
+      <div class="meta-field"><dt>Restricciones de acceso</dt><dd>Ninguna (dato derivado de fuente de acceso público)</dd></div>
+      <div class="meta-field"><dt>Restricciones de uso</dt><dd>Versión simplificada con fines de visualización web.</dd></div>
+    </dl>
+    <br>
+    <div class="meta-caution">
+      <i class="fa-solid fa-triangle-exclamation"></i>Esta capa tiene fines exclusivamente de visualización y contextualización geográfica. No debe emplearse para fines catastrales, jurídicos o de precisión legal — para ello, consultar directamente la fuente oficial en IGAC o DANE.
+    </div>
+  </div>
+
+  <!-- 2. EXTENSIÓN GEOGRÁFICA -->
+  <div class="meta-section">
+    <h2><i class="fa-solid fa-globe"></i> Extensión geográfica</h2>
+    <dl>
+      <div class="meta-field"><dt>Límite occidental</dt><dd>-81.7356205566</dd></div>
+      <div class="meta-field"><dt>Límite oriental</dt><dd>-66.8472154272</dd></div>
+      <div class="meta-field"><dt>Límite norte</dt><dd>13.3944963293</dd></div>
+      <div class="meta-field"><dt>Límite sur</dt><dd>-4.2294064661</dd></div>
+    </dl>
+  </div>
+
+  <!-- 3. LINAJE / CALIDAD DEL DATO -->
+  <div class="meta-section">
+    <h2><i class="fa-solid fa-timeline"></i> Calidad del dato — linaje</h2>
+    <div class="meta-field" style="grid-template-columns:200px 1fr; margin-bottom:14px;">
+      <dt>Fuente</dt>
+      <dd>Instituto Geográfico Agustín Codazzi (IGAC), capa "MUNICIPIOS" (Feature Class, Esri ArcGIS), metadatos FGDC del 2025-07-03.</dd>
+    </div>
+    <ol class="meta-lineage-list">
+      <li>Exportación desde ArcGIS Pro (Export Features) a Shapefile — proyección original: <code>WGS_1984_Web_Mercator_Auxiliary_Sphere</code></li>
+      <li>Verificación de estructura por consola (<code>mapshaper -i municipios.shp -info</code>): 1.122 registros, tipo polígono, 11 campos confirmados</li>
+      <li>Reproyección a WGS84 / EPSG:4326 (<code>mapshaper -proj wgs84</code>)</li>
+      <li>Generalización cartográfica al 2% de densidad de vértices, algoritmo Visvalingam (<code>mapshaper -simplify 2%</code>), con reparación automática de 6 auto-intersecciones menores</li>
+      <li>Conversión a TopoJSON (<code>mapshaper -o format=topojson</code>)</li>
+      <li>Validación final: conteo de registros, sistema de referencia y totalidad de atributos verificados; exactitud de área contrastada contra el campo <code>mpio_narea</code> original</li>
+    </ol>
+    <br>
+    <dl>
+      <div class="meta-field"><dt>Exactitud posicional</dt><dd>Desviación media estimada de 0,55% en área, respecto de la geometría original, verificada sobre un municipio de control.</dd></div>
+      <div class="meta-field"><dt>Completitud</dt><dd>Se conserva el 100% de los 1.122 registros y de los campos de atributos originales; la generalización afectó únicamente la densidad de vértices del contorno.</dd></div>
+    </dl>
+  </div>
+
+  <!-- 4. REFERENCIA ESPACIAL -->
+  <div class="meta-section">
+    <h2><i class="fa-solid fa-location-crosshairs"></i> Referencia espacial</h2>
+    <dl>
+      <div class="meta-field"><dt>Sistema de coordenadas</dt><dd>WGS84 (EPSG:4326), grados decimales</dd></div>
+      <div class="meta-field"><dt>Nota</dt><dd>La fuente original venía en proyección Web Mercator Auxiliar (metros); fue corregida en el paso 3 del linaje.</dd></div>
+    </dl>
+  </div>
+
+  <!-- 5. ENTIDADES Y ATRIBUTOS -->
+  <div class="meta-section">
+    <h2><i class="fa-solid fa-table"></i> Entidades y atributos</h2>
+    <table class="meta-attr-table">
+      <thead><tr><th>Campo</th><th>Definición</th></tr></thead>
+      <tbody>
+        <tr><td><code>dpto_ccdgo</code></td><td>Código DANE del departamento (2 dígitos)</td></tr>
+        <tr><td><code>dpto_cnmbr</code></td><td>Nombre del departamento</td></tr>
+        <tr><td><code>mpio_ccdgo</code></td><td>Código del municipio dentro de su departamento (3 dígitos)</td></tr>
+        <tr><td><code>mpio_ccnct</code></td><td>Código DIVIPOLA completo del municipio (departamento + municipio, 5 dígitos)</td></tr>
+        <tr><td><code>mpio_cnmbr</code></td><td>Nombre del municipio</td></tr>
+        <tr><td><code>mpio_crslc</code></td><td>Acto administrativo de creación o reconocimiento legal del municipio</td></tr>
+        <tr><td><code>mpio_nano</code></td><td>Año de referencia de la cartografía de origen</td></tr>
+        <tr><td><code>mpio_narea</code></td><td>Área oficial del municipio en km², según fuente IGAC</td></tr>
+        <tr><td><code>shape_leng</code></td><td>Longitud del perímetro, calculada automáticamente por el software SIG</td></tr>
+        <tr><td><code>Shape__Are</code></td><td>Área de la geometría, calculada automáticamente por el software SIG</td></tr>
+        <tr><td><code>Shape__Len</code></td><td>Perímetro de la geometría, calculado automáticamente por el software SIG</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- 6. DISTRIBUCIÓN -->
+  <div class="meta-section">
+    <h2><i class="fa-solid fa-cloud-arrow-down"></i> Distribución</h2>
+    <dl>
+      <div class="meta-field"><dt>Formato</dt><dd>TopoJSON (application/json)</dd></div>
+      <div class="meta-field"><dt>Archivo</dt><dd>data/municipios.json</dd></div>
+      <div class="meta-field"><dt>Peso</dt><dd>997.311 bytes (~974 KB) · ~287 KB comprimido (gzip) en transferencia real</dd></div>
+      <div class="meta-field"><dt>Acceso</dt><dd>Repositorio geiperud/geiper2026, publicado vía GitHub Pages</dd></div>
+    </dl>
+  </div>
+
+  <!-- 7. REFERENCIA DE LOS METADATOS -->
+  <div class="meta-section">
+    <h2><i class="fa-solid fa-file-signature"></i> Referencia de los metadatos</h2>
+    <dl>
+      <div class="meta-field"><dt>Fecha</dt><dd id="metaDate">—</dd></div>
+      <div class="meta-field"><dt>Estándar</dt><dd>FGDC CSDGM (adaptado), en correspondencia con NTC 4611 / ISO 19115</dd></div>
+      <div class="meta-field"><dt>Elaborado por</dt><dd>Laura Dayana Díaz Beltrán — Semillero de Investigación GEIPER, Universidad Distrital Francisco José de Caldas</dd></div>
+    </dl>
+  </div>
+
+</div>
+
+<footer id="contacto">
+  <div class="footer-container">
+    <div class="footer-col">
+      <img src="../assets/images/Logo_GEIPER.png" alt="Logo GEIPER" class="footer-logo-img">
+    </div>
+    <div class="footer-col">
+      <h3>Ubicación</h3>
+      <p><i class="fa-solid fa-university"></i>Universidad Distrital Francisco José de Caldas</p>
+      <p><i class="fa-solid fa-building-columns"></i>Facultad de Ingeniería</p>
+      <p><i class="fa-solid fa-compass-drafting"></i>Ingeniería Catastral y Geodesia</p>
+      <p><i class="fa-solid fa-location-dot"></i>Bogotá, Colombia</p>
+    </div>
+    <div class="footer-col">
+      <h3>Contacto</h3>
+      <p><i class="fa-solid fa-envelope"></i>geiper@udistrital.edu.co</p>
+      <p><i class="fa-brands fa-instagram"></i>@semillerogeiper</p>
+    </div>
+  </div>
+  <div class="footer-divider"></div>
+  <div class="footer-info">
+    <span>Semillero activo desde 2007</span>
+    <span class="footer-sep">·</span>
+    <span>Grupo de investigación NIDE</span>
+    <span class="footer-sep">·</span>
+    <span>Avalado por MinCiencias · CvLAC</span>
+  </div>
+  <div class="footer-divider-bottom"></div>
+  <div class="footer-bottom">
+    <span>© 2026 Semillero de Investigación GEIPER · Desarrollado por <strong>Laura Dayana Díaz Beltrán</strong></span>
+  </div>
+</footer>
+
+<script>
+/* ══════════════════════════════════════════════
+   FUENTE ÚNICA DE LOS METADATOS
+   A partir de este objeto se generan los tres
+   formatos descargables (.txt, .xml, .json).
+   ══════════════════════════════════════════════ */
+const METADATA = {
+  identificacion: {
+    titulo: "Municipios de Colombia — capa simplificada para el Geovisor GEIPER",
+    formaPresentacion: "Datos vectoriales digitales (polígono), formato TopoJSON",
+    resumen: "Capa de límites municipales de Colombia derivada de la capa oficial \"MUNICIPIOS\" del Instituto Geográfico Agustín Codazzi (IGAC), reproyectada a WGS84 y generalizada cartográficamente para su uso como capa de referencia interactiva dentro del geovisor del Semillero GEIPER (Universidad Distrital Francisco José de Caldas).",
+    proposito: "Contextualizar los trabajos de grado del semillero dentro de la división político-administrativa vigente (DIVIPOLA), sin comprometer el rendimiento del sitio estático.",
+    palabrasClave: ["municipios", "división político-administrativa", "DIVIPOLA", "límites municipales", "Colombia", "GEIPER"],
+    restriccionesAcceso: "Ninguna (dato derivado de fuente de acceso público)",
+    restriccionesUso: "Versión simplificada con fines de visualización web. No debe emplearse para fines catastrales, jurídicos o de precisión legal."
+  },
+  extension: {
+    oeste: -81.7356205566,
+    este: -66.8472154272,
+    norte: 13.3944963293,
+    sur: -4.2294064661
+  },
+  linaje: {
+    fuente: "Instituto Geográfico Agustín Codazzi (IGAC), capa \"MUNICIPIOS\" (Feature Class, Esri ArcGIS), metadatos FGDC del 2025-07-03.",
+    pasos: [
+      "Exportación desde ArcGIS Pro (Export Features) a Shapefile — proyección original: WGS_1984_Web_Mercator_Auxiliary_Sphere",
+      "Verificación de estructura por consola (mapshaper -i municipios.shp -info): 1.122 registros, tipo polígono, 11 campos confirmados",
+      "Reproyección a WGS84 / EPSG:4326 (mapshaper -proj wgs84)",
+      "Generalización cartográfica al 2% de densidad de vértices, algoritmo Visvalingam (mapshaper -simplify 2%), con reparación automática de 6 auto-intersecciones menores",
+      "Conversión a TopoJSON (mapshaper -o format=topojson)",
+      "Validación final: conteo de registros, sistema de referencia y totalidad de atributos verificados; exactitud de área contrastada contra el campo mpio_narea original"
+    ],
+    exactitudPosicional: "Desviación media estimada de 0,55% en área respecto de la geometría original, verificada sobre un municipio de control.",
+    completitud: "Se conserva el 100% de los 1.122 registros y de los campos de atributos originales; la generalización afectó únicamente la densidad de vértices del contorno."
+  },
+  referenciaEspacial: {
+    sistemaCoordenadas: "WGS84 (EPSG:4326), grados decimales",
+    nota: "La fuente original venía en proyección Web Mercator Auxiliar (metros); fue corregida en el paso 3 del linaje."
+  },
+  atributos: [
+    { campo: "dpto_ccdgo", definicion: "Código DANE del departamento (2 dígitos)" },
+    { campo: "dpto_cnmbr", definicion: "Nombre del departamento" },
+    { campo: "mpio_ccdgo", definicion: "Código del municipio dentro de su departamento (3 dígitos)" },
+    { campo: "mpio_ccnct", definicion: "Código DIVIPOLA completo del municipio (departamento + municipio, 5 dígitos)" },
+    { campo: "mpio_cnmbr", definicion: "Nombre del municipio" },
+    { campo: "mpio_crslc", definicion: "Acto administrativo de creación o reconocimiento legal del municipio" },
+    { campo: "mpio_nano", definicion: "Año de referencia de la cartografía de origen" },
+    { campo: "mpio_narea", definicion: "Área oficial del municipio en km², según fuente IGAC" },
+    { campo: "shape_leng", definicion: "Longitud del perímetro, calculada automáticamente por el software SIG" },
+    { campo: "Shape__Are", definicion: "Área de la geometría, calculada automáticamente por el software SIG" },
+    { campo: "Shape__Len", definicion: "Perímetro de la geometría, calculado automáticamente por el software SIG" }
+  ],
+  distribucion: {
+    formato: "TopoJSON (application/json)",
+    archivo: "data/municipios.json",
+    peso: "997.311 bytes (~974 KB) · ~287 KB comprimido (gzip) en transferencia real",
+    acceso: "Repositorio geiperud/geiper2026, publicado vía GitHub Pages"
+  },
+  referenciaMetadatos: {
+    fecha: new Date().toISOString().slice(0, 10),
+    estandar: "FGDC CSDGM (adaptado), en correspondencia con NTC 4611 / ISO 19115",
+    elaboradoPor: "Laura Dayana Díaz Beltrán — Semillero de Investigación GEIPER, Universidad Distrital Francisco José de Caldas"
+  }
+};
+
+document.getElementById('metaDate').textContent = METADATA.referenciaMetadatos.fecha;
+
+/* ── Descarga genérica ─────────────────────── */
+function download(filename, content, mime) {
+  const blob = new Blob([content], { type: mime });
+  const url  = URL.createObjectURL(blob);
+  const a    = document.createElement('a');
+  a.href = url;
+  a.download = filename;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+}
+
+/* ── Formato .txt ───────────────────────────── */
+function buildTXT(m) {
+  const L = [];
+  const line = (s) => L.push(s);
+  const kv = (k, v) => L.push('  ' + k + ': ' + v);
+
+  line('METADATOS — CAPA DE MUNICIPIOS DE COLOMBIA');
+  line('Geovisor del Semillero de Investigación GEIPER');
+  line('='.repeat(60));
+  line('');
+  line('IDENTIFICACIÓN');
+  kv('Título', m.identificacion.titulo);
+  kv('Forma de presentación', m.identificacion.formaPresentacion);
+  kv('Resumen', m.identificacion.resumen);
+  kv('Propósito', m.identificacion.proposito);
+  kv('Palabras clave', m.identificacion.palabrasClave.join(', '));
+  kv('Restricciones de acceso', m.identificacion.restriccionesAcceso);
+  kv('Restricciones de uso', m.identificacion.restriccionesUso);
+  line('');
+  line('EXTENSIÓN GEOGRÁFICA');
+  kv('Límite occidental', m.extension.oeste);
+  kv('Límite oriental', m.extension.este);
+  kv('Límite norte', m.extension.norte);
+  kv('Límite sur', m.extension.sur);
+  line('');
+  line('CALIDAD DEL DATO — LINAJE');
+  kv('Fuente', m.linaje.fuente);
+  line('  Pasos de procesamiento:');
+  m.linaje.pasos.forEach(function (p, i) { line('    ' + (i + 1) + '. ' + p); });
+  kv('Exactitud posicional', m.linaje.exactitudPosicional);
+  kv('Completitud', m.linaje.completitud);
+  line('');
+  line('REFERENCIA ESPACIAL');
+  kv('Sistema de coordenadas', m.referenciaEspacial.sistemaCoordenadas);
+  kv('Nota', m.referenciaEspacial.nota);
+  line('');
+  line('ENTIDADES Y ATRIBUTOS');
+  m.atributos.forEach(function (a) { kv(a.campo, a.definicion); });
+  line('');
+  line('DISTRIBUCIÓN');
+  kv('Formato', m.distribucion.formato);
+  kv('Archivo', m.distribucion.archivo);
+  kv('Peso', m.distribucion.peso);
+  kv('Acceso', m.distribucion.acceso);
+  line('');
+  line('REFERENCIA DE LOS METADATOS');
+  kv('Fecha', m.referenciaMetadatos.fecha);
+  kv('Estándar', m.referenciaMetadatos.estandar);
+  kv('Elaborado por', m.referenciaMetadatos.elaboradoPor);
+
+  return L.join('\n');
+}
+
+/* ── Formato .xml ───────────────────────────── */
+function esc(s) {
+  return String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+}
+function buildXML(m) {
+  const L = [];
+  L.push('<?xml version="1.0" encoding="UTF-8"?>');
+  L.push('<metadata>');
+  L.push('  <idinfo>');
+  L.push('    <citation><title>' + esc(m.identificacion.titulo) + '</title></citation>');
+  L.push('    <descript>');
+  L.push('      <abstract>' + esc(m.identificacion.resumen) + '</abstract>');
+  L.push('      <purpose>' + esc(m.identificacion.proposito) + '</purpose>');
+  L.push('    </descript>');
+  L.push('    <keywords>' + m.identificacion.palabrasClave.map(function (k) { return esc(k); }).join(', ') + '</keywords>');
+  L.push('    <accconst>' + esc(m.identificacion.restriccionesAcceso) + '</accconst>');
+  L.push('    <useconst>' + esc(m.identificacion.restriccionesUso) + '</useconst>');
+  L.push('    <spdom>');
+  L.push('      <bounding>');
+  L.push('        <westbc>' + m.extension.oeste + '</westbc>');
+  L.push('        <eastbc>' + m.extension.este + '</eastbc>');
+  L.push('        <northbc>' + m.extension.norte + '</northbc>');
+  L.push('        <southbc>' + m.extension.sur + '</southbc>');
+  L.push('      </bounding>');
+  L.push('    </spdom>');
+  L.push('  </idinfo>');
+  L.push('  <dataqual>');
+  L.push('    <lineage>');
+  L.push('      <srcinfo>' + esc(m.linaje.fuente) + '</srcinfo>');
+  m.linaje.pasos.forEach(function (p, i) {
+    L.push('      <procstep order="' + (i + 1) + '">' + esc(p) + '</procstep>');
+  });
+  L.push('      <posacc>' + esc(m.linaje.exactitudPosicional) + '</posacc>');
+  L.push('      <complete>' + esc(m.linaje.completitud) + '</complete>');
+  L.push('    </lineage>');
+  L.push('  </dataqual>');
+  L.push('  <spref>');
+  L.push('    <horizsys>' + esc(m.referenciaEspacial.sistemaCoordenadas) + '</horizsys>');
+  L.push('    <note>' + esc(m.referenciaEspacial.nota) + '</note>');
+  L.push('  </spref>');
+  L.push('  <eainfo>');
+  m.atributos.forEach(function (a) {
+    L.push('    <attr>');
+    L.push('      <attrlabl>' + esc(a.campo) + '</attrlabl>');
+    L.push('      <attrdef>' + esc(a.definicion) + '</attrdef>');
+    L.push('    </attr>');
+  });
+  L.push('  </eainfo>');
+  L.push('  <distinfo>');
+  L.push('    <format>' + esc(m.distribucion.formato) + '</format>');
+  L.push('    <file>' + esc(m.distribucion.archivo) + '</file>');
+  L.push('    <size>' + esc(m.distribucion.peso) + '</size>');
+  L.push('    <access>' + esc(m.distribucion.acceso) + '</access>');
+  L.push('  </distinfo>');
+  L.push('  <metainfo>');
+  L.push('    <metd>' + m.referenciaMetadatos.fecha + '</metd>');
+  L.push('    <metstdn>' + esc(m.referenciaMetadatos.estandar) + '</metstdn>');
+  L.push('    <metc><cntperp>' + esc(m.referenciaMetadatos.elaboradoPor) + '</cntperp></metc>');
+  L.push('  </metainfo>');
+  L.push('</metadata>');
+  return L.join('\n');
+}
+
+/* ── Botones ────────────────────────────────── */
+document.getElementById('btnDlTxt').addEventListener('click', function () {
+  download('metadatos_municipios.txt', buildTXT(METADATA), 'text/plain;charset=utf-8');
+});
+document.getElementById('btnDlXml').addEventListener('click', function () {
+  download('metadatos_municipios.xml', buildXML(METADATA), 'application/xml;charset=utf-8');
+});
+document.getElementById('btnDlJson').addEventListener('click', function () {
+  download('metadatos_municipios.json', JSON.stringify(METADATA, null, 2), 'application/json;charset=utf-8');
+});
+</script>
+
+<script>
+/* ── Hamburger dinámico: aparece solo cuando los links no caben ── */
+(function () {
+  const header = document.querySelector('header');
+  const btn    = document.getElementById('navHamburger');
+  const links  = document.getElementById('navLinks');
+  if (!btn || !links) return;
+
+  function checkFit() {
+    header.classList.remove('mobile-nav');
+    links.classList.remove('open');
+    btn.classList.remove('open');
+    btn.setAttribute('aria-expanded', 'false');
+
+    links.style.cssText = 'display:flex;flex-direction:row;position:static;width:auto;visibility:hidden;';
+    btn.style.display = 'none';
+
+    const navEl   = document.querySelector('nav');
+    const brandEl = navEl.querySelector('.nav-brand');
+    const gap     = 40;
+    const fits    = brandEl.offsetWidth + gap + links.scrollWidth <= navEl.offsetWidth;
+
+    links.style.cssText = '';
+    btn.style.display   = '';
+
+    if (!fits) header.classList.add('mobile-nav');
+  }
+
+  btn.addEventListener('click', function () {
+    const isOpen = links.classList.toggle('open');
+    btn.classList.toggle('open', isOpen);
+    btn.setAttribute('aria-expanded', isOpen);
+  });
+
+  links.querySelectorAll('a').forEach(function (a) {
+    a.addEventListener('click', function () {
+      links.classList.remove('open');
+      btn.classList.remove('open');
+      btn.setAttribute('aria-expanded', 'false');
+    });
+  });
+
+  document.addEventListener('click', function (e) {
+    if (!btn.contains(e.target) && !links.contains(e.target)) {
+      links.classList.remove('open');
+      btn.classList.remove('open');
+      btn.setAttribute('aria-expanded', 'false');
+    }
+  });
+
+  checkFit();
+  window.addEventListener('resize', checkFit);
+})();
+</script>
+
+</body>
+</html>

@@ -395,7 +395,7 @@ html, body {
 /* ── Panel de análisis espacial (Turf.js) ─── */
 .turf-rail {
   position: absolute;
-  left: 12px;
+  right: 12px;
   top: 50%;
   transform: translateY(-50%);
   z-index: 10;
@@ -441,7 +441,7 @@ html, body {
 
 .turf-panel {
   position: absolute;
-  left: 62px;
+  right: 62px;
   top: 50%;
   transform: translateY(-50%);
   z-index: 11;
@@ -547,8 +547,8 @@ html, body {
 .turf-panel-row button:hover { background: #0b543f; }
 
 @media (max-width: 720px) {
-  .turf-rail { left: 8px; }
-  .turf-panel { left: 8px; top: auto; bottom: 64px; transform: none; width: calc(100% - 16px); max-width: none; }
+  .turf-rail { right: 8px; }
+  .turf-panel { right: 8px; top: auto; bottom: 64px; transform: none; width: calc(100% - 16px); max-width: none; }
 }
 
 /* ── Buscador de municipios ──────────────── */
@@ -585,6 +585,22 @@ html, body {
 }
 .muni-search-box input::placeholder { color: #94a3b8; }
 
+.muni-info-btn {
+  flex-shrink: 0;
+  width: 22px;
+  height: 22px;
+  border: none;
+  background: transparent;
+  color: #94a3b8;
+  cursor: pointer;
+  font-size: 13px;
+  border-radius: 5px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.muni-info-btn:hover { background: #f1f5f9; color: #0F6E56; }
+
 .muni-search-results {
   margin-top: 4px;
   background: #ffffff;
@@ -614,26 +630,42 @@ html, body {
   color: #94a3b8;
 }
 
-/* ── Badge de municipio seleccionado ─────── */
+.muni-search-hint {
+  text-align: center;
+  margin-top: 4px;
+  font-size: 10px;
+  color: rgba(255,255,255,0.85);
+  text-shadow: 0 1px 3px rgba(0,0,0,0.45);
+}
+
+/* ── Badge de municipio(s) seleccionado(s) ─────── */
 .muni-badge {
   position: absolute;
-  top: 60px;
+  top: 66px;
   left: 50%;
   transform: translateX(-50%);
   z-index: 11;
+  display: none;
+  flex-direction: column;
+  gap: 6px;
+  max-width: 320px;
+  max-height: calc(100% - 90px);
+  overflow-y: auto;
+}
+.muni-badge.open { display: flex; }
+
+.muni-card {
+  position: relative;
   background: rgba(255,255,255,0.97);
   backdrop-filter: blur(10px);
   border: 1px solid #e2e8f0;
   border-radius: 10px;
   box-shadow: 0 4px 16px rgba(0,0,0,0.12);
-  padding: 10px 34px 10px 14px;
-  min-width: 200px;
-  max-width: 320px;
-  display: none;
+  padding: 10px 30px 10px 14px;
+  min-width: 220px;
 }
-.muni-badge.open { display: block; }
 
-.muni-badge-close {
+.muni-card-remove {
   position: absolute;
   top: 6px;
   right: 6px;
@@ -646,24 +678,39 @@ html, body {
   font-size: 11px;
   border-radius: 5px;
 }
-.muni-badge-close:hover { background: #f1f5f9; color: #475569; }
+.muni-card-remove:hover { background: #f1f5f9; color: #475569; }
 
-.muni-badge-name {
+.muni-card-name {
   font-size: 13px;
   font-weight: 700;
   color: #0B2E6B;
   line-height: 1.3;
 }
-.muni-badge-depto {
+.muni-card-depto {
   font-size: 10.5px;
   color: #64748b;
   margin-bottom: 6px;
+  line-height: 1.4;
 }
-.muni-badge-area {
+.muni-card-area {
   font-size: 11.5px;
   color: #0F6E56;
   font-weight: 600;
 }
+
+.muni-badge-clearall {
+  align-self: center;
+  border: none;
+  background: rgba(255,255,255,0.95);
+  color: #dc2626;
+  font-size: 11px;
+  font-weight: 600;
+  padding: 6px 14px;
+  border-radius: 20px;
+  cursor: pointer;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.12);
+}
+.muni-badge-clearall:hover { background: #fef2f2; }
 
 @media (max-width: 720px) {
   .muni-search-wrap { max-width: calc(100% - 100px); left: 8px; transform: none; }
@@ -1209,16 +1256,18 @@ html, body {
         <div class="muni-search-box">
           <i class="fa-solid fa-magnifying-glass"></i>
           <input type="text" id="muniSearchInput" placeholder="Buscar municipio de Colombia...">
+          <button class="muni-info-btn" id="muniInfoBtn" title="Ver metadatos de la capa de municipios">
+            <i class="fa-solid fa-circle-info"></i>
+          </button>
         </div>
+        <div class="muni-search-hint">Clic: seleccionar · Ctrl+clic: agregar varios</div>
         <div class="muni-search-results" id="muniSearchResults"></div>
       </div>
 
-      <!-- Badge del municipio seleccionado (nombre + área) -->
+      <!-- Badge de municipio(s) seleccionado(s): una tarjeta por cada uno -->
       <div class="muni-badge" id="muniBadge">
-        <button class="muni-badge-close" id="muniBadgeClose"><i class="fa-solid fa-xmark"></i></button>
-        <div class="muni-badge-name" id="muniBadgeName">—</div>
-        <div class="muni-badge-depto" id="muniBadgeDepto">—</div>
-        <div class="muni-badge-area" id="muniBadgeArea">—</div>
+        <div class="muni-badge-list" id="muniBadgeList"></div>
+        <button class="muni-badge-clearall" id="muniBadgeClearAll" style="display:none;">Limpiar selección</button>
       </div>
 
       <!-- ── Riel de análisis espacial (Turf.js) ─────────────── -->
@@ -2107,10 +2156,11 @@ window.TurfPanel = (function () {
     dist: {
       eyebrow: 'Medición',
       title: 'Distancia',
-      desc: 'Calcula la distancia en línea recta entre dos marcadores de tesis, usando el radio terrestre.',
-      hint: 'Haz clic en dos marcadores del mapa.',
+      desc: 'Calcula la distancia en línea recta entre dos puntos cualesquiera del mapa (marcadores, municipios o cualquier lugar), usando el radio terrestre.',
+      hint: 'Haz clic en dos puntos del mapa.',
       needsPicking: true,
-      picksNeeded: 2
+      picksNeeded: 2,
+      pickAnywhere: true
     },
     area: {
       eyebrow: 'Medición',
@@ -2121,10 +2171,11 @@ window.TurfPanel = (function () {
     buff: {
       eyebrow: 'Transformación',
       title: 'Buffer',
-      desc: 'Genera una zona de influencia circular alrededor de un marcador, al radio (km) que definas.',
-      hint: 'Haz clic en un marcador del mapa.',
+      desc: 'Genera una zona de influencia circular alrededor de cualquier punto del mapa, al radio (km) que definas.',
+      hint: 'Haz clic en cualquier punto del mapa.',
       needsPicking: true,
       picksNeeded: 1,
+      pickAnywhere: true,
       showRadius: true
     },
     ctrd: {
@@ -2155,10 +2206,11 @@ window.TurfPanel = (function () {
     intx: {
       eyebrow: 'Relación espacial',
       title: 'Intersección',
-      desc: 'Genera un buffer de 20 km alrededor de dos marcadores y comprueba si esas zonas de influencia se cruzan.',
-      hint: 'Haz clic en dos marcadores del mapa.',
+      desc: 'Genera un buffer de 20 km alrededor de dos puntos cualesquiera del mapa y comprueba si esas zonas de influencia se cruzan.',
+      hint: 'Haz clic en dos puntos del mapa.',
       needsPicking: true,
-      picksNeeded: 2
+      picksNeeded: 2,
+      pickAnywhere: true
     },
     voro: {
       eyebrow: 'Agregación',
@@ -2353,6 +2405,26 @@ window.TurfPanel = (function () {
     }
   }
 
+  /* ── Etiqueta descriptiva de un punto clickeado ──────────
+     Prioridad: marcador de tesis > municipio > punto genérico.
+     Solo se usa para el texto del resultado; el cálculo
+     siempre usa la coordenada exacta del clic. ──────────── */
+  function labelForClick(evt) {
+    let label = null;
+
+    map.forEachFeatureAtPixel(evt.pixel, function (feature) {
+      if (label !== null) return;
+      if (feature.get('isProjectMarker')) label = feature.get('lugar');
+    }, { hitTolerance: 8 });
+
+    if (label === null && window.MunicipioSearch && window.MunicipioSearch.getFeatureAtPixel) {
+      const muniFeat = window.MunicipioSearch.getFeatureAtPixel(evt);
+      if (muniFeat) label = muniFeat.properties.mpio_cnmbr;
+    }
+
+    return label || 'Punto en el mapa';
+  }
+
   /* ── Clic en el mapa mientras hay picking activo ── */
   function handleMapClick(evt) {
     if (!activeTool) return false;
@@ -2360,25 +2432,9 @@ window.TurfPanel = (function () {
     if (!t.needsPicking) return false;
 
     const clickLonLat = ol.proj.toLonLat(evt.coordinate);
+    const label = labelForClick(evt);
 
-    /* Determinar si el clic cayó sobre un marcador de proyecto */
-    let hitMarkerIdx = null;
-    map.forEachFeatureAtPixel(evt.pixel, function (feature) {
-      if (hitMarkerIdx !== null) return;
-      if (!feature.get('isProjectMarker')) return;
-      const geomCoord = ol.proj.toLonLat(feature.getGeometry().getCoordinates());
-      const idx = PROJECT_MARKERS.findIndex(function (m) {
-        return Math.abs(m.coords[0] - geomCoord[0]) < 1e-6 && Math.abs(m.coords[1] - geomCoord[1]) < 1e-6;
-      });
-      if (idx !== -1) hitMarkerIdx = idx;
-    }, { hitTolerance: 8 });
-
-    if (!t.pickAnywhere && hitMarkerIdx === null) {
-      /* esta herramienta necesita un marcador y el clic no cayó en ninguno */
-      return true; // absorbe el clic igual, para no abrir el popup normal
-    }
-
-    picked.push({ idx: hitMarkerIdx, coord: clickLonLat });
+    picked.push({ coord: clickLonLat, label: label });
 
     if (picked.length < t.picksNeeded) {
       document.getElementById('turfHint').textContent =
@@ -2395,14 +2451,13 @@ window.TurfPanel = (function () {
     clearResultLayer();
 
     if (key === 'dist') {
-      const a = PROJECT_MARKERS[picked[0].idx];
-      const b = PROJECT_MARKERS[picked[1].idx];
-      const from = turf.point(a.coords), to = turf.point(b.coords);
-      const line = turf.lineString([a.coords, b.coords]);
+      const a = picked[0], b = picked[1];
+      const from = turf.point(a.coord), to = turf.point(b.coord);
+      const line = turf.lineString([a.coord, b.coord]);
       addOlFeatureFromTurf(line, STYLE_LINE);
       const km = turf.distance(from, to);
       showResult(
-        '<b>Distancia</b><br>' + escHtml(a.lugar) + ' &harr; ' + escHtml(b.lugar) + '<br>' + fmtKm(km)
+        '<b>Distancia</b><br>' + escHtml(a.label) + ' &harr; ' + escHtml(b.label) + '<br>' + fmtKm(km)
       );
       resetPicking();
     }
@@ -2421,7 +2476,7 @@ window.TurfPanel = (function () {
 
     if (key === 'pip') {
       if (!lastBuffer) {
-        showResult('Aún no hay ningún buffer generado. Usa primero la herramienta <b>Buffer</b> sobre un marcador.');
+        showResult('Aún no hay ningún buffer generado. Usa primero la herramienta <b>Buffer</b> sobre cualquier punto.');
         resetPicking();
         return;
       }
@@ -2431,31 +2486,25 @@ window.TurfPanel = (function () {
       addOlFeatureFromTurf(turf.point(clicked), styleForPoint(inside ? '#0F6E56' : '#dc2626'));
       showResult(
         'El punto seleccionado está <b>' + (inside ? 'DENTRO' : 'FUERA') + '</b> del buffer de ' +
-        fmtKm(lastBuffer.radiusKm) + ' alrededor de ' + escHtml(PROJECT_MARKERS[lastBuffer.markerIdx].lugar)
+        fmtKm(lastBuffer.radiusKm) + ' alrededor de ' + escHtml(lastBuffer.label)
       );
       resetPicking();
     }
 
     if (key === 'buff') {
       const radiusKm = parseFloat(document.getElementById('turfRadiusInput').value) || 20;
-      generateBuffer(picked[0].idx, radiusKm);
+      generateBuffer(picked[0].coord, picked[0].label, radiusKm);
       resetPicking();
     }
 
     if (key === 'intx') {
-      const idxA = picked[0].idx, idxB = picked[1].idx;
-      if (idxA === null || idxB === null || idxA === idxB) {
-        showResult('Selecciona dos marcadores distintos.');
-        resetPicking();
-        return;
-      }
-      const a = PROJECT_MARKERS[idxA], b = PROJECT_MARKERS[idxB];
-      const bufA = turf.buffer(turf.point(a.coords), 20, { units: 'kilometers' });
-      const bufB = turf.buffer(turf.point(b.coords), 20, { units: 'kilometers' });
+      const a = picked[0], b = picked[1];
+      const bufA = turf.buffer(turf.point(a.coord), 20, { units: 'kilometers' });
+      const bufB = turf.buffer(turf.point(b.coord), 20, { units: 'kilometers' });
       addOlFeatureFromTurf(bufA, STYLE_BUFFER);
       addOlFeatureFromTurf(bufB, STYLE_BUFFER);
       const intersects = turf.booleanIntersects(bufA, bufB);
-      let html = 'Buffers de 20 km alrededor de ' + escHtml(a.lugar) + ' y ' + escHtml(b.lugar) + '<br>' +
+      let html = 'Buffers de 20 km alrededor de ' + escHtml(a.label) + ' y ' + escHtml(b.label) + '<br>' +
                  '<b>' + (intersects ? 'SÍ se intersectan' : 'NO se intersectan') + '</b>';
       if (intersects) {
         try {
@@ -2474,14 +2523,13 @@ window.TurfPanel = (function () {
     }
   }
 
-  function generateBuffer(markerIdx, radiusKm) {
-    const m = PROJECT_MARKERS[markerIdx];
-    const poly = turf.buffer(turf.point(m.coords), radiusKm, { units: 'kilometers' });
+  function generateBuffer(coord, label, radiusKm) {
+    const poly = turf.buffer(turf.point(coord), radiusKm, { units: 'kilometers' });
     addOlFeatureFromTurf(poly, STYLE_BUFFER);
-    lastBuffer = { turfPolygon: poly, markerIdx: markerIdx, radiusKm: radiusKm };
+    lastBuffer = { turfPolygon: poly, label: label, radiusKm: radiusKm };
     const areaKm2 = turf.area(poly) / 1e6;
     showResult(
-      '<b>Buffer</b> de ' + fmtKm(radiusKm) + ' alrededor de ' + escHtml(m.lugar) + '<br>' +
+      '<b>Buffer</b> de ' + fmtKm(radiusKm) + ' alrededor de ' + escHtml(label) + '<br>' +
       'Área: ' + fmtKm2(areaKm2)
     );
   }
@@ -2495,7 +2543,7 @@ window.TurfPanel = (function () {
     document.getElementById('turfRadiusBtn').addEventListener('click', function () {
       if (activeTool === 'buff' && picked.length) {
         const radiusKm = parseFloat(document.getElementById('turfRadiusInput').value) || 20;
-        generateBuffer(picked[0].idx, radiusKm);
+        generateBuffer(picked[0].coord, picked[0].label, radiusKm);
       }
     });
   }
@@ -2523,18 +2571,20 @@ window.MunicipioSearch = (function () {
 
   const DATA_URL = '../data/municipios.json';
 
-  let municipiosFC   = null;   // FeatureCollection GeoJSON (WGS84), tras descomprimir el TopoJSON
-  let hitLayer        = null;  // capa invisible para detección de clic sobre los 1,122 polígonos
-  let highlightLayer  = null;  // capa visible: solo el municipio actualmente seleccionado
-  let selectedFeature = null;
+  let municipiosFC    = null;   // FeatureCollection GeoJSON (WGS84), tras descomprimir el TopoJSON
+  let hitLayer         = null;  // capa invisible para detección de clic sobre los 1,122 polígonos
+  let highlightLayer   = null;  // capa visible: solo los municipios actualmente seleccionados
+  let selectedFeatures = [];    // selección activa (1 o varias, según Ctrl+clic)
+  let deptoAreaTotals  = {};    // { [dpto_ccdgo]: área total del departamento en km² }
 
   const STYLE_INVISIBLE = new ol.style.Style({
     fill:   new ol.style.Fill({ color: 'rgba(0,0,0,0)' }),
     stroke: new ol.style.Stroke({ color: 'rgba(0,0,0,0)', width: 1 })
   });
+  /* Un poco más visible que antes (grosor y opacidad levemente mayores) */
   const STYLE_HIGHLIGHT = new ol.style.Style({
-    fill:   new ol.style.Fill({ color: 'rgba(15,110,86,0.18)' }),
-    stroke: new ol.style.Stroke({ color: '#0F6E56', width: 2 })
+    fill:   new ol.style.Fill({ color: 'rgba(15,110,86,0.24)' }),
+    stroke: new ol.style.Stroke({ color: '#0F6E56', width: 2.75 })
   });
 
   function stripAccents(str) {
@@ -2543,6 +2593,10 @@ window.MunicipioSearch = (function () {
   function fmtKm2(km2) {
     return km2 < 0.01 ? (km2 * 1e6).toFixed(0) + ' m²' : km2.toLocaleString('es-CO', { maximumFractionDigits: 1 }) + ' km²';
   }
+  function fmtPct(pct) {
+    return pct.toLocaleString('es-CO', { maximumFractionDigits: 1 }) + '%';
+  }
+  function keyOf(f) { return f.properties.mpio_ccnct; } // código DIVIPOLA de municipio, único
 
   /* ── Carga del TopoJSON + construcción de capas ─────────── */
   function init() {
@@ -2551,6 +2605,15 @@ window.MunicipioSearch = (function () {
       .then(function (topo) {
         const key = Object.keys(topo.objects)[0];
         municipiosFC = topojson.feature(topo, topo.objects[key]);
+
+        /* Área total por departamento, calculada una sola vez sumando
+           el área (Turf) de todos sus municipios — no requiere ningún
+           dataset adicional de límites departamentales. */
+        municipiosFC.features.forEach(function (f) {
+          const d = f.properties.dpto_ccdgo;
+          const a = turf.area(f) / 1e6;
+          deptoAreaTotals[d] = (deptoAreaTotals[d] || 0) + a;
+        });
 
         const gjFormat = new ol.format.GeoJSON();
         const olFeatures = gjFormat.readFeatures(municipiosFC, {
@@ -2578,50 +2641,112 @@ window.MunicipioSearch = (function () {
       });
 
     wireSearchBox();
-    document.getElementById('muniBadgeClose').addEventListener('click', clearSelection);
   }
 
-  /* ── Selección (por búsqueda o por clic) ─────────────────── */
-  function selectMunicipio(geojsonFeature) {
-    selectedFeature = geojsonFeature;
-
-    highlightLayer.getSource().clear();
-    const gjFormat = new ol.format.GeoJSON();
-    const olFeat = gjFormat.readFeature(geojsonFeature, {
-      featureProjection: 'EPSG:3857',
-      dataProjection: 'EPSG:4326'
-    });
-    highlightLayer.getSource().addFeature(olFeat);
-
-    const extent3857 = olFeat.getGeometry().getExtent();
-    map.getView().fit(extent3857, { padding: [60, 60, 60, 60], duration: 400, maxZoom: 12 });
-
-    const p = geojsonFeature.properties;
-    const areaKm2 = turf.area(geojsonFeature) / 1e6;
-    document.getElementById('muniBadgeName').textContent  = p.mpio_cnmbr;
-    document.getElementById('muniBadgeDepto').textContent = p.dpto_cnmbr + ' · Cód. DIVIPOLA ' + p.mpio_ccnct;
-    document.getElementById('muniBadgeArea').innerHTML    = '<i class="fa-solid fa-draw-polygon"></i> Área: ' + fmtKm2(areaKm2);
-    document.getElementById('muniBadge').classList.add('open');
-  }
-
-  function clearSelection() {
-    selectedFeature = null;
-    if (highlightLayer) highlightLayer.getSource().clear();
-    document.getElementById('muniBadge').classList.remove('open');
-  }
-
-  /* ── Clic directo sobre el mapa ───────────────────────────── */
-  function handleMapClick(evt) {
-    if (!hitLayer) return false;
+  /* ── Utilidad interna: feature de municipio bajo un pixel ── */
+  function findMunicipioAtPixel(evt) {
+    if (!hitLayer) return null;
     let hit = null;
     map.forEachFeatureAtPixel(evt.pixel, function (feature, layer) {
       if (layer === hitLayer) hit = feature;
     }, { hitTolerance: 2 });
+    if (!hit) return null;
+    return municipiosFC.features[hit.get('__muniIndex')];
+  }
 
-    if (!hit) return false;
-    const idx = hit.get('__muniIndex');
-    selectMunicipio(municipiosFC.features[idx]);
+  /* ── Render de capa resaltada + badge, a partir de selectedFeatures ── */
+  function renderSelection(fitView) {
+    highlightLayer.getSource().clear();
+    const gjFormat = new ol.format.GeoJSON();
+
+    if (selectedFeatures.length === 0) {
+      document.getElementById('muniBadge').classList.remove('open');
+      return;
+    }
+
+    let combinedExtent = null;
+    selectedFeatures.forEach(function (gf) {
+      const olFeat = gjFormat.readFeature(gf, { featureProjection: 'EPSG:3857', dataProjection: 'EPSG:4326' });
+      highlightLayer.getSource().addFeature(olFeat);
+      const ext = olFeat.getGeometry().getExtent();
+      combinedExtent = combinedExtent ? ol.extent.extend(combinedExtent, ext) : ext.slice();
+    });
+
+    if (fitView && combinedExtent) {
+      map.getView().fit(combinedExtent, { padding: [60, 60, 60, 60], duration: 400, maxZoom: 12 });
+    }
+
+    renderBadge();
+  }
+
+  function renderBadge() {
+    const listEl = document.getElementById('muniBadgeList');
+    listEl.innerHTML = '';
+
+    selectedFeatures.forEach(function (gf) {
+      const p = gf.properties;
+      const areaKm2   = turf.area(gf) / 1e6;
+      const deptoArea = deptoAreaTotals[p.dpto_ccdgo] || 0;
+      const pct       = deptoArea > 0 ? (areaKm2 / deptoArea) * 100 : 0;
+
+      const card = document.createElement('div');
+      card.className = 'muni-card';
+      card.innerHTML =
+        '<button class="muni-card-remove" title="Quitar"><i class="fa-solid fa-xmark"></i></button>' +
+        '<div class="muni-card-name">' + escHtml(p.mpio_cnmbr) + '</div>' +
+        '<div class="muni-card-depto">' + escHtml(p.dpto_cnmbr) + ' · Depto. DIVIPOLA ' + escHtml(p.dpto_ccdgo) +
+          ' · Municipio ' + escHtml(p.mpio_ccnct) + '</div>' +
+        '<div class="muni-card-area"><i class="fa-solid fa-draw-polygon"></i> ' + fmtKm2(areaKm2) +
+          ' &nbsp;·&nbsp; ' + fmtPct(pct) + ' del departamento</div>';
+      card.querySelector('.muni-card-remove').addEventListener('click', function (e) {
+        e.stopPropagation();
+        removeFromSelection(keyOf(gf));
+      });
+      listEl.appendChild(card);
+    });
+
+    document.getElementById('muniBadgeClearAll').style.display = selectedFeatures.length > 1 ? 'block' : 'none';
+    document.getElementById('muniBadge').classList.add('open');
+  }
+
+  /* ── Operaciones de selección ─────────────────────────── */
+  function replaceSelection(geojsonFeature) {
+    selectedFeatures = [geojsonFeature];
+    renderSelection(true);
+  }
+  function toggleInSelection(geojsonFeature) {
+    const k = keyOf(geojsonFeature);
+    const i = selectedFeatures.findIndex(function (f) { return keyOf(f) === k; });
+    if (i !== -1) selectedFeatures.splice(i, 1);
+    else selectedFeatures.push(geojsonFeature);
+    renderSelection(selectedFeatures.length > 0);
+  }
+  function removeFromSelection(k) {
+    selectedFeatures = selectedFeatures.filter(function (f) { return keyOf(f) !== k; });
+    renderSelection(false);
+  }
+  function clearSelection() {
+    selectedFeatures = [];
+    if (highlightLayer) highlightLayer.getSource().clear();
+    document.getElementById('muniBadge').classList.remove('open');
+  }
+
+  /* ── Clic directo sobre el mapa ────────────────────────
+     Clic normal  → selecciona solo ese municipio.
+     Ctrl/Cmd+clic → lo agrega o lo quita de la selección. ── */
+  function handleMapClick(evt) {
+    const feature = findMunicipioAtPixel(evt);
+    if (!feature) return false;
+
+    const isMulti = !!(evt.originalEvent && (evt.originalEvent.ctrlKey || evt.originalEvent.metaKey));
+    if (isMulti) toggleInSelection(feature);
+    else replaceSelection(feature);
     return true;
+  }
+
+  /* ── API expuesta para otros módulos (p. ej. TurfPanel) ── */
+  function getFeatureAtPixel(evt) {
+    return findMunicipioAtPixel(evt);
   }
 
   /* ── Buscador por nombre ──────────────────────────────────── */
@@ -2653,7 +2778,7 @@ window.MunicipioSearch = (function () {
             '<div class="muni-result-name">' + escHtml(p.mpio_cnmbr) + '</div>' +
             '<div class="muni-result-depto">' + escHtml(p.dpto_cnmbr) + '</div>';
           item.addEventListener('click', function () {
-            selectMunicipio(f);
+            replaceSelection(f);
             resultsEl.classList.remove('open');
             input.value = p.mpio_cnmbr;
           });
@@ -2668,11 +2793,20 @@ window.MunicipioSearch = (function () {
         resultsEl.classList.remove('open');
       }
     });
+
+    document.getElementById('muniBadgeClearAll').addEventListener('click', clearSelection);
+
+    const infoBtn = document.getElementById('muniInfoBtn');
+    if (infoBtn) {
+      infoBtn.addEventListener('click', function () {
+        window.open('metadatos-municipios.html', '_blank', 'noopener');
+      });
+    }
   }
 
   window.addEventListener('load', init);
 
-  return { handleMapClick: handleMapClick };
+  return { handleMapClick: handleMapClick, getFeatureAtPixel: getFeatureAtPixel };
 })();
 </script>
 </body>
