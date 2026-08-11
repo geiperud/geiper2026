@@ -20,6 +20,10 @@
   <link rel="icon" type="image/png" href="../assets/images/Logo_GEIPER.png">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/ol@9.2.4/dist/ol.css">
+  <!-- Turf.js: análisis geoespacial en cliente (distancia, área, buffer, centroide, voronoi, etc.) -->
+  <script src="https://cdn.jsdelivr.net/npm/@turf/turf@6/turf.min.js"></script>
+  <!-- topojson-client: descomprime data/municipios.json (TopoJSON) a GeoJSON en el navegador -->
+  <script src="https://cdn.jsdelivr.net/npm/topojson-client@3/dist/topojson-client.min.js"></script>
   <link rel="stylesheet" href="../css/styles.css">
 
 <style>
@@ -386,6 +390,284 @@ html, body {
   color: #0F6E56;
   border-color: #86efac;
   transform: scale(1.05);
+}
+
+/* ── Panel de análisis espacial (Turf.js) ─── */
+.turf-rail {
+  position: absolute;
+  left: 12px;
+  top: 50%;
+  transform: translateY(-50%);
+  z-index: 10;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  background: rgba(255,255,255,0.96);
+  backdrop-filter: blur(10px);
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  padding: 8px;
+  box-shadow: 0 4px 16px rgba(0,0,0,0.1);
+}
+
+.turf-btn {
+  width: 36px;
+  height: 36px;
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 9px;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.06);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #64748b;
+  font-size: 14px;
+  transition: all 0.15s;
+}
+
+.turf-btn:hover {
+  background: #f0fdf4;
+  color: #0F6E56;
+  border-color: #86efac;
+}
+
+.turf-btn.active {
+  background: #0F6E56;
+  color: #ffffff;
+  border-color: #0F6E56;
+  box-shadow: 0 2px 8px rgba(15,110,86,0.35);
+}
+
+.turf-panel {
+  position: absolute;
+  left: 62px;
+  top: 50%;
+  transform: translateY(-50%);
+  z-index: 11;
+  width: 268px;
+  max-width: calc(100% - 90px);
+  background: rgba(255,255,255,0.98);
+  backdrop-filter: blur(10px);
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  box-shadow: 0 8px 28px rgba(0,0,0,0.14);
+  padding: 14px 16px;
+  display: none;
+}
+
+.turf-panel.open { display: block; }
+
+.turf-panel-close {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  width: 22px;
+  height: 22px;
+  border: none;
+  background: transparent;
+  color: #94a3b8;
+  cursor: pointer;
+  font-size: 12px;
+  border-radius: 6px;
+}
+.turf-panel-close:hover { background: #f1f5f9; color: #475569; }
+
+.turf-panel-eyebrow {
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: #0F6E56;
+  margin-bottom: 2px;
+}
+
+.turf-panel-title {
+  font-size: 15px;
+  font-weight: 700;
+  color: #1e293b;
+  margin-bottom: 8px;
+  padding-right: 20px;
+}
+
+.turf-panel-desc {
+  font-size: 12px;
+  line-height: 1.5;
+  color: #64748b;
+  margin-bottom: 10px;
+}
+
+.turf-panel-hint {
+  font-size: 11.5px;
+  line-height: 1.45;
+  color: #0F6E56;
+  background: #f0fdf4;
+  border: 1px solid #bbf7d0;
+  border-radius: 8px;
+  padding: 8px 10px;
+  margin-bottom: 10px;
+}
+
+.turf-panel-result {
+  font-size: 12.5px;
+  line-height: 1.55;
+  color: #1e293b;
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  padding: 10px 12px;
+}
+.turf-panel-result b { color: #0F6E56; }
+
+.turf-panel-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 10px;
+}
+.turf-panel-row input[type="number"] {
+  width: 64px;
+  padding: 5px 7px;
+  border: 1px solid #e2e8f0;
+  border-radius: 6px;
+  font-size: 12px;
+  font-family: inherit;
+}
+.turf-panel-row button {
+  flex: 1;
+  padding: 6px 10px;
+  border: none;
+  border-radius: 6px;
+  background: #0F6E56;
+  color: #fff;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+}
+.turf-panel-row button:hover { background: #0b543f; }
+
+@media (max-width: 720px) {
+  .turf-rail { left: 8px; }
+  .turf-panel { left: 8px; top: auto; bottom: 64px; transform: none; width: calc(100% - 16px); max-width: none; }
+}
+
+/* ── Buscador de municipios ──────────────── */
+.muni-search-wrap {
+  position: absolute;
+  top: 12px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 12;
+  width: 280px;
+  max-width: calc(100% - 180px);
+}
+
+.muni-search-box {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: rgba(255,255,255,0.96);
+  backdrop-filter: blur(10px);
+  border: 1px solid #e2e8f0;
+  border-radius: 10px;
+  box-shadow: 0 4px 16px rgba(0,0,0,0.1);
+  padding: 8px 12px;
+}
+.muni-search-box i { color: #94a3b8; font-size: 12px; }
+.muni-search-box input {
+  border: none;
+  outline: none;
+  background: transparent;
+  font-size: 12.5px;
+  font-family: inherit;
+  color: #1e293b;
+  width: 100%;
+}
+.muni-search-box input::placeholder { color: #94a3b8; }
+
+.muni-search-results {
+  margin-top: 4px;
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 10px;
+  box-shadow: 0 8px 24px rgba(0,0,0,0.12);
+  max-height: 240px;
+  overflow-y: auto;
+  display: none;
+}
+.muni-search-results.open { display: block; }
+
+.muni-result-item {
+  padding: 8px 12px;
+  font-size: 12px;
+  cursor: pointer;
+  border-bottom: 1px solid #f1f5f9;
+}
+.muni-result-item:last-child { border-bottom: none; }
+.muni-result-item:hover { background: #f0fdf4; }
+.muni-result-name { font-weight: 600; color: #1e293b; }
+.muni-result-depto { color: #94a3b8; font-size: 10.5px; }
+
+.muni-search-empty {
+  padding: 10px 12px;
+  font-size: 11.5px;
+  color: #94a3b8;
+}
+
+/* ── Badge de municipio seleccionado ─────── */
+.muni-badge {
+  position: absolute;
+  top: 60px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 11;
+  background: rgba(255,255,255,0.97);
+  backdrop-filter: blur(10px);
+  border: 1px solid #e2e8f0;
+  border-radius: 10px;
+  box-shadow: 0 4px 16px rgba(0,0,0,0.12);
+  padding: 10px 34px 10px 14px;
+  min-width: 200px;
+  max-width: 320px;
+  display: none;
+}
+.muni-badge.open { display: block; }
+
+.muni-badge-close {
+  position: absolute;
+  top: 6px;
+  right: 6px;
+  width: 20px;
+  height: 20px;
+  border: none;
+  background: transparent;
+  color: #94a3b8;
+  cursor: pointer;
+  font-size: 11px;
+  border-radius: 5px;
+}
+.muni-badge-close:hover { background: #f1f5f9; color: #475569; }
+
+.muni-badge-name {
+  font-size: 13px;
+  font-weight: 700;
+  color: #0B2E6B;
+  line-height: 1.3;
+}
+.muni-badge-depto {
+  font-size: 10.5px;
+  color: #64748b;
+  margin-bottom: 6px;
+}
+.muni-badge-area {
+  font-size: 11.5px;
+  color: #0F6E56;
+  font-weight: 600;
+}
+
+@media (max-width: 720px) {
+  .muni-search-wrap { max-width: calc(100% - 100px); left: 8px; transform: none; }
+  .muni-badge { left: 8px; transform: none; max-width: calc(100% - 16px); }
 }
 
 /* ── Coordenadas ──────────────────────────── */
@@ -921,6 +1203,50 @@ html, body {
           </div>
         </div>
       </div>
+
+      <!-- ── Buscador de municipios ───────────────────────────── -->
+      <div class="muni-search-wrap">
+        <div class="muni-search-box">
+          <i class="fa-solid fa-magnifying-glass"></i>
+          <input type="text" id="muniSearchInput" placeholder="Buscar municipio de Colombia...">
+        </div>
+        <div class="muni-search-results" id="muniSearchResults"></div>
+      </div>
+
+      <!-- Badge del municipio seleccionado (nombre + área) -->
+      <div class="muni-badge" id="muniBadge">
+        <button class="muni-badge-close" id="muniBadgeClose"><i class="fa-solid fa-xmark"></i></button>
+        <div class="muni-badge-name" id="muniBadgeName">—</div>
+        <div class="muni-badge-depto" id="muniBadgeDepto">—</div>
+        <div class="muni-badge-area" id="muniBadgeArea">—</div>
+      </div>
+
+      <!-- ── Riel de análisis espacial (Turf.js) ─────────────── -->
+      <div class="turf-rail" id="turfRail">
+        <button class="turf-btn" data-tool="dist"  title="Distancia"><i class="fa-solid fa-ruler"></i></button>
+        <button class="turf-btn" data-tool="area"  title="Área de cobertura"><i class="fa-solid fa-draw-polygon"></i></button>
+        <button class="turf-btn" data-tool="buff"  title="Buffer"><i class="fa-solid fa-circle-notch"></i></button>
+        <button class="turf-btn" data-tool="ctrd"  title="Centroide"><i class="fa-solid fa-crosshairs"></i></button>
+        <button class="turf-btn" data-tool="near"  title="Punto más cercano"><i class="fa-solid fa-location-arrow"></i></button>
+        <button class="turf-btn" data-tool="pip"   title="Punto en polígono"><i class="fa-solid fa-map-pin"></i></button>
+        <button class="turf-btn" data-tool="intx"  title="Intersección"><i class="fa-solid fa-code-compare"></i></button>
+        <button class="turf-btn" data-tool="voro"  title="Voronoi"><i class="fa-solid fa-chess-board"></i></button>
+      </div>
+
+      <!-- Panel de resultado / descripción de la herramienta activa -->
+      <div class="turf-panel" id="turfPanel">
+        <button class="turf-panel-close" id="turfPanelClose"><i class="fa-solid fa-xmark"></i></button>
+        <div class="turf-panel-eyebrow" id="turfEyebrow">—</div>
+        <div class="turf-panel-title" id="turfTitle">—</div>
+        <div class="turf-panel-desc" id="turfDesc">—</div>
+        <div class="turf-panel-row" id="turfRadiusRow" style="display:none;">
+          <input type="number" id="turfRadiusInput" value="20" min="1" max="500">
+          <span style="font-size:11px;color:#64748b;">km</span>
+          <button id="turfRadiusBtn">Generar</button>
+        </div>
+        <div class="turf-panel-hint" id="turfHint" style="display:none;"></div>
+        <div class="turf-panel-result" id="turfResult" style="display:none;"></div>
+      </div>
     </div><!-- /mapCanvas -->
 
     <!-- Panel inferior -->
@@ -1194,6 +1520,12 @@ function initMap() {
 
   /* Click en feature → popup */
   map.on('singleclick', function (evt) {
+    /* Si hay una herramienta de análisis espacial activa en modo de
+       selección (Turf.js), ese clic se dedica a la herramienta y no
+       debe abrir el popup normal de proyecto. */
+    if (window.TurfPanel && window.TurfPanel.handleMapClick(evt)) return;
+    if (window.MunicipioSearch && window.MunicipioSearch.handleMapClick(evt)) return;
+
     const popup = document.getElementById('geoPopup');
     let found   = false;
 
@@ -1757,6 +2089,591 @@ window.addEventListener('load', function () {
   }, 100);
   window.addEventListener('resize', function () { map.updateSize(); });
 });
+</script>
+
+<!-- ══════════════════════════════════════════════
+     PANEL DE ANÁLISIS ESPACIAL (Turf.js)
+     Opera sobre PROJECT_MARKERS (los 4 puntos reales de
+     ubicación de tesis). No depende de capas/polígonos propios
+     de cada proyecto porque esos aún no existen como datasets
+     (ver PROJECTS[].capas, vacío) — así que las herramientas que
+     necesitan un polígono (Buffer, Área, Punto-en-polígono,
+     Intersección) lo generan ellas mismas a partir de los puntos.
+     ══════════════════════════════════════════════ -->
+<script>
+window.TurfPanel = (function () {
+
+  const TOOLS = {
+    dist: {
+      eyebrow: 'Medición',
+      title: 'Distancia',
+      desc: 'Calcula la distancia en línea recta entre dos marcadores de tesis, usando el radio terrestre.',
+      hint: 'Haz clic en dos marcadores del mapa.',
+      needsPicking: true,
+      picksNeeded: 2
+    },
+    area: {
+      eyebrow: 'Medición',
+      title: 'Área de cobertura',
+      desc: 'Calcula el área del polígono envolvente (convex hull) que cubre todas las tesis activas en el mapa.',
+      needsPicking: false
+    },
+    buff: {
+      eyebrow: 'Transformación',
+      title: 'Buffer',
+      desc: 'Genera una zona de influencia circular alrededor de un marcador, al radio (km) que definas.',
+      hint: 'Haz clic en un marcador del mapa.',
+      needsPicking: true,
+      picksNeeded: 1,
+      showRadius: true
+    },
+    ctrd: {
+      eyebrow: 'Transformación',
+      title: 'Centroide',
+      desc: 'Calcula el centro geométrico del conjunto de tesis activas en el mapa.',
+      needsPicking: false
+    },
+    near: {
+      eyebrow: 'Relación espacial',
+      title: 'Punto más cercano',
+      desc: 'Haz clic en cualquier punto del mapa y se identifica qué tesis está geográficamente más cerca.',
+      hint: 'Haz clic en cualquier punto del mapa.',
+      needsPicking: true,
+      picksNeeded: 1,
+      pickAnywhere: true
+    },
+    pip: {
+      eyebrow: 'Relación espacial',
+      title: 'Punto en polígono',
+      desc: 'Verifica si un punto cae dentro del último buffer generado con la herramienta Buffer.',
+      hint: 'Haz clic en cualquier punto del mapa.',
+      needsPicking: true,
+      picksNeeded: 1,
+      pickAnywhere: true,
+      requiresBuffer: true
+    },
+    intx: {
+      eyebrow: 'Relación espacial',
+      title: 'Intersección',
+      desc: 'Genera un buffer de 20 km alrededor de dos marcadores y comprueba si esas zonas de influencia se cruzan.',
+      hint: 'Haz clic en dos marcadores del mapa.',
+      needsPicking: true,
+      picksNeeded: 2
+    },
+    voro: {
+      eyebrow: 'Agregación',
+      title: 'Voronoi',
+      desc: 'Divide el territorio en celdas: cada una agrupa el área más cercana a una tesis que a cualquier otra.',
+      needsPicking: false
+    }
+  };
+
+  let activeTool   = null;
+  let picked       = [];        // marcadores (o coords) elegidos durante el picking
+  let lastBuffer   = null;      // { turfPolygon, olFeature, markerIdx, radiusKm }
+  let resultLayer  = null;      // capa OL donde se dibujan buffers/lineas/voronoi/centroide
+
+  /* ── Utilidades ─────────────────────────────── */
+  function fmtKm(km) {
+    return km < 1 ? (km * 1000).toFixed(0) + ' m' : km.toFixed(2) + ' km';
+  }
+  function fmtKm2(km2) {
+    return km2 < 0.01 ? (km2 * 1e6).toFixed(0) + ' m²' : km2.toFixed(2) + ' km²';
+  }
+  function markersAsFeatureCollection() {
+    return turf.featureCollection(
+      PROJECT_MARKERS.map(function (m) { return turf.point(m.coords, { lugar: m.lugar }); })
+    );
+  }
+  function clearResultLayer() {
+    if (resultLayer) resultLayer.getSource().clear();
+  }
+  function addOlFeatureFromTurf(turfGeom, style) {
+    const olFeat = new ol.format.GeoJSON().readFeature(turfGeom, {
+      featureProjection: 'EPSG:3857',
+      dataProjection: 'EPSG:4326'
+    });
+    if (style) olFeat.setStyle(style);
+    resultLayer.getSource().addFeature(olFeat);
+    return olFeat;
+  }
+  function nearestMarkerFeature(coordLonLat) {
+    /* Encuentra el marcador (PROJECT_MARKERS) más cercano a una coordenada */
+    const from = turf.point(coordLonLat);
+    const fc   = markersAsFeatureCollection();
+    const near = turf.nearestPoint(from, fc);
+    return { feature: near, idx: near.properties.featureIndex };
+  }
+
+  /* ── Capa de resultados (buffers, líneas, voronoi, centroide) ── */
+  function ensureResultLayer() {
+    if (resultLayer) return;
+    resultLayer = new ol.layer.Vector({
+      source: new ol.source.Vector(),
+      zIndex: 4
+    });
+    map.addLayer(resultLayer);
+  }
+
+  const STYLE_LINE = new ol.style.Style({
+    stroke: new ol.style.Stroke({ color: '#0F6E56', width: 2, lineDash: [6, 6] })
+  });
+  const STYLE_BUFFER = new ol.style.Style({
+    fill:   new ol.style.Fill({ color: 'rgba(15,110,86,0.12)' }),
+    stroke: new ol.style.Stroke({ color: '#0F6E56', width: 1.5 })
+  });
+  const STYLE_HULL = new ol.style.Style({
+    fill:   new ol.style.Fill({ color: 'rgba(11,46,107,0.08)' }),
+    stroke: new ol.style.Stroke({ color: '#0B2E6B', width: 1.5, lineDash: [3, 3] })
+  });
+  const STYLE_VORONOI = new ol.style.Style({
+    fill:   new ol.style.Fill({ color: 'rgba(217,119,6,0.06)' }),
+    stroke: new ol.style.Stroke({ color: '#d97706', width: 1 })
+  });
+  function styleForPoint(color) {
+    return new ol.style.Style({
+      image: new ol.style.Circle({
+        radius: 7,
+        fill:   new ol.style.Fill({ color: color }),
+        stroke: new ol.style.Stroke({ color: '#ffffff', width: 2 })
+      })
+    });
+  }
+
+  /* ── UI del panel ───────────────────────────── */
+  function openPanel(key) {
+    const t = TOOLS[key];
+    document.getElementById('turfEyebrow').textContent = t.eyebrow;
+    document.getElementById('turfTitle').textContent   = t.title;
+    document.getElementById('turfDesc').textContent    = t.desc;
+
+    const hintEl   = document.getElementById('turfHint');
+    const resultEl = document.getElementById('turfResult');
+    const radiusRow = document.getElementById('turfRadiusRow');
+
+    hintEl.style.display    = 'none';
+    resultEl.style.display  = 'none';
+    radiusRow.style.display = t.showRadius ? 'flex' : 'none';
+
+    if (t.hint) { hintEl.textContent = t.hint; hintEl.style.display = 'block'; }
+
+    document.getElementById('turfPanel').classList.add('open');
+  }
+
+  function showResult(html) {
+    const resultEl = document.getElementById('turfResult');
+    resultEl.innerHTML = html;
+    resultEl.style.display = 'block';
+    document.getElementById('turfHint').style.display = 'none';
+  }
+
+  function setActiveButton(key) {
+    document.querySelectorAll('.turf-btn').forEach(function (b) {
+      b.classList.toggle('active', b.dataset.tool === key);
+    });
+  }
+
+  function resetPicking() {
+    picked = [];
+  }
+
+  /* ── Selección de una herramienta ──────────── */
+  function selectTool(key) {
+    ensureResultLayer();
+
+    if (activeTool === key) {
+      /* clic sobre la misma herramienta activa: cerrar */
+      deactivate();
+      return;
+    }
+
+    activeTool = key;
+    resetPicking();
+    setActiveButton(key);
+    openPanel(key);
+
+    const t = TOOLS[key];
+    if (!t.needsPicking) {
+      runImmediateTool(key);
+    }
+  }
+
+  function deactivate() {
+    activeTool = null;
+    resetPicking();
+    setActiveButton(null);
+    document.getElementById('turfPanel').classList.remove('open');
+  }
+
+  /* ── Herramientas inmediatas (sin picking) ─── */
+  function runImmediateTool(key) {
+    clearResultLayer();
+    const fc = markersAsFeatureCollection();
+
+    if (key === 'ctrd') {
+      const c = turf.centroid(fc);
+      addOlFeatureFromTurf(c, styleForPoint('#0B2E6B'));
+      const coords = c.geometry.coordinates;
+      map.getView().animate({ center: ol.proj.fromLonLat(coords), duration: 400 });
+      showResult(
+        '<b>Centroide</b> de las ' + PROJECT_MARKERS.length + ' tesis activas<br>' +
+        'Lon: ' + coords[0].toFixed(5) + ' &nbsp; Lat: ' + coords[1].toFixed(5)
+      );
+    }
+
+    if (key === 'area') {
+      if (PROJECT_MARKERS.length < 3) {
+        showResult('Se necesitan al menos 3 tesis con ubicación para calcular un área de cobertura (convex hull). Actualmente hay ' + PROJECT_MARKERS.length + '.');
+        return;
+      }
+      const hull = turf.convex(fc);
+      if (!hull) {
+        showResult('No fue posible calcular un polígono envolvente con la disposición actual de las tesis.');
+        return;
+      }
+      addOlFeatureFromTurf(hull, STYLE_HULL);
+      const areaKm2 = turf.area(hull) / 1e6;
+      showResult('<b>Área de cobertura</b> (convex hull)<br>' + fmtKm2(areaKm2));
+    }
+
+    if (key === 'voro') {
+      if (PROJECT_MARKERS.length < 2) {
+        showResult('Se necesitan al menos 2 tesis para generar celdas de Voronoi.');
+        return;
+      }
+      const bbox = [-78.990935, -4.298187, -66.876326, 12.437303]; // extent Colombia
+      const voro = turf.voronoi(fc, { bbox: bbox });
+      let count = 0;
+      voro.features.forEach(function (f) {
+        if (!f) return;
+        addOlFeatureFromTurf(f, STYLE_VORONOI);
+        count++;
+      });
+      showResult('<b>Voronoi</b> generado<br>' + count + ' celdas — cada una representa el área del país más cercana a esa tesis que a cualquier otra.');
+    }
+  }
+
+  /* ── Clic en el mapa mientras hay picking activo ── */
+  function handleMapClick(evt) {
+    if (!activeTool) return false;
+    const t = TOOLS[activeTool];
+    if (!t.needsPicking) return false;
+
+    const clickLonLat = ol.proj.toLonLat(evt.coordinate);
+
+    /* Determinar si el clic cayó sobre un marcador de proyecto */
+    let hitMarkerIdx = null;
+    map.forEachFeatureAtPixel(evt.pixel, function (feature) {
+      if (hitMarkerIdx !== null) return;
+      if (!feature.get('isProjectMarker')) return;
+      const geomCoord = ol.proj.toLonLat(feature.getGeometry().getCoordinates());
+      const idx = PROJECT_MARKERS.findIndex(function (m) {
+        return Math.abs(m.coords[0] - geomCoord[0]) < 1e-6 && Math.abs(m.coords[1] - geomCoord[1]) < 1e-6;
+      });
+      if (idx !== -1) hitMarkerIdx = idx;
+    }, { hitTolerance: 8 });
+
+    if (!t.pickAnywhere && hitMarkerIdx === null) {
+      /* esta herramienta necesita un marcador y el clic no cayó en ninguno */
+      return true; // absorbe el clic igual, para no abrir el popup normal
+    }
+
+    picked.push({ idx: hitMarkerIdx, coord: clickLonLat });
+
+    if (picked.length < t.picksNeeded) {
+      document.getElementById('turfHint').textContent =
+        'Selecciona ' + (t.picksNeeded - picked.length) + ' más.';
+      return true;
+    }
+
+    runPickedTool(activeTool);
+    return true;
+  }
+
+  /* ── Herramientas que dependen de picking ──── */
+  function runPickedTool(key) {
+    clearResultLayer();
+
+    if (key === 'dist') {
+      const a = PROJECT_MARKERS[picked[0].idx];
+      const b = PROJECT_MARKERS[picked[1].idx];
+      const from = turf.point(a.coords), to = turf.point(b.coords);
+      const line = turf.lineString([a.coords, b.coords]);
+      addOlFeatureFromTurf(line, STYLE_LINE);
+      const km = turf.distance(from, to);
+      showResult(
+        '<b>Distancia</b><br>' + escHtml(a.lugar) + ' &harr; ' + escHtml(b.lugar) + '<br>' + fmtKm(km)
+      );
+      resetPicking();
+    }
+
+    if (key === 'near') {
+      const clicked = picked[0].coord;
+      const { feature, idx } = nearestMarkerFeature(clicked);
+      const m = PROJECT_MARKERS[idx];
+      const line = turf.lineString([clicked, m.coords]);
+      addOlFeatureFromTurf(line, STYLE_LINE);
+      addOlFeatureFromTurf(turf.point(clicked), styleForPoint('#d97706'));
+      const km = turf.distance(turf.point(clicked), turf.point(m.coords));
+      showResult('<b>Tesis más cercana</b><br>' + escHtml(m.lugar) + '<br>a ' + fmtKm(km) + ' del punto seleccionado');
+      resetPicking();
+    }
+
+    if (key === 'pip') {
+      if (!lastBuffer) {
+        showResult('Aún no hay ningún buffer generado. Usa primero la herramienta <b>Buffer</b> sobre un marcador.');
+        resetPicking();
+        return;
+      }
+      addOlFeatureFromTurf(lastBuffer.turfPolygon, STYLE_BUFFER);
+      const clicked = picked[0].coord;
+      const inside = turf.booleanPointInPolygon(turf.point(clicked), lastBuffer.turfPolygon);
+      addOlFeatureFromTurf(turf.point(clicked), styleForPoint(inside ? '#0F6E56' : '#dc2626'));
+      showResult(
+        'El punto seleccionado está <b>' + (inside ? 'DENTRO' : 'FUERA') + '</b> del buffer de ' +
+        fmtKm(lastBuffer.radiusKm) + ' alrededor de ' + escHtml(PROJECT_MARKERS[lastBuffer.markerIdx].lugar)
+      );
+      resetPicking();
+    }
+
+    if (key === 'buff') {
+      const radiusKm = parseFloat(document.getElementById('turfRadiusInput').value) || 20;
+      generateBuffer(picked[0].idx, radiusKm);
+      resetPicking();
+    }
+
+    if (key === 'intx') {
+      const idxA = picked[0].idx, idxB = picked[1].idx;
+      if (idxA === null || idxB === null || idxA === idxB) {
+        showResult('Selecciona dos marcadores distintos.');
+        resetPicking();
+        return;
+      }
+      const a = PROJECT_MARKERS[idxA], b = PROJECT_MARKERS[idxB];
+      const bufA = turf.buffer(turf.point(a.coords), 20, { units: 'kilometers' });
+      const bufB = turf.buffer(turf.point(b.coords), 20, { units: 'kilometers' });
+      addOlFeatureFromTurf(bufA, STYLE_BUFFER);
+      addOlFeatureFromTurf(bufB, STYLE_BUFFER);
+      const intersects = turf.booleanIntersects(bufA, bufB);
+      let html = 'Buffers de 20 km alrededor de ' + escHtml(a.lugar) + ' y ' + escHtml(b.lugar) + '<br>' +
+                 '<b>' + (intersects ? 'SÍ se intersectan' : 'NO se intersectan') + '</b>';
+      if (intersects) {
+        try {
+          const inter = turf.intersect(bufA, bufB);
+          if (inter) {
+            addOlFeatureFromTurf(inter, new ol.style.Style({
+              fill: new ol.style.Fill({ color: 'rgba(220,38,38,0.25)' }),
+              stroke: new ol.style.Stroke({ color: '#dc2626', width: 1.5 })
+            }));
+            html += '<br>Área de intersección: ' + fmtKm2(turf.area(inter) / 1e6);
+          }
+        } catch (e) { /* geometrías muy pequeñas o degeneradas: se ignora el área */ }
+      }
+      showResult(html);
+      resetPicking();
+    }
+  }
+
+  function generateBuffer(markerIdx, radiusKm) {
+    const m = PROJECT_MARKERS[markerIdx];
+    const poly = turf.buffer(turf.point(m.coords), radiusKm, { units: 'kilometers' });
+    addOlFeatureFromTurf(poly, STYLE_BUFFER);
+    lastBuffer = { turfPolygon: poly, markerIdx: markerIdx, radiusKm: radiusKm };
+    const areaKm2 = turf.area(poly) / 1e6;
+    showResult(
+      '<b>Buffer</b> de ' + fmtKm(radiusKm) + ' alrededor de ' + escHtml(m.lugar) + '<br>' +
+      'Área: ' + fmtKm2(areaKm2)
+    );
+  }
+
+  /* ── Wiring de UI (se llama una vez el DOM está listo) ─── */
+  function initUIWiring() {
+    document.querySelectorAll('.turf-btn').forEach(function (btn) {
+      btn.addEventListener('click', function () { selectTool(btn.dataset.tool); });
+    });
+    document.getElementById('turfPanelClose').addEventListener('click', deactivate);
+    document.getElementById('turfRadiusBtn').addEventListener('click', function () {
+      if (activeTool === 'buff' && picked.length) {
+        const radiusKm = parseFloat(document.getElementById('turfRadiusInput').value) || 20;
+        generateBuffer(picked[0].idx, radiusKm);
+      }
+    });
+  }
+
+  window.addEventListener('load', function () {
+    /* Se ejecuta después del load handler principal (registrado antes),
+       por lo que `map` y `PROJECT_MARKERS` ya existen. */
+    initUIWiring();
+  });
+
+  return { handleMapClick: handleMapClick };
+})();
+</script>
+
+<!-- ══════════════════════════════════════════════
+     BUSCADOR DE MUNICIPIOS (data/municipios.json)
+     Carga un único TopoJSON nacional (1,122 municipios,
+     fuente IGAC/DANE, WGS84) con hit-testing invisible.
+     El croquis de un municipio solo se dibuja al buscarlo
+     o hacer clic sobre él — nunca se muestran los 1,122 a
+     la vez, a diferencia del borde nacional.
+     ══════════════════════════════════════════════ -->
+<script>
+window.MunicipioSearch = (function () {
+
+  const DATA_URL = '../data/municipios.json';
+
+  let municipiosFC   = null;   // FeatureCollection GeoJSON (WGS84), tras descomprimir el TopoJSON
+  let hitLayer        = null;  // capa invisible para detección de clic sobre los 1,122 polígonos
+  let highlightLayer  = null;  // capa visible: solo el municipio actualmente seleccionado
+  let selectedFeature = null;
+
+  const STYLE_INVISIBLE = new ol.style.Style({
+    fill:   new ol.style.Fill({ color: 'rgba(0,0,0,0)' }),
+    stroke: new ol.style.Stroke({ color: 'rgba(0,0,0,0)', width: 1 })
+  });
+  const STYLE_HIGHLIGHT = new ol.style.Style({
+    fill:   new ol.style.Fill({ color: 'rgba(15,110,86,0.18)' }),
+    stroke: new ol.style.Stroke({ color: '#0F6E56', width: 2 })
+  });
+
+  function stripAccents(str) {
+    return str.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
+  }
+  function fmtKm2(km2) {
+    return km2 < 0.01 ? (km2 * 1e6).toFixed(0) + ' m²' : km2.toLocaleString('es-CO', { maximumFractionDigits: 1 }) + ' km²';
+  }
+
+  /* ── Carga del TopoJSON + construcción de capas ─────────── */
+  function init() {
+    fetch(DATA_URL)
+      .then(function (r) { return r.json(); })
+      .then(function (topo) {
+        const key = Object.keys(topo.objects)[0];
+        municipiosFC = topojson.feature(topo, topo.objects[key]);
+
+        const gjFormat = new ol.format.GeoJSON();
+        const olFeatures = gjFormat.readFeatures(municipiosFC, {
+          featureProjection: 'EPSG:3857',
+          dataProjection: 'EPSG:4326'
+        });
+        /* índice de vuelta a la feature GeoJSON original (para turf.area) */
+        olFeatures.forEach(function (f, i) { f.set('__muniIndex', i); });
+
+        hitLayer = new ol.layer.Vector({
+          source: new ol.source.Vector({ features: olFeatures }),
+          style: STYLE_INVISIBLE,
+          zIndex: 2
+        });
+        highlightLayer = new ol.layer.Vector({
+          source: new ol.source.Vector(),
+          style: STYLE_HIGHLIGHT,
+          zIndex: 2
+        });
+        map.addLayer(hitLayer);
+        map.addLayer(highlightLayer);
+      })
+      .catch(function (err) {
+        console.error('No se pudo cargar data/municipios.json:', err);
+      });
+
+    wireSearchBox();
+    document.getElementById('muniBadgeClose').addEventListener('click', clearSelection);
+  }
+
+  /* ── Selección (por búsqueda o por clic) ─────────────────── */
+  function selectMunicipio(geojsonFeature) {
+    selectedFeature = geojsonFeature;
+
+    highlightLayer.getSource().clear();
+    const gjFormat = new ol.format.GeoJSON();
+    const olFeat = gjFormat.readFeature(geojsonFeature, {
+      featureProjection: 'EPSG:3857',
+      dataProjection: 'EPSG:4326'
+    });
+    highlightLayer.getSource().addFeature(olFeat);
+
+    const extent3857 = olFeat.getGeometry().getExtent();
+    map.getView().fit(extent3857, { padding: [60, 60, 60, 60], duration: 400, maxZoom: 12 });
+
+    const p = geojsonFeature.properties;
+    const areaKm2 = turf.area(geojsonFeature) / 1e6;
+    document.getElementById('muniBadgeName').textContent  = p.mpio_cnmbr;
+    document.getElementById('muniBadgeDepto').textContent = p.dpto_cnmbr + ' · Cód. DIVIPOLA ' + p.mpio_ccnct;
+    document.getElementById('muniBadgeArea').innerHTML    = '<i class="fa-solid fa-draw-polygon"></i> Área: ' + fmtKm2(areaKm2);
+    document.getElementById('muniBadge').classList.add('open');
+  }
+
+  function clearSelection() {
+    selectedFeature = null;
+    if (highlightLayer) highlightLayer.getSource().clear();
+    document.getElementById('muniBadge').classList.remove('open');
+  }
+
+  /* ── Clic directo sobre el mapa ───────────────────────────── */
+  function handleMapClick(evt) {
+    if (!hitLayer) return false;
+    let hit = null;
+    map.forEachFeatureAtPixel(evt.pixel, function (feature, layer) {
+      if (layer === hitLayer) hit = feature;
+    }, { hitTolerance: 2 });
+
+    if (!hit) return false;
+    const idx = hit.get('__muniIndex');
+    selectMunicipio(municipiosFC.features[idx]);
+    return true;
+  }
+
+  /* ── Buscador por nombre ──────────────────────────────────── */
+  function wireSearchBox() {
+    const input   = document.getElementById('muniSearchInput');
+    const resultsEl = document.getElementById('muniSearchResults');
+
+    input.addEventListener('input', function () {
+      const q = stripAccents(input.value.trim());
+      if (!municipiosFC || q.length < 2) {
+        resultsEl.classList.remove('open');
+        resultsEl.innerHTML = '';
+        return;
+      }
+
+      const matches = municipiosFC.features
+        .filter(function (f) { return stripAccents(f.properties.mpio_cnmbr).indexOf(q) !== -1; })
+        .slice(0, 8);
+
+      resultsEl.innerHTML = '';
+      if (matches.length === 0) {
+        resultsEl.innerHTML = '<div class="muni-search-empty">Sin resultados para "' + escHtml(input.value) + '"</div>';
+      } else {
+        matches.forEach(function (f) {
+          const p = f.properties;
+          const item = document.createElement('div');
+          item.className = 'muni-result-item';
+          item.innerHTML =
+            '<div class="muni-result-name">' + escHtml(p.mpio_cnmbr) + '</div>' +
+            '<div class="muni-result-depto">' + escHtml(p.dpto_cnmbr) + '</div>';
+          item.addEventListener('click', function () {
+            selectMunicipio(f);
+            resultsEl.classList.remove('open');
+            input.value = p.mpio_cnmbr;
+          });
+          resultsEl.appendChild(item);
+        });
+      }
+      resultsEl.classList.add('open');
+    });
+
+    document.addEventListener('click', function (e) {
+      if (!input.contains(e.target) && !resultsEl.contains(e.target)) {
+        resultsEl.classList.remove('open');
+      }
+    });
+  }
+
+  window.addEventListener('load', init);
+
+  return { handleMapClick: handleMapClick };
+})();
 </script>
 </body>
 </html>
