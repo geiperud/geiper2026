@@ -255,6 +255,7 @@ vectorstore = None
 vectorstore_investigacion = None
 api_token   = None
 groq_token   = None
+glm_token   = None
 
 # ── Embeddings via REST ──────────────────────────────────────────────────────
 class GoogleEmbeddingsREST(Embeddings):
@@ -403,6 +404,44 @@ def gemini_generate(prompt, api_key, nombre_asistente="Asistente Académico"):
                 )
         resp.raise_for_status()
         return resp.json()["candidates"][0]["content"]["parts"][0]["text"]
+
+
+# ── LLM GLM via Zhipu AI / BigModel (fallback, formato OpenAI-compatible) ────
+GLM_URL = "https://open.bigmodel.cn/api/paas/v4/chat/completions"
+GLM_MODEL = "glm-4.5-flash"
+
+
+def glm_generate(prompt, api_key, nombre_asistente="Asistente Académico"):
+    headers = {
+        "Authorization": f"Bearer {api_key}",
+        "Content-Type": "application/json"
+    }
+    payload = {
+        "model": GLM_MODEL,
+        "messages": [
+            {"role": "system", "content": construir_system_prompt(nombre_asistente)},
+            {"role": "user", "content": prompt}
+        ],
+        "max_tokens": 1500,
+        "temperature": 0.2
+    }
+    MAX_REINTENTOS = 2
+    for intento in range(MAX_REINTENTOS):
+        resp = requests.post(GLM_URL, headers=headers, json=payload, timeout=25)
+        if resp.status_code == 429:
+            if intento < MAX_REINTENTOS - 1:
+                espera = 5 * (intento + 1)
+                logger.warning(f"Rate limit GLM (429), esperando {espera}s antes de reintentar...")
+                time.sleep(espera)
+                continue
+            else:
+                logger.error("Rate limit GLM (429) agotado tras reintentos.")
+                raise HTTPException(
+                    status_code=429,
+                    detail="El servicio de IA está temporalmente saturado. Por favor, espera unos segundos e intenta de nuevo."
+                )
+        resp.raise_for_status()
+        return resp.json()["choices"][0]["message"]["content"]
 
 
 # ── Búsqueda web via DuckDuckGo ──────────────────────────────────────────────
@@ -957,13 +996,20 @@ def construir_prompt_conversacional(contexto_docs, contexto_web, transcripcion, 
 
 
 def init_services():
-    global vectorstore, vectorstore_investigacion, api_token, groq_token
+    global vectorstore, vectorstore_investigacion, api_token, groq_token, glm_token
 
     groq_token  = os.environ.get("GROQ_API_KEY", "")
     if groq_token:
         logger.info("Groq API Key encontrada (modelo primario).")
     else:
         logger.warning("No se encontro GROQ_API_KEY.")
+
+    glm_token = os.environ.get("GLM_API_KEY", "").strip()
+    if glm_token:
+        logger.info("GLM API Key encontrada (modelo fallback).")
+    else:
+        logger.warning("No se encontro GLM_API_KEY.")
+
 
     api_token = os.environ.get("GOOGLE_API_KEY", "").strip()
     if api_token:
@@ -1091,7 +1137,7 @@ def construir_consulta_efectiva(chat_request):
 
 @app.get("/status")
 def status():
-    return {"status": "ok", "cloud_ready": bool(groq_token or api_token)}
+    return {"status": "ok", "cloud_ready": bool(groq_token or glm_token)}
 
 @app.get("/documentos")
 def documentos(modo: str = "tematico"):
@@ -1110,7 +1156,7 @@ def documentos(modo: str = "tematico"):
 @app.post("/chat")
 @limiter.limit("10/minute")
 def chat(request: Request, chat_request: ChatRequest):
-    if not groq_token and not api_token:
+    if not groq_token and not glm_token:
         raise HTTPException(status_code=500, detail="Sin configuracion de API.")
 
     # ── Filtro de obscenidades: corte inmediato, sin gastar API ni web ───────
@@ -1164,11 +1210,11 @@ def chat(request: Request, chat_request: ChatRequest):
                 except Exception as e:
                     # Antes, un HTTPException (ej. 429 de Groq saturado) se
                     # relanzaba directo al usuario sin darle oportunidad al
-                    # respaldo de Gemini de abajo. Ahora CUALQUIER falla de
+                    # respaldo de GLM de abajo. Ahora CUALQUIER falla de
                     # Groq (429, error de red, lo que sea) cae al respaldo.
                     logger.warning(f"Groq fallo en saludo: {e}")
-            if api_token:
-                respuesta = gemini_generate(saludo_prompt, api_token, nombre_asistente)
+            if glm_token:
+                respuesta = glm_generate(saludo_prompt, glm_token, nombre_asistente)
                 return {"response": respuesta}
 
         # ── "¿Qué documentos tienes?": se responde directo, sin pasar por el LLM ─
@@ -1258,7 +1304,7 @@ def chat(request: Request, chat_request: ChatRequest):
             contexto_docs, contexto_web, transcripcion, chat_request.query, respuesta_corta=respuesta_corta
         )
 
-        # ── Generar respuesta (Groq primero, Gemini fallback) ─────────────────
+        # ── Generar respuesta (Groq primero, GLM fallback) ─────────────────
         respuesta = None
         if groq_token:
             try:
@@ -1268,16 +1314,16 @@ def chat(request: Request, chat_request: ChatRequest):
             except Exception as e:
                 # Antes, un HTTPException (ej. 429 de Groq saturado) se
                 # relanzaba directo al usuario sin darle oportunidad al
-                # respaldo de Gemini de abajo. Ahora CUALQUIER falla de
+                # respaldo de GLM de abajo. Ahora CUALQUIER falla de
                 # Groq (429, error de red, lo que sea) cae al respaldo.
-                logger.warning(f"Groq falló, intentando con Gemini: {e}")
+                logger.warning(f"Groq falló, intentando con GLM: {e}")
 
         if respuesta is None:
-            if not api_token:
+            if not glm_token:
                 raise HTTPException(status_code=500, detail="Servicio temporalmente no disponible.")
-            logger.info(f"Enviando a Gemini fallback (modo: {chat_request.mode})")
-            respuesta = gemini_generate(user_prompt, api_token, nombre_asistente)
-            logger.info("Respuesta recibida de Gemini.")
+            logger.info(f"Enviando a GLM fallback (modo: {chat_request.mode})")
+            respuesta = glm_generate(user_prompt, glm_token, nombre_asistente)
+            logger.info("Respuesta recibida de GLM.")
 
         # ── Verificación anti-alucinación: descarta toda la respuesta si hay ──
         # una cita no verificable en cualquier parte del texto, no solo en
