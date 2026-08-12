@@ -161,11 +161,11 @@
 
 
 
-<!-- ── GEIPER EN ACCIÓN (mosaico) ────────────────── -->
+<!-- ── 	Detrás de cada proyecto (mosaico) ────────────────── -->
 <section style="padding:70px 80px 90px; background:#F5F7FB;">
-  <h2 class="section-title">Del salón de clase a la investigación aplicada</h2>
+  <h2 class="section-title">	Detrás de cada proyecto </h2>
   <p style="text-align:center; max-width:640px; margin:-24px auto 44px; font-size:15px; color:var(--gris); line-height:1.6;">
-    Talleres, conferencias magistrales y sesiones de trabajo que forman a la próxima generación de investigadores en percepción remota y sistemas de información geográfica.
+    Talleres, charlas y conferencias magistrales que sostienen el trabajo investigativo del semillero.
   </p>
 
   <div class="mosaico-cols">
@@ -274,7 +274,7 @@
       Feed automático de noticias, congresos y oportunidades académicas.
     </p>
 
-    <div id="rssFeedContainer" class="feed-grid" data-feed-url="data/eventos_feed.json" data-limit="3">
+    <div id="rssFeedContainer" class="feed-list" data-feed-url="data/eventos_feed.json" data-limit="3">
       <!-- Las tarjetas se inyectarán aquí vía JS -->
     </div>
 
@@ -285,43 +285,13 @@
 </section>
 
 <!-- ── CONTACTO Y PREGUNTAS FRECUENTES (FAQ) ──────────────── -->
-<section class="support-split-section" id="contacto-form" style="background: var(--fondo-alt); padding: 80px;">
-  <div class="support-split-container" style="max-width: 1200px; margin: 0 auto; display: grid; grid-template-columns: 1fr 1fr; gap: 60px; align-items: start;">
-    
-    <!-- LADO IZQUIERDO: FORMULARIO -->
-    <div class="contact-container" style="background: white; padding: 40px; border-radius: 16px; box-shadow: 0 10px 30px rgba(11,46,107,0.08); max-width: 100%; margin: 0;">
-      <h2 style="text-align: center; font-family: 'Playfair Display', serif; color: var(--azul-oscuro); margin-bottom: 10px; font-size: 28px;">Escríbenos directamente</h2>
-      <p class="subtitle" style="text-align: center; color: var(--gris); font-size: 14px; margin-bottom: 30px;">¿Quieres saber más sobre GEIPER? Déjanos tu mensaje y te contactamos pronto.</p>
-      
-      <form id="contactForm">
-        <div class="form-group">
-          <label for="name">Tu Nombre Completo</label>
-          <input type="text" id="name" name="name" class="form-input" placeholder="Ej: Laura Díaz" required>
-        </div>
-        
-        <div class="form-group">
-          <label for="email">Tu Correo Electrónico</label>
-          <input type="email" id="email" name="email" class="form-input" placeholder="ejemplo@udistrital.edu.co" required>
-        </div>
-        
-        <div class="form-group">
-          <label for="subject">Asunto</label>
-          <input type="text" id="subject" name="subject" class="form-input" placeholder="Inscripciones / Duda Académica" required>
-        </div>
-        
-        <div class="form-group">
-          <label for="message">Tu Mensaje</label>
-          <textarea id="message" name="message" class="form-input" placeholder="Escribe aquí tu duda..." required></textarea>
-        </div>
-        
-        <button type="submit" class="submit-btn"><i class="fa-regular fa-paper-plane" style="margin-right:8px;"></i>Enviar Mensaje</button>
-      </form>
-    </div>
+<section class="support-split-section" id="contacto-form" style="background: var(--fondo-alt); padding: 70px 80px;">
+  <div style="max-width: 1180px; margin: 0 auto;">
 
-    <!-- LADO DERECHO: FAQ -->
-    <div class="faq-container">
-      <h2 style="font-family: 'Playfair Display', serif; color: var(--azul-oscuro); margin-bottom: 30px; font-size: 28px;">Preguntas Frecuentes</h2>
-      
+    <h2 class="section-title" style="margin-bottom: 30px;">Preguntas Frecuentes</h2>
+
+    <div class="faq-grid-2col">
+
       <div class="faq-item">
         <button class="faq-question">
           ¿Cuáles son los requisitos para unirme a GEIPER?
@@ -383,7 +353,39 @@
       </div>
 
     </div>
-    
+
+    <div class="contact-wide-card">
+      <div class="contact-wide-top">
+        <h2>Escríbenos directamente</h2>
+        <p>¿Tienes una duda sobre GEIPER? Completa el formulario y te contactamos pronto.</p>
+      </div>
+
+      <form id="contactForm">
+        <div class="contact-row-3">
+          <div class="form-group">
+            <label for="name">Tu Nombre Completo</label>
+            <input type="text" id="name" name="name" class="form-input" placeholder="Ej: Laura Díaz" required>
+          </div>
+          <div class="form-group">
+            <label for="email">Tu Correo Electrónico</label>
+            <input type="email" id="email" name="email" class="form-input" placeholder="ejemplo@udistrital.edu.co" required>
+          </div>
+          <div class="form-group">
+            <label for="subject">Asunto</label>
+            <input type="text" id="subject" name="subject" class="form-input" placeholder="Inscripciones / Duda Académica" required>
+          </div>
+        </div>
+
+        <div class="contact-bottom-row">
+          <div class="form-group">
+            <label for="message">Tu Mensaje</label>
+            <textarea id="message" name="message" class="form-input" placeholder="Escribe aquí tu duda..." required></textarea>
+          </div>
+          <button type="submit" class="submit-btn-inline"><i class="fa-regular fa-paper-plane" style="margin-right:8px;"></i>Enviar</button>
+        </div>
+      </form>
+    </div>
+
   </div>
 </section>
 

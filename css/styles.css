@@ -544,21 +544,34 @@ header.mobile-nav .nav-links a.active {
 }
 
 /* ── ESTILOS DEL FEED DE EVENTOS (RSS) ───────── */
-.feed-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 30px; margin-top: 20px;}
-.event-feed-card { background: white; border-radius: 12px; padding: 25px; box-shadow: 0 4px 15px rgba(0,0,0,0.05); display: flex; flex-direction: column; transition: transform 0.2s;}
-.event-feed-card:hover { transform: translateY(-3px); box-shadow: 0 8px 25px rgba(11,46,107,0.1); }
-.event-feed-date { font-size: 13px; color: var(--gris); margin-bottom: 10px; font-weight: 500;}
-.event-feed-date i { color: var(--azul-claro); margin-right: 5px; }
-.event-feed-type { display: inline-block; padding: 4px 12px; border-radius: 20px; font-size: 11px; font-weight: 600; margin-bottom: 15px; text-transform: uppercase;}
-.type-convocatoria { background-color: #fff3cd; color: #856404; }
-.type-congreso { background-color: #d1ecf1; color: #0c5460; }
-.type-taller { background-color: #d4edda; color: #155724; }
-.event-feed-title { font-size: 18px; color: var(--azul-oscuro); margin-bottom: 10px; font-weight: 600; line-height: 1.3;}
-.event-feed-desc { font-size: 14px; color: var(--gris); line-height: 1.6; margin-bottom: 20px; flex-grow: 1;}
-.event-feed-tags { margin-bottom: 20px; display: flex; gap: 8px; flex-wrap: wrap;}
-.event-tag { font-size: 11px; color: var(--azul-claro); background: #f0f4fb; padding: 2px 8px; border-radius: 4px;}
-.event-feed-btn { text-align: center; font-size: 13px; padding: 10px; border-radius: 6px; width: 100%; border: 1px solid var(--azul-medio); background: transparent; color: var(--azul-medio) !important;}
-.event-feed-btn:hover { background: var(--azul-medio); color: white !important;}
+/* ── BOLETÍN "NOVEDADES & CONVOCATORIAS" ────────
+   Sin tarjetas ni pastillas de color: filas separadas por
+   una línea fina, fecha grande tipo "número de revista" y
+   título en Playfair Display, igual que los encabezados del
+   sitio. Se usa igual en el resumen del home y en la página
+   completa de eventos (mismo contenedor #rssFeedContainer). */
+.feed-list { max-width: 880px; margin: 20px auto 0; }
+.feed-row {
+    display: grid; grid-template-columns: 100px 1fr; gap: 26px;
+    padding: 28px 0; border-bottom: 1px solid #dde3f0;
+}
+.feed-list .feed-row:first-child { padding-top: 0; }
+.feed-date-block { text-align: right; }
+.feed-date-block .feed-day { font-family: 'Playfair Display', serif; font-weight: 700; font-size: 34px; color: var(--azul-oscuro); line-height: 1; }
+.feed-date-block .feed-month { font-size: 11px; color: var(--gris); text-transform: uppercase; letter-spacing: 1px; margin-top: 4px; }
+.feed-type { font-size: 10.5px; font-weight: 700; letter-spacing: 1.5px; text-transform: uppercase; color: var(--azul-claro); margin-bottom: 6px; }
+.feed-title { font-family: 'Playfair Display', serif; font-size: 21px; color: var(--azul-oscuro); margin-bottom: 8px; line-height: 1.25; font-weight: 700; }
+.feed-desc { font-size: 14px; color: var(--gris); line-height: 1.6; margin-bottom: 12px; }
+.feed-tags { font-size: 12px; color: var(--azul-medio); }
+.feed-tags span:not(:last-child)::after { content: '·'; margin: 0 6px; color: #c7cfe3; }
+.feed-link { font-size: 13px; font-weight: 600; color: var(--azul-claro); }
+.feed-link:hover { color: var(--azul-oscuro); }
+
+@media (max-width: 700px) {
+    .feed-row { grid-template-columns: 60px 1fr; gap: 14px; }
+    .feed-date-block .feed-day { font-size: 24px; }
+}
+
 
 /* ── NUEVO BOTÓN OUTLINE ─────────────────────── */
 .btn-outline {
@@ -622,32 +635,71 @@ header.mobile-nav .nav-links a.active {
     transform: rotate(45deg);
 }
 
-/* ── FORMULARIO DE CONTACTO ──────────────────── */
-.contact-form-section {
-    padding: 80px 80px 100px;
-    background: var(--fondo-alt);
+/* ── FAQ: grid de 2 columnas (franja horizontal) ────── */
+.faq-grid-2col {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 0 40px;
+    margin-bottom: 34px;
 }
-.contact-container {
-    max-width: 600px;
+
+/* ── FORMULARIO DE CONTACTO: franja ancha ───────────── */
+.contact-wide-card {
+    max-width: 1180px;
     margin: 0 auto;
     background: white;
-    padding: 40px;
+    padding: 30px 36px;
     border-radius: 16px;
     box-shadow: 0 10px 30px rgba(11,46,107,0.08);
 }
-.contact-container h2 {
-    text-align: center;
+.contact-wide-top {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 24px;
+    flex-wrap: wrap;
+    margin-bottom: 20px;
+}
+.contact-wide-top h2 {
     font-family: 'Playfair Display', serif;
     color: var(--azul-oscuro);
-    margin-bottom: 10px;
-    font-size: 28px;
+    font-size: 22px;
 }
-.contact-container p.subtitle {
-    text-align: center;
+.contact-wide-top p {
     color: var(--gris);
-    font-size: 14px;
-    margin-bottom: 30px;
+    font-size: 13.5px;
 }
+.contact-row-3 {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    gap: 16px;
+    margin-bottom: 14px;
+}
+.contact-bottom-row {
+    display: flex;
+    gap: 16px;
+    align-items: flex-end;
+}
+.contact-bottom-row .form-group {
+    flex: 1;
+    margin-bottom: 0;
+}
+.submit-btn-inline {
+    padding: 12px 28px;
+    background: var(--azul-medio);
+    color: white;
+    border: none;
+    border-radius: 8px;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    white-space: nowrap;
+    flex-shrink: 0;
+    transition: background 0.2s;
+    font-family: 'Montserrat', sans-serif;
+}
+.submit-btn-inline:hover { background: var(--azul-oscuro); }
+
 .form-group {
     margin-bottom: 20px;
 }
@@ -675,7 +727,8 @@ header.mobile-nav .nav-links a.active {
 }
 textarea.form-input {
     resize: vertical;
-    min-height: 120px;
+    min-height: 44px;
+    height: 44px;
 }
 .submit-btn {
     width: 100%;
@@ -695,8 +748,13 @@ textarea.form-input {
 }
 
 @media (max-width: 768px) {
-    .faq-section, .contact-form-section { padding: 50px 20px; }
-    .contact-container { padding: 30px 20px; }
+    .faq-section { padding: 50px 20px; }
     .support-split-section { padding: 50px 20px !important; }
-    .support-split-container { grid-template-columns: 1fr !important; gap: 40px !important; }
+    .faq-grid-2col { grid-template-columns: 1fr; }
+    .contact-wide-card { padding: 24px 20px; }
+    .contact-wide-top { flex-direction: column; align-items: flex-start; }
+    .contact-row-3 { grid-template-columns: 1fr; gap: 0; }
+    .contact-bottom-row { flex-direction: column; align-items: stretch; }
+    .submit-btn-inline { width: 100%; }
 }
+
