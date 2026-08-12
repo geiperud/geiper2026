@@ -57,7 +57,7 @@ app.add_middleware(
 
 FAISS_DIR = "faiss_index"
 FAISS_DIR_INVESTIGACION = "faiss_index_investigacion"
-GEMINI_MODEL = "gemini-2.0-flash"
+GEMINI_MODEL = "gemini-2.5-flash"
 EMBED_MODEL  = "gemini-embedding-001"
 GEMINI_URL   = f"https://generativelanguage.googleapis.com/v1beta/models/{GEMINI_MODEL}:generateContent"
 EMBED_URL    = f"https://generativelanguage.googleapis.com/v1beta/models/{EMBED_MODEL}:embedContent"
