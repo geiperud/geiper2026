@@ -226,49 +226,50 @@ section { padding: 100px 80px; }
 .stat-label { font-size: 24px; font-weight: 700; color: var(--azul-oscuro); text-align: center; margin: 0; }
 .stat-desc  { font-size: 15px; color: var(--gris); text-align: center; line-height: 1.55; margin: 0; }
 
-/* ── CARRUSEL ────────────────────────────────── */
-.carrusel-outer { overflow: hidden; border-radius: 12px; }
-.carrusel-track {
+/* ── MOSAICO "GEIPER EN ACCIÓN" ─────────────────
+   4 columnas en cascada diagonal: cada columna baja un poco
+   más que la anterior (desfase progresivo, no un simple
+   arriba/abajo), y cada foto conserva su proporción real
+   -- nada se recorta a la fuerza a un formato ajeno. */
+.mosaico-cols {
     display: flex; gap: 14px;
-    transition: transform 0.7s cubic-bezier(.4,0,.2,1);
+    max-width: 1180px; margin: 0 auto;
+    align-items: flex-start;
 }
-.carrusel-slide {
-    flex: 0 0 calc(33.333% - 10px);
-    position: relative; height: 220px;
-    border-radius: 12px; overflow: hidden;
+.mosaico-col { flex: 1; display: flex; flex-direction: column; gap: 14px; min-width: 0; }
+.mosaico-col:nth-child(1) { margin-top: 0; }
+.mosaico-col:nth-child(2) { margin-top: 42px; }
+.mosaico-col:nth-child(3) { margin-top: 84px; }
+.mosaico-col:nth-child(4) { margin-top: 126px; }
+
+.mosaico-card {
+    position: relative; border-radius: 10px; overflow: hidden;
+    box-shadow: 0 4px 14px rgba(11,46,107,0.08);
 }
-.carrusel-slide img { width: 100%; height: 100%; object-fit: cover; display: block; }
-.carrusel-overlay {
+.mosaico-card img {
+    width: 100%; height: auto; display: block;
+    filter: saturate(0.94) brightness(0.98);
+    transition: transform 0.6s cubic-bezier(.4,0,.2,1), filter 0.5s ease;
+}
+.mosaico-card:hover img { transform: scale(1.045); filter: saturate(1.05) brightness(1.02); }
+.mosaico-overlay {
     position: absolute; inset: 0;
-    background: linear-gradient(to top, rgba(11,46,107,0.82) 0%, transparent 55%);
+    background: linear-gradient(to top, rgba(11,46,107,0.86) 0%, rgba(11,46,107,0.12) 45%, transparent 65%);
     display: flex; flex-direction: column; justify-content: flex-end;
-    padding: 16px 14px;
+    padding: 14px 15px; pointer-events: none;
 }
-.carrusel-tag {
-    display: inline-block; background: rgba(255,255,255,0.18);
-    color: white; font-size: 9px; letter-spacing: 1.2px; text-transform: uppercase;
-    padding: 3px 10px; border-radius: 20px; margin-bottom: 5px; width: fit-content;
-    border: 1px solid rgba(255,255,255,0.25);
+.mosaico-tag {
+    display: inline-block; background: rgba(255,255,255,0.16);
+    border: 1px solid rgba(255,255,255,0.3); color: white;
+    font-size: 8.5px; font-weight: 600; letter-spacing: 1.1px; text-transform: uppercase;
+    padding: 3px 9px; border-radius: 20px; width: fit-content; margin-bottom: 6px;
 }
-.carrusel-caption { color: white; font-size: 12px; font-weight: 500; margin: 0; line-height: 1.4; }
-.carrusel-controls {
-    display: flex; align-items: center; justify-content: center;
-    gap: 14px; margin-top: 18px;
+.mosaico-caption { color: white; font-size: 12px; font-weight: 500; line-height: 1.35; max-width: 94%; margin: 0; }
+
+@media (max-width: 980px) { .mosaico-col:nth-child(n) { margin-top: 0 !important; } }
+@media (max-width: 760px) {
+    .mosaico-cols { flex-direction: column; }
 }
-.carrusel-btn {
-    width: 32px; height: 32px; border-radius: 50%;
-    border: 1.5px solid var(--azul-medio); background: transparent; color: var(--azul-medio);
-    font-size: 14px; cursor: pointer; display: flex; align-items: center; justify-content: center;
-    transition: all 0.2s; font-family: 'Montserrat', sans-serif;
-}
-.carrusel-btn:hover { background: var(--azul-medio); color: white; }
-.carrusel-dots { display: flex; gap: 5px; }
-.carrusel-dot {
-    width: 7px; height: 7px; border-radius: 50%;
-    background: #c5cfe8; cursor: pointer; transition: background 0.3s;
-}
-.carrusel-dot.active { background: var(--azul-oscuro); }
-.carrusel-counter { font-size: 11px; color: var(--gris); min-width: 32px; text-align: center; }
 
 /* ── BADGES / FILTROS ────────────────────────── */
 .filtros {
