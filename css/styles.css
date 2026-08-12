@@ -556,6 +556,7 @@ header.mobile-nav .nav-links a.active {
     padding: 28px 0; border-bottom: 1px solid #dde3f0;
 }
 .feed-list .feed-row:first-child { padding-top: 0; }
+.feed-list .feed-row:last-child { border-bottom: none; padding-bottom: 4px; }
 .feed-date-block { text-align: right; }
 .feed-date-block .feed-day { font-family: 'Playfair Display', serif; font-weight: 700; font-size: 34px; color: var(--azul-oscuro); line-height: 1; }
 .feed-date-block .feed-month { font-size: 11px; color: var(--gris); text-transform: uppercase; letter-spacing: 1px; margin-top: 4px; }
