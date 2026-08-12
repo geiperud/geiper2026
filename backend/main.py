@@ -965,9 +965,12 @@ def init_services():
     else:
         logger.warning("No se encontro GROQ_API_KEY.")
 
-    api_token = os.environ.get("GOOGLE_API_KEY", "")
+    api_token = os.environ.get("GOOGLE_API_KEY", "").strip()
     if api_token:
-        logger.info("Google API Key encontrada (modelo fallback + embeddings RAG).")
+        logger.info(
+            f"Google API Key encontrada (modelo fallback + embeddings RAG). "
+            f"len={len(api_token)} inicio='{api_token[:6]}' fin='{api_token[-4:]}'"
+        )
     else:
         logger.warning("No se encontro GOOGLE_API_KEY.")
 
