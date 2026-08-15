@@ -1360,3 +1360,187 @@ def chat(request: Request, chat_request: ChatRequest):
         logger.error(f"Error: {e}")
         logger.error(traceback.format_exc())
         raise HTTPException(status_code=500, detail="Servicio temporalmente no disponible.")
+
+
+# ═══════════════════════════════════════════════════════════════════════════
+# ── Asistente del geovisor (function calling) ────────────────────────────
+# Distinto del /chat (RAG sobre documentos): este endpoint no responde con
+# texto fundamentado en PDFs, sino que traduce lenguaje natural en acciones
+# ejecutables sobre el mapa (buscar un municipio, activar una herramienta de
+# análisis espacial, cambiar el basemap, etc.), siguiendo el patrón de
+# asistente geoespacial con function calling descrito en Dorobantu y Badea
+# (2026a) para arquitecturas WebGIS: el LLM decide qué función invocar, el
+# backend valida y estructura la llamada, y es el FRONTEND (no el backend)
+# quien la ejecuta sobre el mapa real —el backend nunca toca datos
+# geoespaciales, solo interpreta la intención del usuario.
+# ═══════════════════════════════════════════════════════════════════════════
+
+GEOVISOR_TOOLS = [
+    {
+        "type": "function",
+        "function": {
+            "name": "buscar_municipio",
+            "description": (
+                "Busca un municipio colombiano por nombre, lo resalta en el mapa "
+                "y hace zoom hacia él. Úsalo cuando el usuario pida ver, ubicar, "
+                "buscar o centrar el mapa en un municipio específico."
+            ),
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "nombre": {
+                        "type": "string",
+                        "description": "Nombre del municipio, tal como lo escribió el usuario (ej. 'Sopó', 'Bogotá', 'Villa de Leyva')."
+                    }
+                },
+                "required": ["nombre"]
+            }
+        }
+    },
+    {
+        "type": "function",
+        "function": {
+            "name": "limpiar_seleccion_municipios",
+            "description": "Quita del mapa todos los municipios actualmente resaltados/seleccionados.",
+            "parameters": {"type": "object", "properties": {}}
+        }
+    },
+    {
+        "type": "function",
+        "function": {
+            "name": "activar_herramienta_analisis",
+            "description": (
+                "Activa una herramienta de análisis espacial (Turf.js) sobre las tesis "
+                "del semillero mostradas en el mapa. Úsala cuando el usuario pida calcular "
+                "una distancia, un área, un buffer, un centroide, el vecino más cercano, "
+                "si un punto está dentro de un polígono, una intersección, o celdas de Voronoi."
+            ),
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "herramienta": {
+                        "type": "string",
+                        "enum": ["dist", "area", "buff", "ctrd", "near", "pip", "intx", "voro"],
+                        "description": (
+                            "dist=distancia entre dos puntos, area=área de cobertura (convex hull), "
+                            "buff=buffer/zona de influencia, ctrd=centroide, near=vecino más cercano, "
+                            "pip=punto en polígono, intx=intersección, voro=celdas de Voronoi."
+                        )
+                    }
+                },
+                "required": ["herramienta"]
+            }
+        }
+    },
+    {
+        "type": "function",
+        "function": {
+            "name": "centrar_vista_colombia",
+            "description": "Centra y ajusta el zoom del mapa para mostrar todo el territorio colombiano.",
+            "parameters": {"type": "object", "properties": {}}
+        }
+    },
+    {
+        "type": "function",
+        "function": {
+            "name": "cambiar_basemapa",
+            "description": "Cambia la capa base (basemap) del mapa.",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "tipo": {
+                        "type": "string",
+                        "enum": ["osm", "sat", "blank"],
+                        "description": "osm=callejero OpenStreetMap, sat=satelital (EOX Sentinel-2), blank=sin fondo."
+                    }
+                },
+                "required": ["tipo"]
+            }
+        }
+    },
+]
+
+GEOVISOR_SYSTEM_PROMPT = (
+    "Eres el asistente del geovisor del Semillero GEIPER (UDFJC). Tu única función "
+    "es traducir lo que pide el usuario en llamadas a las funciones disponibles para "
+    "controlar el mapa (buscar municipios, activar herramientas de análisis espacial, "
+    "cambiar el basemap, centrar la vista). No respondes preguntas de investigación ni "
+    "buscas en documentos —para eso existen los Asistentes Temático y de Investigación "
+    "del geoportal, indícaselo al usuario si pregunta algo de ese tipo. Si el usuario "
+    "pide algo que no corresponde a ninguna función disponible, explícaselo brevemente "
+    "y en español, sin inventar una acción. Si la petición es ambigua (por ejemplo, un "
+    "nombre de municipio mal escrito o incompleto), pide una aclaración breve antes de "
+    "llamar a una función."
+)
+
+
+class GeovisorChatRequest(BaseModel):
+    query: str = Field(min_length=1, max_length=500)
+    historial: List[Turno] = Field(default_factory=list, max_length=6)
+
+
+def groq_generate_with_tools(mensajes, api_key):
+    """Variante de groq_generate que expone las herramientas del geovisor al
+    modelo. A diferencia de /chat (RAG puro), aquí la respuesta puede venir
+    como texto libre O como una o más llamadas a función (tool_calls)."""
+    headers = {
+        "Content-Type": "application/json",
+        "Authorization": f"Bearer {api_key}"
+    }
+    payload = {
+        "model": GROQ_MODEL,
+        "messages": mensajes,
+        "tools": GEOVISOR_TOOLS,
+        "tool_choice": "auto",
+        "max_tokens": 400,
+        "temperature": 0.1,
+        "stream": False
+    }
+    resp = requests.post(GROQ_URL, json=payload, headers=headers, timeout=30)
+    if resp.status_code == 429:
+        raise HTTPException(
+            status_code=429,
+            detail="El servicio de IA está temporalmente saturado. Por favor, espera unos segundos e intenta de nuevo."
+        )
+    resp.raise_for_status()
+    return resp.json()["choices"][0]["message"]
+
+
+@app.post("/geovisor-chat")
+@limiter.limit("15/minute")
+def geovisor_chat(request: Request, chat_request: GeovisorChatRequest):
+    if not groq_token:
+        raise HTTPException(status_code=500, detail="Sin configuración de API.")
+
+    if contiene_contenido_bloqueado(chat_request.query):
+        return {"response": "Prefiero que mantengamos un tono respetuoso. ¿Qué necesitas ver en el mapa?", "actions": []}
+
+    mensajes = [{"role": "system", "content": GEOVISOR_SYSTEM_PROMPT}]
+    for turno in chat_request.historial:
+        mensajes.append({"role": turno.role, "content": turno.content})
+    mensajes.append({"role": "user", "content": chat_request.query})
+
+    try:
+        mensaje_modelo = groq_generate_with_tools(mensajes, groq_token)
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error en geovisor-chat: {e}")
+        raise HTTPException(status_code=500, detail="Servicio temporalmente no disponible.")
+
+    tool_calls = mensaje_modelo.get("tool_calls") or []
+    acciones = []
+    for tc in tool_calls:
+        try:
+            import json as _json
+            nombre_fn = tc["function"]["name"]
+            args = _json.loads(tc["function"]["arguments"] or "{}")
+            acciones.append({"name": nombre_fn, "args": args})
+        except Exception:
+            continue
+
+    texto_respuesta = mensaje_modelo.get("content") or (
+        "Listo." if acciones else "No entendí bien qué querías hacer en el mapa, ¿puedes reformularlo?"
+    )
+
+    return {"response": texto_respuesta, "actions": acciones}

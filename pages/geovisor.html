@@ -2718,7 +2718,10 @@ window.TurfPanel = (function () {
     initUIWiring();
   });
 
-  return { handleMapClick: handleMapClick };
+  return {
+    handleMapClick: handleMapClick,
+    activateTool: function (key) { if (TOOLS[key]) selectTool(key); }
+  };
 })();
 </script>
 
@@ -2913,6 +2916,29 @@ window.MunicipioSearch = (function () {
     return findMunicipioAtPixel(evt);
   }
 
+  /* ── Búsqueda programática por nombre (usada por el chat del geovisor) ──
+     Busca el mejor match exacto/parcial y lo selecciona, igual que si el
+     usuario hubiera hecho clic en un resultado del buscador. Devuelve un
+     resumen simple para que el chat lo pueda usar en su respuesta, o null
+     si no hay coincidencias ni datos cargados aún. ── */
+  function selectByName(nombre) {
+    if (!municipiosFC || !nombre) return null;
+    const q = stripAccents(String(nombre).trim());
+    if (q.length < 2) return null;
+
+    const exacto = municipiosFC.features.find(function (f) {
+      return stripAccents(f.properties.mpio_cnmbr) === q;
+    });
+    const match = exacto || municipiosFC.features.find(function (f) {
+      return stripAccents(f.properties.mpio_cnmbr).indexOf(q) !== -1;
+    });
+    if (!match) return null;
+
+    replaceSelection(match);
+    const p = match.properties;
+    return { nombre: p.mpio_cnmbr, departamento: p.dpto_cnmbr };
+  }
+
   /* ── Buscador por nombre ──────────────────────────────────── */
   function wireSearchBox() {
     const input   = document.getElementById('muniSearchInput');
@@ -2970,7 +2996,152 @@ window.MunicipioSearch = (function () {
 
   window.addEventListener('load', init);
 
-  return { handleMapClick: handleMapClick, getFeatureAtPixel: getFeatureAtPixel };
+  return {
+    handleMapClick: handleMapClick,
+    getFeatureAtPixel: getFeatureAtPixel,
+    selectByName: selectByName,
+    clearSelection: clearSelection
+  };
+})();
+</script>
+
+<!-- ══════════════════════════════════════════════
+     CHAT DEL GEOVISOR (function calling)
+     Distinto de los asistentes RAG de pages/chatbots.html:
+     este chat no responde con texto de documentos, sino que
+     traduce la consulta en acciones ejecutadas sobre el mapa
+     (buscar municipio, activar herramienta Turf, etc.), vía
+     el endpoint /geovisor-chat del backend. Patrón basado en
+     Dorobantu y Badea (2026a) para asistentes geoespaciales
+     con function calling sobre WebGIS.
+     ══════════════════════════════════════════════ -->
+<style>
+#geoChatToggle {
+  position: absolute; right: 16px; bottom: 16px; z-index: 20;
+  width: 52px; height: 52px; border-radius: 50%; border: none;
+  background: #0F6E56; color: #fff; font-size: 20px; cursor: pointer;
+  box-shadow: 0 4px 14px rgba(0,0,0,0.25);
+}
+#geoChatPanel {
+  position: absolute; right: 16px; bottom: 80px; z-index: 20;
+  width: 320px; max-height: 420px; background: #fff; border-radius: 12px;
+  box-shadow: 0 8px 28px rgba(0,0,0,0.3); display: none; flex-direction: column;
+  overflow: hidden; font-family: inherit;
+}
+#geoChatPanel.open { display: flex; }
+#geoChatHeader {
+  background: #0F6E56; color: #fff; padding: 10px 14px; font-size: 13px;
+  font-weight: 600; display: flex; justify-content: space-between; align-items: center;
+}
+#geoChatHeader button { background: none; border: none; color: #fff; cursor: pointer; font-size: 14px; }
+#geoChatMessages { flex: 1; overflow-y: auto; padding: 10px; font-size: 13px; }
+#geoChatMessages .gc-msg { margin-bottom: 8px; padding: 7px 10px; border-radius: 8px; line-height: 1.35; }
+#geoChatMessages .gc-user { background: #eef2f7; margin-left: 30px; }
+#geoChatMessages .gc-bot { background: #f0fdf4; margin-right: 30px; }
+#geoChatInputRow { display: flex; border-top: 1px solid #e5e7eb; }
+#geoChatInput { flex: 1; border: none; padding: 10px; font-size: 13px; outline: none; }
+#geoChatSend { background: #0F6E56; color: #fff; border: none; width: 42px; cursor: pointer; }
+</style>
+
+<button id="geoChatToggle" title="Asistente del mapa"><i class="fa-solid fa-comment-dots"></i></button>
+<div id="geoChatPanel">
+  <div id="geoChatHeader">
+    <span>Asistente del mapa</span>
+    <button id="geoChatClose">✕</button>
+  </div>
+  <div id="geoChatMessages"></div>
+  <div id="geoChatInputRow">
+    <input id="geoChatInput" type="text" placeholder="Ej: muéstrame Sopó, calcula el área..." maxlength="500">
+    <button id="geoChatSend"><i class="fa-solid fa-paper-plane"></i></button>
+  </div>
+</div>
+
+<script>
+window.GeovisorChat = (function () {
+  const API_BASE = window.CHAT_API_BASE || 'https://geiper2026.onrender.com';
+  let historial = [];
+
+  function addMsg(texto, tipo) {
+    const box = document.createElement('div');
+    box.className = 'gc-msg ' + (tipo === 'user' ? 'gc-user' : 'gc-bot');
+    box.textContent = texto;
+    document.getElementById('geoChatMessages').appendChild(box);
+    document.getElementById('geoChatMessages').scrollTop = 1e9;
+  }
+
+  /* ── Dispatcher: ejecuta cada acción devuelta por el backend sobre el mapa real ── */
+  function ejecutarAccion(accion) {
+    const args = accion.args || {};
+    switch (accion.name) {
+      case 'buscar_municipio': {
+        const r = window.MunicipioSearch && window.MunicipioSearch.selectByName(args.nombre);
+        if (!r) addMsg('No encontré ningún municipio que coincida con "' + args.nombre + '".', 'bot');
+        break;
+      }
+      case 'limpiar_seleccion_municipios':
+        if (window.MunicipioSearch) window.MunicipioSearch.clearSelection();
+        break;
+      case 'activar_herramienta_analisis':
+        if (window.TurfPanel && window.TurfPanel.activateTool) window.TurfPanel.activateTool(args.herramienta);
+        break;
+      case 'centrar_vista_colombia': {
+        const btn = document.getElementById('btnColombia');
+        if (btn) btn.click();
+        break;
+      }
+      case 'cambiar_basemapa': {
+        const opt = document.querySelector('.bm-option[data-value="' + args.tipo + '"]');
+        if (opt) opt.click();
+        break;
+      }
+    }
+  }
+
+  function enviar() {
+    const input = document.getElementById('geoChatInput');
+    const query = input.value.trim();
+    if (!query) return;
+    addMsg(query, 'user');
+    input.value = '';
+    input.disabled = true;
+
+    fetch(API_BASE + '/geovisor-chat', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ query: query, historial: historial.slice(-6) })
+    })
+      .then(function (r) { return r.json(); })
+      .then(function (data) {
+        (data.actions || []).forEach(ejecutarAccion);
+        addMsg(data.response || 'Listo.', 'bot');
+        historial.push({ role: 'user', content: query });
+        historial.push({ role: 'assistant', content: data.response || '' });
+      })
+      .catch(function () {
+        addMsg('No pude conectar con el asistente del mapa. Intenta de nuevo en unos segundos.', 'bot');
+      })
+      .finally(function () {
+        input.disabled = false;
+        input.focus();
+      });
+  }
+
+  function init() {
+    document.getElementById('geoChatToggle').addEventListener('click', function () {
+      document.getElementById('geoChatPanel').classList.add('open');
+      document.getElementById('geoChatInput').focus();
+    });
+    document.getElementById('geoChatClose').addEventListener('click', function () {
+      document.getElementById('geoChatPanel').classList.remove('open');
+    });
+    document.getElementById('geoChatSend').addEventListener('click', enviar);
+    document.getElementById('geoChatInput').addEventListener('keydown', function (e) {
+      if (e.key === 'Enter') enviar();
+    });
+  }
+
+  window.addEventListener('load', init);
+  return {};
 })();
 </script>
 </body>
