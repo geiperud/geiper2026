@@ -1458,20 +1458,271 @@ GEOVISOR_TOOLS = [
             }
         }
     },
+    {
+        "type": "function",
+        "function": {
+            "name": "obtener_coordenadas",
+            "description": (
+                "Obtiene las coordenadas geográficas (latitud/longitud) de un lugar en "
+                "Colombia y centra el mapa ahí. Úsala para CUALQUIER lugar que el usuario "
+                "pida ubicar o del que pida coordenadas: municipios, veredas, barrios, "
+                "sitios de interés, direcciones aproximadas, ríos, o cualquier topónimo "
+                "colombiano — no solo municipios."
+            ),
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "lugar": {
+                        "type": "string",
+                        "description": "Nombre del lugar tal como lo escribió el usuario, con el departamento si lo mencionó (ej. 'Guatapé, Antioquia')."
+                    }
+                },
+                "required": ["lugar"]
+            }
+        }
+    },
+    {
+        "type": "function",
+        "function": {
+            "name": "filtrar_por_departamento",
+            "description": (
+                "Selecciona y resalta en el mapa TODOS los municipios que pertenecen a "
+                "un departamento colombiano. Úsala cuando el usuario pida ver, resaltar, "
+                "contar o seleccionar un departamento completo (no un municipio individual)."
+            ),
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "departamento": {
+                        "type": "string",
+                        "description": "Nombre del departamento (ej. 'Cundinamarca', 'Boyacá', 'Valle del Cauca')."
+                    }
+                },
+                "required": ["departamento"]
+            }
+        }
+    },
+    {
+        "type": "function",
+        "function": {
+            "name": "comparar_municipios",
+            "description": (
+                "Compara el área de dos municipios colombianos y resalta ambos en el "
+                "mapa. Úsala cuando el usuario pida comparar, o preguntar cuál de dos "
+                "municipios es más grande/pequeño."
+            ),
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "municipio1": {"type": "string", "description": "Nombre del primer municipio."},
+                    "municipio2": {"type": "string", "description": "Nombre del segundo municipio."}
+                },
+                "required": ["municipio1", "municipio2"]
+            }
+        }
+    },
+    {
+        "type": "function",
+        "function": {
+            "name": "listar_proyectos_linea",
+            "description": (
+                "Lista los trabajos de tesis/proyectos del Semillero GEIPER que pertenecen "
+                "a una línea de investigación (Percepción Remota, SIG, Geomática, etc.). "
+                "Úsala cuando el usuario pregunte qué proyectos hay, cuántos, o pida "
+                "ejemplos de una línea de investigación del semillero."
+            ),
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "linea": {
+                        "type": "string",
+                        "description": "Nombre o palabra clave de la línea de investigación mencionada por el usuario."
+                    }
+                },
+                "required": ["linea"]
+            }
+        }
+    },
+    {
+        "type": "function",
+        "function": {
+            "name": "obtener_elevacion",
+            "description": (
+                "Obtiene la elevación (altitud sobre el nivel del mar) de un lugar en "
+                "Colombia y centra el mapa ahí. Úsala cuando el usuario pregunte qué tan "
+                "alto está, la altitud o la elevación de un lugar."
+            ),
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "lugar": {"type": "string", "description": "Nombre del lugar del que se pide la elevación."}
+                },
+                "required": ["lugar"]
+            }
+        }
+    },
+    {
+        "type": "function",
+        "function": {
+            "name": "buscar_lugares_cercanos",
+            "description": (
+                "Busca lugares reales de una categoría (hospitales, universidades, colegios, "
+                "farmacias, estaciones de policía, ríos) cerca de un punto, usando datos "
+                "abiertos de OpenStreetMap, y los muestra como marcadores en el mapa. Úsala "
+                "cuando el usuario pida encontrar o mostrar lugares cercanos a algo."
+            ),
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "categoria": {
+                        "type": "string",
+                        "enum": ["hospital", "universidad", "colegio", "farmacia", "policia", "rio"],
+                        "description": "Tipo de lugar a buscar."
+                    },
+                    "lugar": {
+                        "type": "string",
+                        "description": "Lugar de referencia alrededor del cual buscar (ej. 'Sopó', 'centro de Bogotá')."
+                    },
+                    "radio_km": {
+                        "type": "number",
+                        "description": "Radio de búsqueda en kilómetros. Si el usuario no lo especifica, usa 3."
+                    }
+                },
+                "required": ["categoria", "lugar"]
+            }
+        }
+    },
 ]
 
 GEOVISOR_SYSTEM_PROMPT = (
     "Eres el asistente del geovisor del Semillero GEIPER (UDFJC). Tu única función "
     "es traducir lo que pide el usuario en llamadas a las funciones disponibles para "
-    "controlar el mapa (buscar municipios, activar herramientas de análisis espacial, "
-    "cambiar el basemap, centrar la vista). No respondes preguntas de investigación ni "
-    "buscas en documentos —para eso existen los Asistentes Temático y de Investigación "
-    "del geoportal, indícaselo al usuario si pregunta algo de ese tipo. Si el usuario "
-    "pide algo que no corresponde a ninguna función disponible, explícaselo brevemente "
-    "y en español, sin inventar una acción. Si la petición es ambigua (por ejemplo, un "
-    "nombre de municipio mal escrito o incompleto), pide una aclaración breve antes de "
-    "llamar a una función."
+    "controlar el mapa: buscar municipios, obtener coordenadas o elevación de cualquier "
+    "lugar, filtrar por departamento, comparar municipios, buscar lugares cercanos "
+    "(hospitales, universidades, ríos, etc.), listar proyectos del semillero por línea "
+    "de investigación, activar herramientas de análisis espacial, cambiar el basemap, o "
+    "centrar la vista. No respondes preguntas de investigación de fondo ni buscas en "
+    "documentos del corpus académico —para eso existen los Asistentes Temático y de "
+    "Investigación del geoportal, indícaselo al usuario si pregunta algo de ese tipo. Si "
+    "el usuario pide algo que no corresponde a ninguna función disponible (ej. dibujar "
+    "polígonos libremente, generar datos ficticios), dilo con claridad y sin inventar "
+    "una acción ni datos que no tienes. Si la petición es ambigua, pide una aclaración "
+    "breve antes de llamar a una función."
 )
+
+
+
+# ── Geocodificación vía Nominatim (OpenStreetMap) ────────────────────────
+# Servicio gratuito y abierto, coherente con la arquitectura de costo cero
+# del proyecto. Se respeta su política de uso: un User-Agent identificable
+# y una sola petición por consulta (sin llamadas en lote).
+NOMINATIM_URL = "https://nominatim.openstreetmap.org/search"
+NOMINATIM_HEADERS = {
+    "User-Agent": "GEIPER-Geoportal/1.0 (UDFJC; contacto: laddiazb@udistrital.edu.co)"
+}
+
+
+def geocodificar_lugar(lugar):
+    """Resuelve un topónimo colombiano a coordenadas usando Nominatim.
+    Devuelve None si no encuentra nada o si el servicio falla — nunca
+    inventa una coordenada aproximada."""
+    try:
+        params = {
+            "q": lugar,
+            "format": "jsonv2",
+            "limit": 1,
+            "countrycodes": "co",
+        }
+        resp = requests.get(NOMINATIM_URL, params=params, headers=NOMINATIM_HEADERS, timeout=8)
+        resp.raise_for_status()
+        resultados = resp.json()
+        if not resultados:
+            return None
+        r = resultados[0]
+        return {
+            "lat": float(r["lat"]),
+            "lon": float(r["lon"]),
+            "nombre_encontrado": r.get("display_name", lugar)
+        }
+    except Exception as e:
+        logger.warning(f"Geocodificación falló para '{lugar}': {e}")
+        return None
+
+
+# ── Elevación vía Open-Elevation (proyecto open source, sin API key) ─────
+OPEN_ELEVATION_URL = "https://api.open-elevation.com/api/v1/lookup"
+
+
+def obtener_elevacion_metros(lat, lon):
+    """Consulta la elevación en metros sobre el nivel del mar para un punto.
+    Devuelve None si el servicio falla."""
+    try:
+        params = {"locations": f"{lat},{lon}"}
+        resp = requests.get(OPEN_ELEVATION_URL, params=params, timeout=10)
+        resp.raise_for_status()
+        resultados = resp.json().get("results", [])
+        if not resultados:
+            return None
+        return resultados[0].get("elevation")
+    except Exception as e:
+        logger.warning(f"Consulta de elevación falló para ({lat},{lon}): {e}")
+        return None
+
+
+# ── Lugares cercanos vía Overpass API (datos abiertos de OpenStreetMap) ──
+# Mismo tipo de fuente que usa download_osm_to_geojson en el paper de
+# Dorobantu y Badea (2026a): datos vectoriales reales, gratuitos, sin key.
+OVERPASS_URL = "https://overpass-api.de/api/interpreter"
+
+CATEGORIA_OSM = {
+    "hospital":    ("amenity", "hospital"),
+    "universidad": ("amenity", "university"),
+    "colegio":     ("amenity", "school"),
+    "farmacia":    ("amenity", "pharmacy"),
+    "policia":     ("amenity", "police"),
+    "rio":         ("waterway", "river"),
+}
+
+
+def buscar_pois_cercanos(categoria, lat, lon, radio_km=3):
+    """Busca elementos de OpenStreetMap de una categoría dada dentro de un
+    radio (en km) alrededor de un punto. Devuelve una lista de hasta 15
+    lugares con nombre y coordenadas, o [] si no encuentra nada o el
+    servicio falla."""
+    tag = CATEGORIA_OSM.get(categoria)
+    if not tag:
+        return []
+    clave, valor = tag
+    radio_m = max(200, min(int((radio_km or 3) * 1000), 15000))  # tope de seguridad: 15 km
+
+    query = f"""
+    [out:json][timeout:20];
+    (
+      node["{clave}"="{valor}"](around:{radio_m},{lat},{lon});
+      way["{clave}"="{valor}"](around:{radio_m},{lat},{lon});
+      relation["{clave}"="{valor}"](around:{radio_m},{lat},{lon});
+    );
+    out center 15;
+    """
+    try:
+        resp = requests.post(OVERPASS_URL, data={"data": query}, timeout=20)
+        resp.raise_for_status()
+        elementos = resp.json().get("elements", [])
+        lugares = []
+        for el in elementos:
+            if el.get("type") == "node":
+                elat, elon = el.get("lat"), el.get("lon")
+            else:
+                centro = el.get("center") or {}
+                elat, elon = centro.get("lat"), centro.get("lon")
+            if elat is None or elon is None:
+                continue
+            nombre = (el.get("tags") or {}).get("name", f"{categoria} sin nombre registrado")
+            lugares.append({"lat": elat, "lon": elon, "nombre": nombre})
+        return lugares[:15]
+    except Exception as e:
+        logger.warning(f"Búsqueda Overpass falló para categoría '{categoria}': {e}")
+        return []
 
 
 class GeovisorChatRequest(BaseModel):
@@ -1530,17 +1781,81 @@ def geovisor_chat(request: Request, chat_request: GeovisorChatRequest):
 
     tool_calls = mensaje_modelo.get("tool_calls") or []
     acciones = []
+    texto_extra = ""
     for tc in tool_calls:
         try:
             import json as _json
             nombre_fn = tc["function"]["name"]
             args = _json.loads(tc["function"]["arguments"] or "{}")
+
+            # obtener_coordenadas se resuelve aquí mismo, en el backend, en
+            # vez de dejarle la geocodificación al frontend: es una consulta
+            # de datos, no una manipulación del DOM del mapa.
+            if nombre_fn == "obtener_coordenadas":
+                geo = geocodificar_lugar(args.get("lugar", ""))
+                if geo:
+                    texto_extra += (
+                        f"{args.get('lugar')}: latitud {geo['lat']:.5f}, "
+                        f"longitud {geo['lon']:.5f}. "
+                    )
+                    acciones.append({
+                        "name": "centrar_coordenadas",
+                        "args": {"lat": geo["lat"], "lon": geo["lon"], "lugar": args.get("lugar")}
+                    })
+                else:
+                    texto_extra += f"No pude encontrar coordenadas para \"{args.get('lugar')}\". "
+                continue
+
+            # obtener_elevacion: primero geocodifica (Nominatim), luego
+            # consulta la elevación de ese punto (Open-Elevation).
+            if nombre_fn == "obtener_elevacion":
+                geo = geocodificar_lugar(args.get("lugar", ""))
+                if not geo:
+                    texto_extra += f"No pude encontrar \"{args.get('lugar')}\" para consultar su elevación. "
+                    continue
+                elevacion = obtener_elevacion_metros(geo["lat"], geo["lon"])
+                if elevacion is not None:
+                    texto_extra += f"{args.get('lugar')} está a {elevacion:.0f} msnm. "
+                    acciones.append({
+                        "name": "centrar_coordenadas",
+                        "args": {"lat": geo["lat"], "lon": geo["lon"], "lugar": args.get("lugar")}
+                    })
+                else:
+                    texto_extra += f"Encontré {args.get('lugar')} pero no pude consultar su elevación en este momento. "
+                continue
+
+            # buscar_lugares_cercanos: geocodifica el punto de referencia y
+            # luego consulta Overpass por la categoría pedida alrededor de él.
+            if nombre_fn == "buscar_lugares_cercanos":
+                geo = geocodificar_lugar(args.get("lugar", ""))
+                if not geo:
+                    texto_extra += f"No pude ubicar \"{args.get('lugar')}\" para buscar alrededor. "
+                    continue
+                lugares = buscar_pois_cercanos(
+                    args.get("categoria", ""), geo["lat"], geo["lon"], args.get("radio_km", 3)
+                )
+                if lugares:
+                    texto_extra += (
+                        f"Encontré {len(lugares)} resultado(s) de tipo "
+                        f"'{args.get('categoria')}' cerca de {args.get('lugar')}. "
+                    )
+                    acciones.append({
+                        "name": "mostrar_pois",
+                        "args": {"lugares": lugares, "lat": geo["lat"], "lon": geo["lon"]}
+                    })
+                else:
+                    texto_extra += (
+                        f"No encontré resultados de tipo '{args.get('categoria')}' "
+                        f"cerca de {args.get('lugar')} en ese radio. "
+                    )
+                continue
+
             acciones.append({"name": nombre_fn, "args": args})
         except Exception:
             continue
 
-    texto_respuesta = mensaje_modelo.get("content") or (
-        "Listo." if acciones else "No entendí bien qué querías hacer en el mapa, ¿puedes reformularlo?"
+    texto_respuesta = texto_extra or mensaje_modelo.get("content") or (
+        "Hecho." if acciones else "No entendí bien qué querías hacer en el mapa, ¿puedes reformularlo?"
     )
 
-    return {"response": texto_respuesta, "actions": acciones}
+    return {"response": texto_respuesta.strip(), "actions": acciones}

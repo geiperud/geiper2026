@@ -2939,6 +2939,46 @@ window.MunicipioSearch = (function () {
     return { nombre: p.mpio_cnmbr, departamento: p.dpto_cnmbr };
   }
 
+  /* ── Selección de TODOS los municipios de un departamento (usada por el
+     chat del geovisor). Igual que selectByName pero devuelve varios. ── */
+  function selectByDepartamento(nombreDepto) {
+    if (!municipiosFC || !nombreDepto) return null;
+    const q = stripAccents(String(nombreDepto).trim());
+    if (q.length < 2) return null;
+
+    const matches = municipiosFC.features.filter(function (f) {
+      return stripAccents(f.properties.dpto_cnmbr).indexOf(q) !== -1;
+    });
+    if (matches.length === 0) return null;
+
+    selectedFeatures = matches;
+    renderSelection(true);
+    return { departamento: matches[0].properties.dpto_cnmbr, total: matches.length };
+  }
+
+  /* ── Comparación de dos municipios por área (usada por el chat) ──
+     Busca ambos, los deja seleccionados juntos en el mapa, y devuelve
+     sus datos para que el chat arme la comparación en texto. ── */
+  function compareTwo(nombre1, nombre2) {
+    if (!municipiosFC) return null;
+    function buscar(nombre) {
+      const q = stripAccents(String(nombre || '').trim());
+      if (q.length < 2) return null;
+      return municipiosFC.features.find(function (f) { return stripAccents(f.properties.mpio_cnmbr) === q; })
+        || municipiosFC.features.find(function (f) { return stripAccents(f.properties.mpio_cnmbr).indexOf(q) !== -1; });
+    }
+    const a = buscar(nombre1), b = buscar(nombre2);
+    if (!a || !b) return { a: a ? a.properties.mpio_cnmbr : null, b: b ? b.properties.mpio_cnmbr : null, faltante: !a ? nombre1 : nombre2 };
+
+    selectedFeatures = [a, b];
+    renderSelection(true);
+    const areaA = turf.area(a) / 1e6, areaB = turf.area(b) / 1e6;
+    return {
+      a: { nombre: a.properties.mpio_cnmbr, depto: a.properties.dpto_cnmbr, areaKm2: areaA },
+      b: { nombre: b.properties.mpio_cnmbr, depto: b.properties.dpto_cnmbr, areaKm2: areaB }
+    };
+  }
+
   /* ── Buscador por nombre ──────────────────────────────────── */
   function wireSearchBox() {
     const input   = document.getElementById('muniSearchInput');
@@ -3000,6 +3040,8 @@ window.MunicipioSearch = (function () {
     handleMapClick: handleMapClick,
     getFeatureAtPixel: getFeatureAtPixel,
     selectByName: selectByName,
+    selectByDepartamento: selectByDepartamento,
+    compareTwo: compareTwo,
     clearSelection: clearSelection
   };
 })();
@@ -3060,6 +3102,7 @@ window.MunicipioSearch = (function () {
 window.GeovisorChat = (function () {
   const API_BASE = window.CHAT_API_BASE || 'https://geiper2026.onrender.com';
   let historial = [];
+  let chatMarkerLayer = null;
 
   function addMsg(texto, tipo) {
     const box = document.createElement('div');
@@ -3069,31 +3112,147 @@ window.GeovisorChat = (function () {
     document.getElementById('geoChatMessages').scrollTop = 1e9;
   }
 
-  /* ── Dispatcher: ejecuta cada acción devuelta por el backend sobre el mapa real ── */
+  /* ── Capa dedicada para el marcador de "obtener_coordenadas"/"obtener_elevacion",
+     separada de highlightLayer (municipios) y de las capas de TurfPanel. ── */
+  function ensureChatMarkerLayer() {
+    if (chatMarkerLayer) return chatMarkerLayer;
+    chatMarkerLayer = new ol.layer.Vector({
+      source: new ol.source.Vector(),
+      zIndex: 5,
+      style: new ol.style.Style({
+        image: new ol.style.Circle({
+          radius: 8,
+          fill: new ol.style.Fill({ color: '#B23A48' }),
+          stroke: new ol.style.Stroke({ color: '#fff', width: 2 })
+        })
+      })
+    });
+    map.addLayer(chatMarkerLayer);
+    return chatMarkerLayer;
+  }
+
+  /* ── Capa para los resultados de "buscar_lugares_cercanos" (Overpass) ── */
+  let poisLayer = null;
+  function ensurePoisLayer() {
+    if (poisLayer) return poisLayer;
+    poisLayer = new ol.layer.Vector({
+      source: new ol.source.Vector(),
+      zIndex: 5,
+      style: new ol.style.Style({
+        image: new ol.style.Circle({
+          radius: 6,
+          fill: new ol.style.Fill({ color: '#1D6FE0' }),
+          stroke: new ol.style.Stroke({ color: '#fff', width: 1.5 })
+        })
+      })
+    });
+    map.addLayer(poisLayer);
+    return poisLayer;
+  }
+
+  const BASEMAP_LABELS = { osm: 'callejero (OpenStreetMap)', sat: 'satelital', blank: 'sin fondo' };
+  const HERRAMIENTA_LABELS = {
+    dist: 'distancia', area: 'área de cobertura', buff: 'buffer', ctrd: 'centroide',
+    near: 'vecino más cercano', pip: 'punto en polígono', intx: 'intersección', voro: 'Voronoi'
+  };
+
+  /* ── Dispatcher: ejecuta cada acción devuelta por el backend sobre el mapa
+     real, y devuelve un texto de confirmación CONCRETO (basado en lo que
+     realmente pasó, no en lo que el LLM supuso que iba a pasar). Si una
+     acción falla o no aplica, devuelve null y no se agrega nada extra. ── */
   function ejecutarAccion(accion) {
     const args = accion.args || {};
     switch (accion.name) {
       case 'buscar_municipio': {
         const r = window.MunicipioSearch && window.MunicipioSearch.selectByName(args.nombre);
-        if (!r) addMsg('No encontré ningún municipio que coincida con "' + args.nombre + '".', 'bot');
-        break;
+        return r
+          ? 'Encontré ' + r.nombre + ' (' + r.departamento + ') y lo resalté en el mapa.'
+          : 'No encontré ningún municipio que coincida con "' + args.nombre + '".';
+      }
+      case 'filtrar_por_departamento': {
+        const r = window.MunicipioSearch && window.MunicipioSearch.selectByDepartamento(args.departamento);
+        return r
+          ? 'Resalté los ' + r.total + ' municipios de ' + r.departamento + '.'
+          : 'No encontré ningún departamento que coincida con "' + args.departamento + '".';
       }
       case 'limpiar_seleccion_municipios':
         if (window.MunicipioSearch) window.MunicipioSearch.clearSelection();
-        break;
-      case 'activar_herramienta_analisis':
+        return 'Limpié la selección de municipios.';
+      case 'activar_herramienta_analisis': {
         if (window.TurfPanel && window.TurfPanel.activateTool) window.TurfPanel.activateTool(args.herramienta);
-        break;
+        const label = HERRAMIENTA_LABELS[args.herramienta] || args.herramienta;
+        return 'Activé la herramienta de ' + label + '.';
+      }
       case 'centrar_vista_colombia': {
         const btn = document.getElementById('btnColombia');
         if (btn) btn.click();
-        break;
+        return 'Centré la vista en todo el territorio colombiano.';
       }
       case 'cambiar_basemapa': {
         const opt = document.querySelector('.bm-option[data-value="' + args.tipo + '"]');
         if (opt) opt.click();
-        break;
+        return 'Cambié el mapa base a vista ' + (BASEMAP_LABELS[args.tipo] || args.tipo) + '.';
       }
+      case 'centrar_coordenadas': {
+        // El texto (con lat/lon) ya lo manda el backend en data.response,
+        // aquí solo se ejecuta la parte visual: mover el mapa y marcar el punto.
+        const layer = ensureChatMarkerLayer();
+        layer.getSource().clear();
+        const coord3857 = ol.proj.fromLonLat([args.lon, args.lat]);
+        layer.getSource().addFeature(new ol.Feature({ geometry: new ol.geom.Point(coord3857) }));
+        map.getView().animate({ center: coord3857, zoom: Math.max(map.getView().getZoom(), 11), duration: 500 });
+        return null;
+      }
+      case 'centrar_coordenadas': {
+        // El texto (con lat/lon o elevación) ya lo manda el backend en
+        // data.response; aquí solo se ejecuta la parte visual.
+        const layer = ensureChatMarkerLayer();
+        layer.getSource().clear();
+        const coord3857 = ol.proj.fromLonLat([args.lon, args.lat]);
+        layer.getSource().addFeature(new ol.Feature({ geometry: new ol.geom.Point(coord3857) }));
+        map.getView().animate({ center: coord3857, zoom: Math.max(map.getView().getZoom(), 11), duration: 500 });
+        return null;
+      }
+      case 'comparar_municipios': {
+        const r = window.MunicipioSearch && window.MunicipioSearch.compareTwo(args.municipio1, args.municipio2);
+        if (!r) return 'No pude cargar los datos de municipios todavía, intenta de nuevo en un momento.';
+        if (!r.a || !r.b) return 'No encontré "' + r.faltante + '" entre los municipios.';
+        const mayor = r.a.areaKm2 >= r.b.areaKm2 ? r.a : r.b;
+        const menor = r.a.areaKm2 >= r.b.areaKm2 ? r.b : r.a;
+        return r.a.nombre + ' (' + r.a.areaKm2.toFixed(1) + ' km²) vs. ' + r.b.nombre +
+          ' (' + r.b.areaKm2.toFixed(1) + ' km²): ' + mayor.nombre + ' es más grande que ' + menor.nombre + '.';
+      }
+      case 'listar_proyectos_linea': {
+        const q = (args.linea || '').toLowerCase();
+        const linea = (typeof LINEAS !== 'undefined') && LINEAS.find(function (l) {
+          return l.nombre.toLowerCase().indexOf(q) !== -1;
+        });
+        if (!linea) return 'No encontré ninguna línea de investigación que coincida con "' + args.linea + '".';
+        const proyectos = PROJECTS.filter(function (p) { return p.lineaId === linea.id; });
+        if (proyectos.length === 0) return 'La línea "' + linea.nombre + '" no tiene proyectos cargados todavía en el geovisor.';
+        return 'Línea "' + linea.nombre + '" (' + proyectos.length + ' proyecto(s)): ' +
+          proyectos.map(function (p) { return p.nombre || 'Sin título'; }).join('; ') + '.';
+      }
+      case 'mostrar_pois': {
+        const layer = ensurePoisLayer();
+        layer.getSource().clear();
+        const lugares = args.lugares || [];
+        let combinedExtent = null;
+        lugares.forEach(function (l) {
+          const c = ol.proj.fromLonLat([l.lon, l.lat]);
+          const feat = new ol.Feature({ geometry: new ol.geom.Point(c) });
+          feat.set('nombre', l.nombre);
+          layer.getSource().addFeature(feat);
+          const ext = feat.getGeometry().getExtent();
+          combinedExtent = combinedExtent ? ol.extent.extend(combinedExtent, ext) : ext.slice();
+        });
+        if (combinedExtent) {
+          map.getView().fit(combinedExtent, { padding: [80, 80, 80, 80], duration: 500, maxZoom: 15 });
+        }
+        return null; // el conteo ya viene en el texto del backend
+      }
+      default:
+        return null;
     }
   }
 
@@ -3112,10 +3271,22 @@ window.GeovisorChat = (function () {
     })
       .then(function (r) { return r.json(); })
       .then(function (data) {
-        (data.actions || []).forEach(ejecutarAccion);
-        addMsg(data.response || 'Listo.', 'bot');
+        const confirmaciones = (data.actions || [])
+          .map(ejecutarAccion)
+          .filter(function (t) { return !!t; });
+
+        // Si alguna acción generó su propia confirmación concreta, se usa
+        // esa en vez del texto genérico del backend ("Hecho."). El texto
+        // del backend sí se respeta cuando trae información real (como las
+        // coordenadas de obtener_coordenadas, que no se resuelven aquí).
+        const esGenerico = !data.response || /^(hecho|listo)\.?$/i.test(data.response.trim());
+        const textoFinal = (confirmaciones.length && esGenerico)
+          ? confirmaciones.join(' ')
+          : (data.response || confirmaciones.join(' ') || 'Hecho.');
+
+        addMsg(textoFinal, 'bot');
         historial.push({ role: 'user', content: query });
-        historial.push({ role: 'assistant', content: data.response || '' });
+        historial.push({ role: 'assistant', content: textoFinal });
       })
       .catch(function () {
         addMsg('No pude conectar con el asistente del mapa. Intenta de nuevo en unos segundos.', 'bot');
