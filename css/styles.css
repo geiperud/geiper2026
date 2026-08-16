@@ -42,9 +42,10 @@ header {
 
 nav {
     display: flex;
-    justify-content: space-between;
-    align-items: center;
-    padding: 15px 0; 
+    align-items: stretch;
+    position: relative;
+    padding: 0;
+    min-height: 76px;
 
     max-width: 1200px; /* Ajusta este valor al ancho de tu diseño central */
     margin: 0 auto;    /* Esto centra el nav horizontalmente */
@@ -52,32 +53,47 @@ nav {
 }
 
 nav .nav-brand {
-    color: white;
-    font-size: 1.3rem;
-    font-weight: 700;
-    letter-spacing: 2px;
+    position: absolute;
+    left: 50%;
+    top: 0;
+    bottom: 0;
+    transform: translateX(-50%);
     display: flex;
     align-items: center;
-    gap: 10px;
     text-decoration: none;
+    z-index: 2;
 }
 
 .nav-logo-img {
-    width: 36px;
-    height: 36px;
+    width: 52px;
+    height: 52px;
     object-fit: contain;
     border-radius: 4px;
+}
+
+.nav-links {
+    display: flex;
+    align-items: stretch;
+    justify-content: space-between;
+    width: 100%;
+}
+
+.nav-spacer {
+    width: 92px;
+    flex-shrink: 0;
 }
 
 .nav-links a {
     color: rgba(255,255,255,0.90);
     text-decoration: none;
-    margin-left: 20px;
-    font-size: 14px;
-    transition: color 0.2s;
+    display: flex;
+    align-items: center;
+    padding: 0 22px;
+    font-size: 16px;
+    transition: background 0.2s, color 0.2s;
 }
 .nav-links a:hover,
-.nav-links a.active { color: #ffffff; }
+.nav-links a.active { color: #ffffff; background: rgba(255,255,255,0.14); }
 
 /* ── HERO ───────────────────────────────────── */
 .hero {
@@ -89,7 +105,7 @@ nav .nav-brand {
     background-position: center;
     color: white;
     padding: 80px 8% 60px;
-    margin-top: 64px;
+    margin-top: 76px;
 }
 
 .hero-inner {
@@ -340,7 +356,7 @@ section { padding: 100px 80px; }
     flex-direction: column;
     text-align: center;
     padding: 40px 40px 40px;
-    margin-top: 64px;
+    margin-top: 76px;
 }
 .page-hero h1 {
     font-family: 'Playfair Display', serif;
@@ -476,7 +492,7 @@ footer { background: var(--azul-oscuro); color: white; padding: 0; }
     .footer-container { grid-template-columns: 1fr 1fr; text-align: center; }
     .footer-logo { margin: 0 auto 12px; }
 
-    nav { padding: 15px 20px; }
+    nav { padding: 0 20px; }
 }
 
 @media (max-width: 600px) {
@@ -490,6 +506,7 @@ footer { background: var(--azul-oscuro); color: white; padding: 0; }
     display: none;
     flex-direction: column;
     justify-content: center;
+    align-self: center;
     gap: 5px;
     background: none;
     border: none;
@@ -498,6 +515,8 @@ footer { background: var(--azul-oscuro); color: white; padding: 0; }
     border-radius: 6px;
     transition: background 0.2s;
     flex-shrink: 0;
+    margin-left: auto;
+    z-index: 3;
 }
 .nav-hamburger:hover { background: rgba(255,255,255,0.1); }
 .nav-hamburger span {
@@ -516,6 +535,9 @@ header.mobile-nav .nav-hamburger { display: flex !important; }
 header.mobile-nav .nav-links {
     display: none;
     flex-direction: column;
+    align-items: stretch;
+    justify-content: flex-start;
+    height: auto;
     position: absolute;
     top: 100%;
     left: 0;
@@ -526,6 +548,7 @@ header.mobile-nav .nav-links {
     z-index: 999;
 }
 header.mobile-nav .nav-links.open { display: flex; }
+header.mobile-nav .nav-spacer { display: none; }
 header.mobile-nav .nav-links a {
     margin-left: 0;
     padding: 13px 24px;

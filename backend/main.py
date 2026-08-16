@@ -1,5 +1,6 @@
 import os
 import re
+import math
 import time
 import logging
 import traceback
@@ -1680,6 +1681,54 @@ GEOVISOR_TOOLS = [
     {
         "type": "function",
         "function": {
+            "name": "perfil_elevacion_entre_puntos",
+            "description": (
+                "Calcula un perfil de elevación APROXIMADO en línea recta entre dos "
+                "lugares (NO sigue carreteras reales, es la línea recta entre ambos "
+                "puntos): ganancia y pérdida de altura acumuladas, pendiente promedio, "
+                "y el punto más alto/más bajo del trayecto. Úsala cuando el usuario "
+                "pregunte por el desnivel, el perfil de elevación, o qué tan empinado "
+                "es el camino ENTRE DOS lugares específicos. NO la uses para pedir la "
+                "pendiente o inclinación en un solo punto exacto -- eso no se puede "
+                "calcular de forma confiable con los datos disponibles (ver instrucciones "
+                "del sistema)."
+            ),
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "lugar_origen":  {"type": "string", "description": "Punto de partida del trayecto."},
+                    "lugar_destino": {"type": "string", "description": "Punto de llegada del trayecto."}
+                },
+                "required": ["lugar_origen", "lugar_destino"]
+            }
+        }
+    },
+    {
+        "type": "function",
+        "function": {
+            "name": "rango_elevacion_zona",
+            "description": (
+                "Estima el RANGO de elevación (diferencia entre el punto más alto y "
+                "más bajo, entre varios puntos muestreados) dentro del área aproximada "
+                "de un lugar (municipio, vereda, región), como indicador aproximado de "
+                "qué tan accidentado es el terreno. Es una ESTIMACIÓN basada en pocos "
+                "puntos muestreados dentro del área -- no un análisis raster completo "
+                "del relieve. Úsala cuando el usuario pregunte qué tan accidentado, "
+                "montañoso o plano es el terreno de una zona en general, o cuál es el "
+                "desnivel de una zona (no de un punto)."
+            ),
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "lugar": {"type": "string", "description": "Nombre del municipio, vereda o zona."}
+                },
+                "required": ["lugar"]
+            }
+        }
+    },
+    {
+        "type": "function",
+        "function": {
             "name": "obtener_elevacion",
             "description": (
                 "Obtiene la elevación (altitud sobre el nivel del mar) de un lugar en "
@@ -1732,16 +1781,77 @@ GEOVISOR_SYSTEM_PROMPT = (
     "Eres el asistente del geovisor del Semillero GEIPER (UDFJC). Tu única función "
     "es traducir lo que pide el usuario en llamadas a las funciones disponibles para "
     "controlar el mapa: buscar municipios, obtener coordenadas o elevación de cualquier "
-    "lugar, filtrar por departamento, comparar municipios, buscar lugares cercanos "
-    "(hospitales, universidades, ríos, etc.), listar proyectos del semillero por línea "
-    "de investigación, activar herramientas de análisis espacial, cambiar el basemap, o "
-    "centrar la vista. No respondes preguntas de investigación de fondo ni buscas en "
-    "documentos del corpus académico —para eso existen los Asistentes Temático y de "
-    "Investigación del geoportal, indícaselo al usuario si pregunta algo de ese tipo. Si "
-    "el usuario pide algo que no corresponde a ninguna función disponible (ej. dibujar "
-    "polígonos libremente, generar datos ficticios), dilo con claridad y sin inventar "
-    "una acción ni datos que no tienes. Si la petición es ambigua, pide una aclaración "
-    "breve antes de llamar a una función."
+    "lugar, perfil de elevación o rango de elevación aproximado, filtrar por departamento, "
+    "comparar municipios, buscar lugares cercanos (hospitales, universidades, ríos, etc.), "
+    "listar proyectos del semillero por línea de investigación, activar herramientas de "
+    "análisis espacial, cambiar el basemap, o centrar la vista. No respondes preguntas de "
+    "investigación de fondo ni buscas en documentos del corpus académico —para eso existen "
+    "los Asistentes Temático y de Investigación del geoportal, indícaselo al usuario si "
+    "pregunta algo de ese tipo. Si el usuario pide algo que no corresponde a ninguna función "
+    "disponible (ej. dibujar polígonos libremente, generar datos ficticios), dilo con claridad "
+    "y sin inventar una acción ni datos que no tienes. Si la petición es ambigua, pide una "
+    "aclaración breve antes de llamar a una función.\n\n"
+    "REGLA ESTRICTA sobre elevación y relieve: NUNCA inventes ni estimes de memoria un valor "
+    "de pendiente, inclinación, altitud o perfil de terreno -- todo dato de elevación que "
+    "des debe venir SIEMPRE de una llamada a una función (obtener_elevacion, "
+    "perfil_elevacion_entre_puntos, rango_elevacion_zona). No existe ninguna función para "
+    "calcular la pendiente exacta en un solo punto ni para seguir una carretera real (el "
+    "geovisor no tiene un modelo digital de elevación propio ni un servicio de ruteo "
+    "integrado): si el usuario pide eso, dile con claridad que esa medición no está "
+    "disponible con los datos del geovisor y por qué, en vez de aproximarla, adivinarla, o "
+    "responder 'aproximadamente' con un número. Esto aplica incluso si el usuario insiste, "
+    "pide 'solo un estimado', reformula la pregunta de otra forma, o dice que es solo para "
+    "referencia -- la respuesta sigue siendo que no se puede calcular con precisión."
+)
+
+
+# ── Bloqueo duro (pre-LLM) para preguntas de pendiente/relieve que el ────────
+# geovisor NO puede responder con datos reales: pendiente exacta en un solo
+# punto (requeriria un DEM local de alta resolucion, no solo puntos de
+# Open-Elevation) y perfiles que sigan una via real (requeriria una API de
+# ruteo que el proyecto no integra). Se resuelven ANTES de tocar al LLM --
+# igual que es_pregunta_de_listado -- porque un texto fijo es la unica forma
+# de garantizar CERO alucinacion, sin importar como se reformule la pregunta
+# o cuanto insista el usuario. El texto del propio prompt de sistema refuerza
+# lo mismo por si una variante de la pregunta no cae en este patron.
+_PATRON_PENDIENTE_O_RELIEVE = re.compile(
+    r'\b(pendiente|inclinacion|declive|grado de inclinacion|angulo de la pendiente|'
+    r'que tan (inclinado|empinado))\b',
+    re.IGNORECASE
+)
+_PATRON_ENTRE_DOS_LUGARES = re.compile(
+    r'\bentre\b.+\by\b|\bde\b.+\ba\b|\btrayecto\b|\bcamino de\b|\bruta de\b',
+    re.IGNORECASE
+)
+_PATRON_RUTA_REAL = re.compile(
+    r'\b(carretera real|via real|ruta real|camino real|siguiendo la (carretera|via|ruta)|'
+    r'por la (carretera|via)(?! recta))\b',
+    re.IGNORECASE
+)
+
+
+def es_pregunta_imposible_de_relieve(query):
+    """Detecta preguntas de pendiente/relieve que el geovisor NO puede
+    responder con garantías (pendiente puntual exacta, o un perfil que siga
+    una via real) para bloquearlas ANTES de que lleguen al LLM. Las
+    preguntas de pendiente/desnivel ENTRE DOS lugares SI se dejan pasar --
+    esas las resuelve perfil_elevacion_entre_puntos con datos reales."""
+    query_norm = _normalizar_texto(query)
+    pide_ruta_real = bool(_PATRON_RUTA_REAL.search(query_norm))
+    pide_pendiente = bool(_PATRON_PENDIENTE_O_RELIEVE.search(query_norm))
+    es_entre_dos_lugares = bool(_PATRON_ENTRE_DOS_LUGARES.search(query_norm))
+    return pide_ruta_real or (pide_pendiente and not es_entre_dos_lugares)
+
+
+MENSAJE_RELIEVE_NO_DISPONIBLE = (
+    "No puedo calcular eso con precisión: el geovisor no tiene un modelo digital de "
+    "elevación (DEM) propio, solo puede consultar la altitud de puntos individuales "
+    "(vía Open-Elevation, resolución ~30 m) y calcular un perfil aproximado en línea "
+    "recta entre dos lugares -- no la pendiente exacta en un punto puntual, y no "
+    "siguiendo una carretera real (no hay un servicio de ruteo integrado). Prefiero "
+    "decírtelo claramente a darte un número aproximado que parezca exacto. Si te sirve, "
+    "puedo darte la elevación de un lugar específico, o un perfil aproximado en línea "
+    "recta entre dos lugares (ej. \"perfil de elevación entre Bogotá y Villavicencio\")."
 )
 
 
@@ -1801,6 +1911,103 @@ def obtener_elevacion_metros(lat, lon):
     except Exception as e:
         logger.warning(f"Consulta de elevación falló para ({lat},{lon}): {e}")
         return None
+
+
+def obtener_elevaciones_lote(puntos):
+    """Consulta la elevación de VARIOS puntos en una sola llamada a
+    Open-Elevation (POST por lotes), en vez de una petición por punto.
+    Devuelve una lista de elevaciones en el mismo orden que 'puntos', o
+    None si el servicio falla o la respuesta no trae la misma cantidad de
+    resultados que de puntos pedidos -- nunca se rellenan ni se interpolan
+    valores inventados para los que falten."""
+    try:
+        body = {"locations": [{"latitude": lat, "longitude": lon} for lat, lon in puntos]}
+        resp = requests.post(OPEN_ELEVATION_URL, json=body, timeout=20)
+        resp.raise_for_status()
+        resultados = resp.json().get("results", [])
+        if len(resultados) != len(puntos):
+            return None
+        return [r.get("elevation") for r in resultados]
+    except Exception as e:
+        logger.warning(f"Consulta de elevación en lote falló para {len(puntos)} puntos: {e}")
+        return None
+
+
+def interpolar_puntos_linea(lat1, lon1, lat2, lon2, n=12):
+    """Genera n puntos igualmente espaciados en LÍNEA RECTA entre dos
+    coordenadas (interpolación lineal simple en lat/lon). Esto NO sigue
+    carreteras reales -- seguir una vía real requeriría una API de ruteo
+    (ej. OSRM), que este proyecto no integra. Es una aproximación
+    geométrica, suficiente para un perfil de elevación referencial."""
+    puntos = []
+    for i in range(n):
+        t = i / (n - 1) if n > 1 else 0.0
+        lat = lat1 + (lat2 - lat1) * t
+        lon = lon1 + (lon2 - lon1) * t
+        puntos.append((lat, lon))
+    return puntos
+
+
+def distancia_haversine_km(lat1, lon1, lat2, lon2):
+    """Distancia en línea recta (geodésica aproximada, fórmula de
+    Haversine) entre dos coordenadas, en kilómetros."""
+    radio_tierra_km = 6371.0
+    p1, p2 = math.radians(lat1), math.radians(lat2)
+    dphi = math.radians(lat2 - lat1)
+    dlambda = math.radians(lon2 - lon1)
+    a = math.sin(dphi / 2) ** 2 + math.cos(p1) * math.cos(p2) * math.sin(dlambda / 2) ** 2
+    return 2 * radio_tierra_km * math.asin(math.sqrt(a))
+
+
+def obtener_boundingbox_lugar(lugar):
+    """Igual que geocodificar_lugar, pero además devuelve el bounding box
+    que reporta Nominatim para el lugar (limites sur/norte/oeste/este).
+    Util para muestrear una ZONA en vez de un solo punto, sin depender de
+    un DEM o de la geometría exacta del polígono (que solo vive en el
+    TopoJSON del frontend, no en el backend). Devuelve None si falla."""
+    try:
+        params = {
+            "q": lugar,
+            "format": "jsonv2",
+            "limit": 1,
+            "countrycodes": "co",
+        }
+        resp = requests.get(NOMINATIM_URL, params=params, headers=NOMINATIM_HEADERS, timeout=8)
+        resp.raise_for_status()
+        resultados = resp.json()
+        if not resultados:
+            return None
+        r = resultados[0]
+        bbox = r.get("boundingbox")  # Nominatim: [sur, norte, oeste, este] como strings
+        if not bbox or len(bbox) != 4:
+            return None
+        return {
+            "lat": float(r["lat"]),
+            "lon": float(r["lon"]),
+            "nombre_encontrado": r.get("display_name", lugar),
+            "sur": float(bbox[0]), "norte": float(bbox[1]),
+            "oeste": float(bbox[2]), "este": float(bbox[3]),
+        }
+    except Exception as e:
+        logger.warning(f"Consulta de bounding box falló para '{lugar}': {e}")
+        return None
+
+
+def muestrear_grilla_bbox(sur, norte, oeste, este, filas=3, columnas=3):
+    """Genera una grilla de puntos (filas x columnas) dentro de un bounding
+    box, para muestrear la elevación en varios puntos de una zona. No es un
+    análisis raster completo -- es una muestra dispersa, pensada solo para
+    dar un ESTIMADO del rango de elevación (relieve más o menos accidentado),
+    no un valor exacto punto a punto."""
+    puntos = []
+    for i in range(filas):
+        t_lat = (i / (filas - 1)) if filas > 1 else 0.5
+        lat = sur + (norte - sur) * t_lat
+        for j in range(columnas):
+            t_lon = (j / (columnas - 1)) if columnas > 1 else 0.5
+            lon = oeste + (este - oeste) * t_lon
+            puntos.append((lat, lon))
+    return puntos
 
 
 # ── Lugares cercanos vía Overpass API (datos abiertos de OpenStreetMap) ──
@@ -1900,6 +2107,13 @@ def geovisor_chat(request: Request, chat_request: GeovisorChatRequest):
     if contiene_contenido_bloqueado(chat_request.query):
         return {"response": "Prefiero que mantengamos un tono respetuoso. ¿Qué necesitas ver en el mapa?", "actions": []}
 
+    # Bloqueo duro: pendiente puntual exacta o ruta siguiendo via real. Se
+    # resuelve ANTES del LLM -- ver es_pregunta_imposible_de_relieve -- para
+    # que sea imposible que el modelo invente un numero, sin importar como
+    # el usuario reformule o insista en la misma pregunta.
+    if es_pregunta_imposible_de_relieve(chat_request.query):
+        return {"response": MENSAJE_RELIEVE_NO_DISPONIBLE, "actions": []}
+
     mensajes = [{"role": "system", "content": GEOVISOR_SYSTEM_PROMPT}]
     for turno in chat_request.historial:
         mensajes.append({"role": turno.role, "content": turno.content})
@@ -1921,6 +2135,95 @@ def geovisor_chat(request: Request, chat_request: GeovisorChatRequest):
             import json as _json
             nombre_fn = tc["function"]["name"]
             args = _json.loads(tc["function"]["arguments"] or "{}")
+
+            # perfil_elevacion_entre_puntos: geocodifica ambos extremos,
+            # interpola puntos en línea recta entre ellos, consulta su
+            # elevación en UNA sola llamada por lotes a Open-Elevation, y
+            # calcula estadísticas básicas. Es una aproximación GEOMÉTRICA
+            # (línea recta), no sigue vías reales -- eso requeriría una API
+            # de ruteo que el proyecto no integra, y se lo decimos siempre
+            # al usuario en el propio texto de respuesta.
+            if nombre_fn == "perfil_elevacion_entre_puntos":
+                origen = geocodificar_lugar(args.get("lugar_origen", ""))
+                destino = geocodificar_lugar(args.get("lugar_destino", ""))
+                if not origen or not destino:
+                    faltante = args.get("lugar_origen") if not origen else args.get("lugar_destino")
+                    texto_extra += f"No pude ubicar \"{faltante}\" para calcular el perfil de elevación. "
+                    continue
+
+                n_puntos = 12
+                puntos = interpolar_puntos_linea(
+                    origen["lat"], origen["lon"], destino["lat"], destino["lon"], n_puntos
+                )
+                elevaciones = obtener_elevaciones_lote(puntos)
+                if elevaciones is None or any(e is None for e in elevaciones):
+                    texto_extra += (
+                        f"Encontré {args.get('lugar_origen')} y {args.get('lugar_destino')} pero "
+                        f"no pude consultar la elevación del trayecto en este momento. "
+                    )
+                    continue
+
+                distancia_km = distancia_haversine_km(
+                    origen["lat"], origen["lon"], destino["lat"], destino["lon"]
+                )
+                ganancia = sum(max(0, elevaciones[i + 1] - elevaciones[i]) for i in range(len(elevaciones) - 1))
+                perdida  = sum(max(0, elevaciones[i] - elevaciones[i + 1]) for i in range(len(elevaciones) - 1))
+                idx_max, idx_min = elevaciones.index(max(elevaciones)), elevaciones.index(min(elevaciones))
+                pendiente_promedio_pct = (
+                    abs(elevaciones[-1] - elevaciones[0]) / (distancia_km * 1000) * 100
+                    if distancia_km > 0 else 0.0
+                )
+
+                texto_extra += (
+                    f"Perfil de elevación en línea recta ({distancia_km:.1f} km) entre "
+                    f"{args.get('lugar_origen')} ({elevaciones[0]:.0f} msnm) y "
+                    f"{args.get('lugar_destino')} ({elevaciones[-1]:.0f} msnm): ganancia "
+                    f"acumulada {ganancia:.0f} m, pérdida acumulada {perdida:.0f} m, pendiente "
+                    f"promedio {pendiente_promedio_pct:.1f}%. Punto más alto: "
+                    f"{elevaciones[idx_max]:.0f} msnm. Punto más bajo: {elevaciones[idx_min]:.0f} "
+                    f"msnm. (Este perfil sigue la línea recta entre los dos puntos, no la "
+                    f"carretera real -- no se integra una API de ruteo en este geovisor). "
+                )
+                acciones.append({
+                    "name": "mostrar_perfil_elevacion",
+                    "args": {
+                        "puntos": [
+                            {"lat": lat, "lon": lon, "elevacion": elev}
+                            for (lat, lon), elev in zip(puntos, elevaciones)
+                        ]
+                    }
+                })
+                continue
+
+            # rango_elevacion_zona: geocodifica el lugar y usa el bounding
+            # box que devuelve Nominatim para muestrear una grilla de
+            # puntos dentro del área -- una ESTIMACIÓN aproximada de cuánto
+            # varía la elevación en la zona, siempre presentada como tal.
+            if nombre_fn == "rango_elevacion_zona":
+                zona = obtener_boundingbox_lugar(args.get("lugar", ""))
+                if not zona:
+                    texto_extra += f"No pude ubicar el área de \"{args.get('lugar')}\" para estimar su relieve. "
+                    continue
+
+                puntos = muestrear_grilla_bbox(zona["sur"], zona["norte"], zona["oeste"], zona["este"])
+                elevaciones = obtener_elevaciones_lote(puntos)
+                if elevaciones is None or any(e is None for e in elevaciones):
+                    texto_extra += f"Encontré {args.get('lugar')} pero no pude consultar la elevación de la zona en este momento. "
+                    continue
+
+                rango = max(elevaciones) - min(elevaciones)
+                texto_extra += (
+                    f"En {args.get('lugar')}, la elevación de los {len(elevaciones)} puntos "
+                    f"muestreados dentro del área va de {min(elevaciones):.0f} a "
+                    f"{max(elevaciones):.0f} msnm (rango de {rango:.0f} m). Esta es una "
+                    f"ESTIMACIÓN aproximada basada en pocos puntos muestreados en el área, no "
+                    f"un análisis completo del relieve. "
+                )
+                acciones.append({
+                    "name": "centrar_coordenadas",
+                    "args": {"lat": zona["lat"], "lon": zona["lon"], "lugar": args.get("lugar")}
+                })
+                continue
 
             # obtener_coordenadas se resuelve aquí mismo, en el backend, en
             # vez de dejarle la geocodificación al frontend: es una consulta
