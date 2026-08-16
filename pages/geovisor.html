@@ -428,6 +428,7 @@ html, body {
 .bm-thumb.osm { background: linear-gradient(135deg,#cfe8d8,#a8d5bb); }
 .bm-thumb.sat { background: linear-gradient(135deg,#2d4a3e,#1a3328); }
 .bm-thumb.blank { background: #f1f5f9; }
+.bm-thumb.relieve { background: linear-gradient(160deg,#e8dcc8 0%,#c9a876 30%,#8a6d3f 55%,#5c4a2e 75%,#3a2f1e 100%); }
 .bm-check { margin-left: auto; color: #0F6E56; font-size: 10px; display: none; }
 .bm-option.active .bm-check { display: inline-block; }
 
@@ -1319,6 +1320,10 @@ html, body {
           <div class="bm-thumb sat"></div> Satélite (Sentinel-2)
           <i class="fa-solid fa-check bm-check"></i>
         </label>
+        <label class="bm-option" data-value="relieve">
+          <div class="bm-thumb relieve"></div> Relieve
+          <i class="fa-solid fa-check bm-check"></i>
+        </label>
         <label class="bm-option" data-value="blank">
           <div class="bm-thumb blank"></div> Sin fondo
           <i class="fa-solid fa-check bm-check"></i>
@@ -1549,7 +1554,7 @@ let openLineaId    = null;
 let vectorLayer    = null;
 let colombiaBorderLayer = null;
 let projectMarkersLayer = null;
-let map, osmLayer, satLayer, view;
+let map, osmLayer, satLayer, relieveLayer, view;
 let toastTimer     = null;
 let currentBasemap = 'sat';
 
@@ -1571,6 +1576,69 @@ function initMap() {
       maxZoom: 14
     }),
     visible: true
+  });
+
+  /* Mapa base de relieve: sombreado de terreno (hillshade) calculado en el
+     cliente vía WebGL a partir de AWS Terrain Tiles (formato Terrarium,
+     originalmente del proyecto Mapzen). Se elige sobre OpenTopoMap porque
+     este ultimo esta en modo de supervivencia desde 2025 (datos sin
+     actualizar desde ene-2023, capacidad limitada por ser financiado con
+     donaciones) -- el mismo tipo de riesgo que ya se evito con Esri World
+     Imagery al migrar a EOX. AWS Terrain Tiles, en cambio, esta alojado
+     como AWS Open Data: sin API key, sin cuota, sin costo de transferencia
+     para quien consulta.
+
+     La elevacion viene codificada en los canales R/G/B de cada pixel
+     (formato Terrarium: altura_m = R*256 + G + B/256 - 32768). La funcion
+     'elevacionTerrarium' decodifica esos canales; el resto de expresiones
+     calcula pendiente y orientacion en una vecindad 3x3 de pixeles (para
+     el gradiente dz/dx, dz/dy) y de ahi el sombreado segun la posicion del
+     sol -- el mismo metodo del ejemplo oficial de OpenLayers para relieve
+     sombreado con WebGL. */
+  const RELIEVE_EXAGERACION_VERTICAL = 1.5; /* realza el relieve sin distorsionarlo en exceso */
+  const RELIEVE_SOL_ELEVACION = 45;         /* grados sobre el horizonte */
+  const RELIEVE_SOL_AZIMUT = 315;           /* iluminacion desde el noroeste (convencion cartografica estandar) */
+
+  function elevacionTerrarium(xOffset, yOffset) {
+    const red   = ['band', 1, xOffset, yOffset];
+    const green = ['band', 2, xOffset, yOffset];
+    const blue  = ['band', 3, xOffset, yOffset];
+    /* band math opera sobre valores normalizados 0-1, de ahi el *255 */
+    return [
+      '+',
+      ['*', 255 * 256, red],
+      ['*', 255, green],
+      ['*', 255 / 256, blue],
+      -32768
+    ];
+  }
+
+  const relieveDp   = ['*', 2, ['resolution']];
+  const relieveZ0x  = ['*', RELIEVE_EXAGERACION_VERTICAL, elevacionTerrarium(-1, 0)];
+  const relieveZ1x  = ['*', RELIEVE_EXAGERACION_VERTICAL, elevacionTerrarium(1, 0)];
+  const relieveDzdx = ['/', ['-', relieveZ1x, relieveZ0x], relieveDp];
+  const relieveZ0y  = ['*', RELIEVE_EXAGERACION_VERTICAL, elevacionTerrarium(0, -1)];
+  const relieveZ1y  = ['*', RELIEVE_EXAGERACION_VERTICAL, elevacionTerrarium(0, 1)];
+  const relieveDzdy = ['/', ['-', relieveZ1y, relieveZ0y], relieveDp];
+  const relieveSlope  = ['atan', ['sqrt', ['+', ['^', relieveDzdx, 2], ['^', relieveDzdy, 2]]]];
+  const relieveAspect  = ['clamp', ['atan', ['-', 0, relieveDzdx], relieveDzdy], -Math.PI, Math.PI];
+  const relieveSunEl = RELIEVE_SOL_ELEVACION * Math.PI / 180;
+  const relieveSunAz = RELIEVE_SOL_AZIMUT * Math.PI / 180;
+  const relieveCosIncidencia = [
+    '+',
+    ['*', Math.sin(relieveSunEl), ['cos', relieveSlope]],
+    ['*', Math.cos(relieveSunEl), ['sin', relieveSlope], ['cos', ['-', relieveSunAz, relieveAspect]]]
+  ];
+  const relieveEscalado = ['*', 255, relieveCosIncidencia];
+
+  relieveLayer = new ol.layer.WebGLTile({
+    visible: false,
+    source: new ol.source.ImageTile({
+      url: 'https://s3.amazonaws.com/elevation-tiles-prod/terrarium/{z}/{x}/{y}.png',
+      maxZoom: 15,
+      attributions: 'Relieve: <a href="https://github.com/tilezen/joerd/blob/master/docs/attribution.md" target="_blank" rel="noopener">AWS Terrain Tiles (Terrarium)</a>, datos SRTM (NASA/USGS)'
+    }),
+    style: { color: ['color', relieveEscalado] }
   });
 
   /* Vista inicial: encuadre de todo el país (Colombia continental) */
@@ -1628,7 +1696,7 @@ function initMap() {
 
   map = new ol.Map({
     target: 'map',
-    layers: [osmLayer, satLayer, colombiaBorderLayer, projectMarkersLayer],
+    layers: [osmLayer, satLayer, relieveLayer, colombiaBorderLayer, projectMarkersLayer],
     view: view,
     controls: []
   });
@@ -2173,15 +2241,17 @@ function initUI() {
 
   /* ── Selector global de mapa base (botón + popover) ── */
   const BASEMAP_LABELS = {
-    osm:   'OpenStreetMap',
-    sat:   'Sentinel-2 Cloudless · EOX/Copernicus',
-    blank: 'Sin mapa base'
+    osm:     'OpenStreetMap',
+    sat:     'Sentinel-2 Cloudless · EOX/Copernicus',
+    relieve: 'Relieve · AWS Terrain Tiles (Terrarium)',
+    blank:   'Sin mapa base'
   };
 
   function setBasemap(value) {
     currentBasemap = value;
     osmLayer.setVisible(value === 'osm');
     satLayer.setVisible(value === 'sat');
+    relieveLayer.setVisible(value === 'relieve');
     document.getElementById('map').style.background = value === 'blank' ? '#f9fafb' : '';
 
     document.querySelectorAll('.bm-option').forEach(function (opt) {
@@ -3150,7 +3220,7 @@ window.GeovisorChat = (function () {
     return poisLayer;
   }
 
-  const BASEMAP_LABELS = { osm: 'callejero (OpenStreetMap)', sat: 'satelital', blank: 'sin fondo' };
+  const BASEMAP_LABELS = { osm: 'callejero (OpenStreetMap)', sat: 'satelital', relieve: 'de relieve (sombreado del terreno)', blank: 'sin fondo' };
   const HERRAMIENTA_LABELS = {
     dist: 'distancia', area: 'área de cobertura', buff: 'buffer', ctrd: 'centroide',
     near: 'vecino más cercano', pip: 'punto en polígono', intx: 'intersección', voro: 'Voronoi'

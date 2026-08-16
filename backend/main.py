@@ -1584,8 +1584,8 @@ GEOVISOR_TOOLS = [
                 "properties": {
                     "tipo": {
                         "type": "string",
-                        "enum": ["osm", "sat", "blank"],
-                        "description": "osm=callejero OpenStreetMap, sat=satelital (EOX Sentinel-2), blank=sin fondo."
+                        "enum": ["osm", "sat", "relieve", "blank"],
+                        "description": "osm=callejero OpenStreetMap, sat=satelital (EOX Sentinel-2), relieve=sombreado de terreno/alturas (AWS Terrain Tiles), blank=sin fondo."
                     }
                 },
                 "required": ["tipo"]
