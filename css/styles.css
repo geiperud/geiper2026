@@ -74,8 +74,14 @@ nav .nav-brand {
 .nav-links {
     display: flex;
     align-items: stretch;
-    justify-content: space-between;
     width: 100%;
+}
+
+.nav-group {
+    display: flex;
+    align-items: stretch;
+    justify-content: space-between;
+    flex: 1 1 0%;
 }
 
 .nav-spacer {
@@ -548,6 +554,7 @@ header.mobile-nav .nav-links {
     z-index: 999;
 }
 header.mobile-nav .nav-links.open { display: flex; }
+header.mobile-nav .nav-group { display: contents; }
 header.mobile-nav .nav-spacer { display: none; }
 header.mobile-nav .nav-links a {
     margin-left: 0;

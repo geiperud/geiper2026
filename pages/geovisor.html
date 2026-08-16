@@ -1230,13 +1230,17 @@ html, body {
       <span></span><span></span><span></span>
     </button>
         <div class="nav-links" id="navLinks">
-      <a href="../index.html">Inicio</a>
-      <a href="lineas.html">Líneas de investigación</a>
-      <a href="chatbots.html">Asistentes IA</a>
+      <div class="nav-group">
+        <a href="../index.html">Inicio</a>
+        <a href="lineas.html">Líneas de investigación</a>
+        <a href="chatbots.html">Asistentes IA</a>
+      </div>
       <span class="nav-spacer"></span>
-      <a href="geovisor.html" class="active">Geovisor</a>
-      <a href="integrantes.html">Integrantes</a>
-      <a href="repositorios.html">Repositorios</a>
+      <div class="nav-group">
+        <a href="geovisor.html" class="active">Geovisor</a>
+        <a href="integrantes.html">Integrantes</a>
+        <a href="repositorios.html">Repositorios</a>
+      </div>
     </div>
   </nav>
 </header>
@@ -3189,20 +3193,13 @@ window.GeovisorChat = (function () {
     chatMarkerLayer = new ol.layer.Vector({
       source: new ol.source.Vector(),
       zIndex: 5,
-      style: function (feature) {
-        if (feature.getGeometry().getType() === 'LineString') {
-          return new ol.style.Style({
-            stroke: new ol.style.Stroke({ color: '#B23A48', width: 3, lineDash: [2, 6] })
-          });
-        }
-        return new ol.style.Style({
-          image: new ol.style.Circle({
-            radius: 8,
-            fill: new ol.style.Fill({ color: '#B23A48' }),
-            stroke: new ol.style.Stroke({ color: '#fff', width: 2 })
-          })
-        });
-      }
+      style: new ol.style.Style({
+        image: new ol.style.Circle({
+          radius: 8,
+          fill: new ol.style.Fill({ color: '#B23A48' }),
+          stroke: new ol.style.Stroke({ color: '#fff', width: 2 })
+        })
+      })
     });
     map.addLayer(chatMarkerLayer);
     return chatMarkerLayer;
@@ -3309,24 +3306,6 @@ window.GeovisorChat = (function () {
         if (proyectos.length === 0) return 'La línea "' + linea.nombre + '" no tiene proyectos cargados todavía en el geovisor.';
         return 'Línea "' + linea.nombre + '" (' + proyectos.length + ' proyecto(s)): ' +
           proyectos.map(function (p) { return p.nombre || 'Sin título'; }).join('; ') + '.';
-      }
-      case 'mostrar_perfil_elevacion': {
-        // Dibuja la línea recta (aproximación geométrica, no la carretera
-        // real) entre origen y destino del perfil de elevación calculado
-        // en el backend. El texto con las estadísticas ya viene en
-        // data.response -- aquí solo se ejecuta la parte visual.
-        const layer = ensureChatMarkerLayer();
-        layer.getSource().clear();
-        const puntos = args.puntos || [];
-        if (puntos.length < 2) return null;
-        const coords3857 = puntos.map(function (p) { return ol.proj.fromLonLat([p.lon, p.lat]); });
-        const lineFeat = new ol.Feature({ geometry: new ol.geom.LineString(coords3857) });
-        layer.getSource().addFeature(lineFeat);
-        [0, coords3857.length - 1].forEach(function (i) {
-          layer.getSource().addFeature(new ol.Feature({ geometry: new ol.geom.Point(coords3857[i]) }));
-        });
-        map.getView().fit(lineFeat.getGeometry().getExtent(), { padding: [60, 60, 60, 60], duration: 500, maxZoom: 13 });
-        return null; // el resumen (ganancia, pérdida, pendiente) ya viene en el texto del backend
       }
       case 'mostrar_pois': {
         const layer = ensurePoisLayer();
