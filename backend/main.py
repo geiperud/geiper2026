@@ -659,6 +659,29 @@ def buscar_contexto_documentos(vectorstore_local, referencias_apa, query_actual,
     """
     if vectorstore_local is None:
         return "", 0.0
+
+    # ── Caso 1: la consulta nombra un documento directamente por autor ──────
+    # (ej. "hablemos del trabajo de forero zapata", "resume el de valbuena
+    # gaona"). Se resuelve por coincidencia textual + retrieval filtrado por
+    # fuente, NO por similitud coseno global (ver detectar_documento_nombrado
+    # para el porque). Se prueba con query_actual y, si no hay match ahi, con
+    # consulta_efectiva (cubre el caso "resume ESE trabajo" referido al turno
+    # anterior, donde el nombre del autor ya no esta en el mensaje actual).
+    archivo_nombrado = detectar_documento_nombrado(query_actual, referencias_apa)
+    if archivo_nombrado is None and consulta_efectiva != query_actual:
+        archivo_nombrado = detectar_documento_nombrado(consulta_efectiva, referencias_apa)
+    if archivo_nombrado:
+        contexto = buscar_contexto_por_documento(
+            vectorstore_local, archivo_nombrado, consulta_efectiva, referencias_apa
+        )
+        if contexto:
+            # similitud sintetica alta: es una fuente identificada con
+            # certeza por nombre, no una coincidencia semantica aproximada.
+            # Ademas, al ser >= UMBRAL_SALTAR_WEB, evita una busqueda web
+            # redundante para una pregunta que ya se resolvio con la fuente
+            # exacta que el usuario pidio.
+            return contexto, 1.0
+
     try:
         candidatos = {}
         consultas_a_probar = [query_actual]
@@ -706,6 +729,117 @@ def buscar_contexto_documentos(vectorstore_local, referencias_apa, query_actual,
     except Exception as e:
         logger.warning(f"RAG falló: {e}")
         return "", 0.0
+
+
+def _extraer_apellidos_autores(cita_apa):
+    """Extrae los apellidos de autor(es) de una cita APA (la parte antes del
+    año entre parentesis), descartando las iniciales sueltas de nombre (ej.
+    'S.', 'L. M.'). Soporta apellidos compuestos ('Forero Zapata',
+    'Vargas Rodríguez') y multiples autores unidos por '&'."""
+    parte_autores = cita_apa.split(" (")[0]
+    autores = parte_autores.split("&")
+    apellidos = []
+    for autor in autores:
+        apellido = autor.split(",")[0].strip()
+        apellido = re.sub(r'^(y|and)\s+', '', apellido, flags=re.IGNORECASE)
+        if apellido:
+            apellidos.append(apellido)
+    return apellidos
+
+
+def detectar_documento_nombrado(query, referencias_apa):
+    """
+    Detecta si la consulta nombra directamente a un documento indexado por su
+    autor (ej. "hablemos del trabajo de forero zapata", "resume el de
+    valbuena gaona", "que dice el de melo cristancho"). Este tipo de
+    preguntas NO son preguntas de contenido semántico -- son una referencia
+    directa a una fuente por nombre -- así que compararlas contra los chunks
+    via similitud coseno (ver UMBRAL_SIMILITUD_COSENO) falla sistemáticamente:
+    "hablemos del trabajo de X" esta lejos, en el espacio de embeddings, de
+    un fragmento que habla de segmentacion semantica o redes convolucionales,
+    aunque el documento SI este indexado. Por eso se detecta aparte, con
+    coincidencia textual de apellidos, y se resuelve con
+    buscar_contexto_por_documento (bypass del umbral).
+
+    Devuelve el nombre de archivo del mejor match (el apellido mas largo /
+    especifico que aparezca en la consulta, para evitar que un apellido corto
+    y comun capture el documento equivocado), o None si no se detecta ninguno.
+    """
+    query_norm = _normalizar_texto(query)
+    mejor_archivo = None
+    mejor_longitud = 0
+    for archivo, cita in referencias_apa.items():
+        for apellido in _extraer_apellidos_autores(cita):
+            apellido_norm = _normalizar_texto(apellido)
+            if not apellido_norm:
+                continue
+            patron = r'\b' + re.escape(apellido_norm) + r'\b'
+            if re.search(patron, query_norm) and len(apellido_norm) > mejor_longitud:
+                mejor_archivo = archivo
+                mejor_longitud = len(apellido_norm)
+    return mejor_archivo
+
+
+def buscar_contexto_por_documento(vectorstore_local, archivo, consulta_para_ordenar, referencias_apa, k=5):
+    """
+    Trae fragmentos de UN documento ya identificado por nombre (autor/título),
+    sin pasar por UMBRAL_SIMILITUD_COSENO: ese umbral esta calibrado para
+    preguntas de contenido, y aqui la pregunta ya trajo la fuente por su
+    cuenta. La similitud coseno se usa solo para ORDENAR los fragmentos
+    propios del documento entre si (los mas relevantes primero), nunca para
+    decidir si el documento entra o no.
+    """
+    if vectorstore_local is None:
+        return ""
+    try:
+        archivo_norm = _normalizar_nombre_archivo(archivo)
+        id_a_indice = {
+            docstore_id: idx
+            for idx, docstore_id in vectorstore_local.index_to_docstore_id.items()
+        }
+
+        candidatos = []
+        for docstore_id, doc in vectorstore_local.docstore._dict.items():
+            fuente = os.path.basename(doc.metadata.get("source", ""))
+            if _normalizar_nombre_archivo(fuente) != archivo_norm:
+                continue
+            idx = id_a_indice.get(docstore_id)
+            if idx is None:
+                continue
+            candidatos.append((doc, idx))
+
+        if not candidatos:
+            logger.warning(
+                f"RAG: '{archivo}' se detecto por nombre pero no tiene "
+                f"fragmentos en el docstore (¿desalineado con el indice?)."
+            )
+            return ""
+
+        query_vec = np.array(vectorstore_local._embed_query(consulta_para_ordenar), dtype="float32")
+        norma_query = np.linalg.norm(query_vec) or 1.0
+        query_norm = query_vec / norma_query
+
+        puntuados = []
+        for doc, idx in candidatos:
+            doc_vec = np.array(vectorstore_local.index.reconstruct(int(idx)), dtype="float32")
+            norma_doc = np.linalg.norm(doc_vec) or 1.0
+            doc_norm = doc_vec / norma_doc
+            similitud = float(np.dot(query_norm, doc_norm))
+            puntuados.append((doc, similitud))
+
+        puntuados.sort(key=lambda par: -par[1])
+        seleccionados = puntuados[:k]
+
+        apa = obtener_referencia_apa(referencias_apa, archivo)
+        bloques = [f"[Referencia APA: {apa}]\n{doc.page_content[:500]}" for doc, _ in seleccionados]
+        logger.info(
+            f"RAG: documento nombrado detectado -> {archivo}, "
+            f"{len(seleccionados)}/{len(candidatos)} fragmentos traidos directamente (bypass umbral)."
+        )
+        return "\n\n---\n\n".join(bloques)
+    except Exception as e:
+        logger.warning(f"No se pudo recuperar contexto por documento nombrado '{archivo}': {e}")
+        return ""
 
 
 # ── Detección de preguntas sobre el semillero mismo o el sitio ──────────────
