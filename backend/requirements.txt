@@ -1,11 +1,20 @@
 # Dependencias de PRODUCCIÓN (Render) — usadas por main.py
 # Embeddings via REST (Gemini gemini-embedding-001) — sin modelo local, sin torch.
+#
+# IMPORTANTE (reproducibilidad): versiones fijadas a propósito, no ">=".
+# langchain-core/langchain-community 0.4+ introdujeron una reestructuración
+# grande del paquete (nuevo paquete "langchain-classic" como dependencia
+# transitiva) que casi duplica el peso de la instalación -- en el tier
+# gratuito de Render (512 MB RAM) eso agota la memoria durante el arranque
+# y el proceso muere sin abrir el puerto, sin traceback claro en los logs.
+# Se fija <0.4 para quedarse en la línea 0.3.x, ya probada y estable con
+# el resto del código (FAISS.load_local, embeddings vía REST, etc.).
 fastapi>=0.109.0
 uvicorn>=0.27.0
 slowapi>=0.1.9
 pydantic>=2.7.4
-langchain-core>=0.3.0
-langchain-community>=0.3.0
+langchain-core>=0.3.0,<0.4.0
+langchain-community>=0.3.0,<0.4.0
 faiss-cpu>=1.7.0
 numpy>=1.26.0
 requests>=2.31.0
