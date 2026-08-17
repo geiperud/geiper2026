@@ -2242,12 +2242,18 @@ function initUI() {
     map.setLayoutProperty('relieve-hillshade', 'visibility', value === 'relieve' ? 'visible' : 'none');
 
     /* Terreno 3D real (map.setTerrain) solo se activa en el basemap de
-       relieve: permite inclinar/rotar la vista (clic derecho + arrastre)
-       para ver el relieve extruido, igual que el ejemplo de AWS Open Data.
-       En el resto de basemaps se desactiva para conservar la vista 2D
-       plana que necesitan las herramientas de análisis espacial. */
+       relieve. A diferencia de un simple hillshade 2D, aquí también se
+       inclina la cámara automáticamente (pitch) para que el relieve se
+       note de inmediato -- vista desde arriba (pitch 0) el terreno 3D
+       no se percibe, por más terreno activo que haya. El usuario puede
+       seguir inclinando/rotando libremente con clic derecho + arrastre
+       (o dos dedos en trackpad), igual que en el ejemplo de AWS Open
+       Data / Made with MapLibre. En el resto de basemaps se vuelve a
+       vista plana (pitch 0), que es la que necesitan las herramientas
+       de análisis espacial. */
     if (value === 'relieve') {
       map.setTerrain({ source: 'terrarium', exaggeration: RELIEVE_EXAGERACION_VERTICAL });
+      map.easeTo({ pitch: 60, bearing: -17, duration: 1200 });
     } else {
       map.setTerrain(null);
       map.easeTo({ pitch: 0, bearing: 0, duration: 400 });
