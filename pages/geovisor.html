@@ -569,11 +569,33 @@ html, body {
   margin-bottom: 10px;
 }
 
+.turf-panel-hint.sar-hint-error {
+  color: #b91c1c;
+  background: #fef2f2;
+  border-color: #fecaca;
+  font-weight: 600;
+}
+.turf-panel-hint.sar-hint-error i { margin-right: 4px; }
+
 .turf-rail-divider {
   height: 1px;
   background: #e2e8f0;
   margin: 3px 4px;
 }
+
+/* Botón de detección de cambios SAR: se distingue visualmente del resto
+   de herramientas de análisis (Turf) con un tinte propio permanente,
+   en vez de solo cambiar de color al pasar el mouse/activarse como los
+   demás -- es una función de otra categoría (percepción remota) y es
+   fácil perderla entre los 8 íconos de análisis espacial si se ve
+   idéntica a ellos en reposo. */
+#sarRailBtn {
+  background: #eff6ff;
+  border-color: #bfdbfe;
+  color: #1d4ed8;
+}
+#sarRailBtn:hover { background: #dbeafe; border-color: #93c5fd; color: #1e40af; }
+#sarRailBtn.active { background: #1d4ed8; border-color: #1d4ed8; color: #ffffff; }
 
 .sar-field-label {
   font-size: 10px;
@@ -1819,7 +1841,7 @@ function initMap() {
     },
     center: [-90, 12],   /* vista inicial: globo mostrando América desde el espacio */
     zoom: 1.5,
-    minZoom: 0,           /* se restringe a 4 (ver más abajo) una vez aterriza el flyTo de entrada */
+    minZoom: 0,           /* se sube a 1.2 (ver más abajo) tras el flyTo de entrada -- lo suficiente para poder volver a alejar y ver el globo cuando se quiera, sin permitir perderse del todo */
     maxZoom: 19,
     pitchWithRotate: true,   /* permite inclinar (3D) con clic derecho + arrastre, o dos dedos */
     dragRotate: true,
@@ -2444,7 +2466,13 @@ function initUI() {
       map.easeTo({ pitch: 60, bearing: -17, duration: 1200 });
     } else {
       map.setTerrain(null);
-      map.easeTo({ pitch: 0, bearing: 0, duration: 400 });
+      /* No aplanar la vista si Edificios 3D sigue activo -- ese toggle
+         maneja su propio pitch y perdería el efecto 3D si cada cambio
+         de basemap la reiniciara a 0. */
+      const edificios3DActivos = document.getElementById('bm3dBuildingsToggle').checked;
+      if (!edificios3DActivos) {
+        map.easeTo({ pitch: 0, bearing: 0, duration: 400 });
+      }
     }
 
     document.getElementById('map').style.background = value === 'blank' ? '#f9fafb' : '';
@@ -2533,8 +2561,21 @@ function initUI() {
     if (this.checked) {
       ensureBuildings3DLayer();
       map.setLayoutProperty('3d-buildings', 'visibility', 'visible');
+      /* Inclinar la cámara al activar: vistos desde arriba (pitch 0) los
+         edificios extruidos se ven casi planos, apenas se nota el 3D.
+         Si el usuario ya inclinó la vista a mano (o está en el basemap
+         "Relieve", que maneja su propio pitch), se respeta lo que ya
+         haya -- solo se inclina automáticamente desde una vista plana. */
+      if (map.getPitch() < 30) {
+        map.easeTo({ pitch: 55, duration: 900 });
+      }
     } else if (buildings3DReady) {
       map.setLayoutProperty('3d-buildings', 'visibility', 'none');
+      /* Al desactivar, solo se vuelve a vista plana si el basemap
+         "Relieve" no está activo (ese modo controla su propio pitch). */
+      if (currentBasemap !== 'relieve') {
+        map.easeTo({ pitch: 0, bearing: 0, duration: 500 });
+      }
     }
   });
 
@@ -2635,7 +2676,7 @@ window.addEventListener('load', function () {
         duration: 3200,
         curve: 1.4
       });
-      setTimeout(function () { map.setMinZoom(4); }, 3300);
+      setTimeout(function () { map.setMinZoom(1.2); }, 3300);
     }, 700);
   }, 100);
   window.addEventListener('resize', function () { map.resize(); });
@@ -3842,9 +3883,24 @@ window.SarCambios = (function () {
     el.style.display = 'block';
     document.getElementById('sarHint').style.display = 'none';
   }
+  /* Aviso neutro (falta seleccionar área/fechas, etc.) -- mismo estilo
+     verde que el resto de hints informativos del geovisor. */
   function mostrarHint(texto) {
     const el = document.getElementById('sarHint');
+    el.classList.remove('sar-hint-error');
     el.textContent = texto;
+    el.style.display = 'block';
+    document.getElementById('sarResult').style.display = 'none';
+  }
+  /* Error real (falla del backend, sin credenciales, sin conexión, etc.)
+     -- estilo rojo, deliberadamente distinto al hint neutro, para que
+     sea imposible confundirlo con "nada pasó" o con una instrucción
+     más. Incluye un ícono de alerta para reforzar que es un problema,
+     no un paso a seguir. */
+  function mostrarError(texto) {
+    const el = document.getElementById('sarHint');
+    el.classList.add('sar-hint-error');
+    el.innerHTML = '<i class="fa-solid fa-triangle-exclamation"></i> ' + escHtml(texto);
     el.style.display = 'block';
     document.getElementById('sarResult').style.display = 'none';
   }
@@ -3888,7 +3944,7 @@ window.SarCambios = (function () {
         );
       })
       .catch(function (err) {
-        mostrarHint(err.message || 'No se pudo completar el análisis. Intenta con otras fechas.');
+        mostrarError(err.message || 'No se pudo completar el análisis. Intenta con otras fechas.');
       })
       .finally(function () {
         btn.disabled = false;

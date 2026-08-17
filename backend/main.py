@@ -257,6 +257,9 @@ vectorstore_investigacion = None
 api_token   = None
 groq_token   = None
 glm_token   = None
+sh_client_id     = None
+sh_client_secret = None
+_sh_token_cache = {"token": None, "expira": 0.0}  # cache en memoria del access_token OAuth de Sentinel Hub
 
 # ── Embeddings via REST ──────────────────────────────────────────────────────
 class GoogleEmbeddingsREST(Embeddings):
@@ -1154,6 +1157,15 @@ def init_services():
         )
     else:
         logger.warning("No se encontro GOOGLE_API_KEY.")
+
+    global sh_client_id, sh_client_secret
+    sh_client_id = os.environ.get("SENTINELHUB_CLIENT_ID", "").strip()
+    sh_client_secret = os.environ.get("SENTINELHUB_CLIENT_SECRET", "").strip()
+    if sh_client_id and sh_client_secret:
+        logger.info("Credenciales de Sentinel Hub (Copernicus Data Space Ecosystem) encontradas.")
+    else:
+        logger.warning("No se encontraron SENTINELHUB_CLIENT_ID / SENTINELHUB_CLIENT_SECRET. "
+                        "La herramienta de detección de cambios SAR quedará deshabilitada.")
 
     if not groq_token and not api_token:
         logger.error("No hay ninguna API Key configurada.")
@@ -2296,3 +2308,203 @@ def geovisor_chat(request: Request, chat_request: GeovisorChatRequest):
     )
 
     return {"response": texto_respuesta.strip(), "actions": acciones}
+
+
+# ══════════════════════════════════════════════════════════════════
+# DETECCIÓN DE CAMBIOS SAR (Sentinel-1) — Copernicus Data Space Ecosystem
+#
+# Compara la retrodispersión de radar (banda VV) entre dos periodos de
+# tiempo sobre una misma área, usando la Process API de Sentinel Hub
+# (https://dataspace.copernicus.eu). A diferencia de Sentinel-2, el radar
+# atraviesa nubes y funciona de noche, lo que lo hace especialmente útil
+# para detectar cambios recientes (inundaciones, deforestación, obras)
+# en zonas con cobertura de nubes persistente -- muy común en Colombia.
+#
+# Técnica: log-ratio de amplitud VV (10*log10(después/antes)), el método
+# estándar en teledetección SAR para resaltar cambios reales por encima
+# del ruido speckle inherente al radar. Se visualiza con una escala
+# divergente: rojo = aumento de retrodispersión (p. ej. nueva
+# construcción, superficie más rugosa), azul = disminución (p. ej.
+# inundación, tala), gris = sin cambio significativo.
+# ══════════════════════════════════════════════════════════════════
+
+SH_TOKEN_URL   = "https://identity.dataspace.copernicus.eu/auth/realms/CDSE/protocol/openid-connect/token"
+SH_PROCESS_URL = "https://sh.dataspace.copernicus.eu/api/v1/process"
+
+SAR_EVALSCRIPT = """
+//VERSION=3
+function setup() {
+  return {
+    input: [
+      { datasource: "antes",   bands: ["VV"] },
+      { datasource: "despues", bands: ["VV"] }
+    ],
+    output: { bands: 3, sampleType: "AUTO" }
+  };
+}
+
+function evaluatePixel(samples) {
+  let antes   = Math.max(samples.antes[0].VV,   1e-6);
+  let despues = Math.max(samples.despues[0].VV, 1e-6);
+  let ratioDb = 10 * Math.log10(despues / antes);
+
+  // Rango tipico de cambio real en SAR: -6 dB a +6 dB. Se recorta (clamp)
+  // para que el ruido speckle fuera de ese rango no sature el color.
+  let t = Math.max(-6, Math.min(6, ratioDb));
+  t = (t + 6) / 12; // normalizado 0..1
+
+  if (t < 0.5) {
+    // disminución de retrodispersión -> azul (posible inundación / tala)
+    let f = t * 2;
+    return [0.85 * f, 0.85 * f, 1];
+  } else {
+    // aumento de retrodispersión -> rojo (posible construcción / superficie nueva)
+    let f = (t - 0.5) * 2;
+    return [1, 0.85 * (1 - f), 0.85 * (1 - f)];
+  }
+}
+"""
+
+
+def get_sentinelhub_token():
+    """Obtiene (y cachea en memoria) el access_token OAuth de Sentinel Hub
+    vía client_credentials. Los tokens de Sentinel Hub duran ~1 hora; se
+    reutiliza mientras no esté vencido para no gastar cuota de más."""
+    if not sh_client_id or not sh_client_secret:
+        raise HTTPException(
+            status_code=503,
+            detail="La detección de cambios SAR no está configurada en el servidor todavía "
+                   "(faltan credenciales de Copernicus Data Space Ecosystem)."
+        )
+
+    ahora = time.time()
+    if _sh_token_cache["token"] and ahora < _sh_token_cache["expira"]:
+        return _sh_token_cache["token"]
+
+    resp = requests.post(
+        SH_TOKEN_URL,
+        data={
+            "grant_type": "client_credentials",
+            "client_id": sh_client_id,
+            "client_secret": sh_client_secret,
+        },
+        timeout=15,
+    )
+    resp.raise_for_status()
+    data = resp.json()
+    _sh_token_cache["token"]  = data["access_token"]
+    # se resta un margen de 60s para renovar antes de que expire de verdad
+    _sh_token_cache["expira"] = ahora + data.get("expires_in", 3600) - 60
+    return _sh_token_cache["token"]
+
+
+def _ventana_de_dias(fecha_iso: str, margen_dias: int = 4):
+    """Convierte una fecha puntual (YYYY-MM-DD) en una ventana [inicio, fin]
+    de +/- margen_dias, para aumentar la probabilidad de encontrar una
+    escena Sentinel-1 real dentro del rango (revisita ~6 días)."""
+    from datetime import datetime, timedelta
+    base = datetime.strptime(fecha_iso, "%Y-%m-%d")
+    inicio = (base - timedelta(days=margen_dias)).strftime("%Y-%m-%dT00:00:00Z")
+    fin    = (base + timedelta(days=margen_dias)).strftime("%Y-%m-%dT23:59:59Z")
+    return inicio, fin
+
+
+class SarCambiosRequest(BaseModel):
+    bbox: List[float] = Field(min_length=4, max_length=4)  # [minLon, minLat, maxLon, maxLat] EPSG:4326
+    fecha_inicio: str  # YYYY-MM-DD ("antes")
+    fecha_fin: str     # YYYY-MM-DD ("después")
+
+
+@app.post("/sar-cambios")
+@limiter.limit("10/minute")
+def sar_cambios(request: Request, body: SarCambiosRequest):
+    if body.bbox[0] >= body.bbox[2] or body.bbox[1] >= body.bbox[3]:
+        raise HTTPException(status_code=400, detail="bbox inválido.")
+
+    ancho_grados = body.bbox[2] - body.bbox[0]
+    alto_grados  = body.bbox[3] - body.bbox[1]
+    if ancho_grados > 3 or alto_grados > 3:
+        raise HTTPException(
+            status_code=400,
+            detail="El área seleccionada es demasiado grande para este análisis. "
+                   "Elige un municipio o un rectángulo más pequeño."
+        )
+
+    try:
+        token = get_sentinelhub_token()
+
+        antes_ini, antes_fin     = _ventana_de_dias(body.fecha_inicio)
+        despues_ini, despues_fin = _ventana_de_dias(body.fecha_fin)
+
+        payload = {
+            "input": {
+                "bounds": {
+                    "bbox": body.bbox,
+                    "properties": {"crs": "http://www.opengis.net/def/crs/EPSG/0/4326"}
+                },
+                "data": [
+                    {
+                        "type": "sentinel-1-grd",
+                        "id": "antes",
+                        "dataFilter": {
+                            "timeRange": {"from": antes_ini, "to": antes_fin},
+                            "acquisitionMode": "IW",
+                            "polarization": "DV"
+                        }
+                    },
+                    {
+                        "type": "sentinel-1-grd",
+                        "id": "despues",
+                        "dataFilter": {
+                            "timeRange": {"from": despues_ini, "to": despues_fin},
+                            "acquisitionMode": "IW",
+                            "polarization": "DV"
+                        }
+                    }
+                ]
+            },
+            "output": {
+                "width": 512,
+                "height": 512,
+                "responses": [{"identifier": "default", "format": {"type": "image/png"}}]
+            },
+            "evalscript": SAR_EVALSCRIPT
+        }
+
+        resp = requests.post(
+            SH_PROCESS_URL,
+            json=payload,
+            headers={"Authorization": f"Bearer {token}"},
+            timeout=45,
+        )
+
+        if resp.status_code == 400:
+            # Caso más común: no hubo ninguna escena Sentinel-1 en alguna
+            # de las dos ventanas de tiempo sobre esa área.
+            raise HTTPException(
+                status_code=422,
+                detail="No se encontraron imágenes de radar Sentinel-1 para alguna de las dos "
+                       "fechas en esa área. Prueba con fechas distintas (la revisita del "
+                       "satélite es de unos 6 días)."
+            )
+        resp.raise_for_status()
+
+        import base64
+        imagen_b64 = base64.b64encode(resp.content).decode("ascii")
+
+        return {
+            "imagen_base64": imagen_b64,
+            "bbox": body.bbox,
+            "fecha_antes": body.fecha_inicio,
+            "fecha_despues": body.fecha_fin,
+        }
+
+    except HTTPException:
+        raise
+    except requests.exceptions.RequestException as e:
+        logger.error(f"Error de red en sar-cambios: {e}")
+        raise HTTPException(status_code=502, detail="No se pudo contactar el servicio de Copernicus Data Space Ecosystem.")
+    except Exception as e:
+        logger.error(f"Error en sar-cambios: {e}\n{traceback.format_exc()}")
+        raise HTTPException(status_code=500, detail="Error interno procesando la detección de cambios.")
+
