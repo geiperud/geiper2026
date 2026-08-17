@@ -19,7 +19,7 @@
   <meta property="og:image" content="https://geiperud.github.io/geiper2026/assets/images/Logo_GEIPER.png">
   <link rel="icon" type="image/png" href="../assets/images/Logo_GEIPER.png">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
-  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/ol@10.10.0/dist/ol.css">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/maplibre-gl@5.8.0/dist/maplibre-gl.css">
   <!-- Turf.js: análisis geoespacial en cliente (distancia, área, buffer, centroide, voronoi, etc.) -->
   <script src="https://cdn.jsdelivr.net/npm/@turf/turf@6/turf.min.js"></script>
   <!-- topojson-client: descomprime data/municipios.json (TopoJSON) a GeoJSON en el navegador -->
@@ -289,28 +289,22 @@ html, body {
   background: #f9fafb;
 }
 
-/* Ocultar controles nativos de OL */
-.ol-zoom,
-.ol-attribution { display: none !important; }
+/* Ocultar controles nativos de MapLibre (usamos los propios del riel derecho) */
+.maplibregl-ctrl-top-right,
+.maplibregl-ctrl-top-left,
+.maplibregl-ctrl-bottom-left,
+.maplibregl-ctrl-attrib { display: none !important; }
 
-/* ScaleLine — ahora renderizada DENTRO de #scaleTarget en la barra inferior,
-   en vez de flotar de forma independiente (ol.control.ScaleLine target option) */
-.ol-scale-line {
-  position: static !important;
-  background: transparent !important;
-  border: none !important;
-  padding: 0 !important;
-  font-size: 10px !important;
-  color: #475569 !important;
-  font-family: 'Montserrat', sans-serif !important;
-}
-
-.ol-scale-line-inner {
-  border: 1.5px solid #94a3b8 !important;
-  border-top: none !important;
-  color: #475569 !important;
-  font-size: 9.5px !important;
-  font-family: 'Montserrat', sans-serif !important;
+/* Barra de escala custom, renderizada DENTRO de #scaleTarget en la barra
+   inferior (reemplaza al control nativo de MapLibre, que flota aparte) */
+.geo-scale-line {
+  font-size: 9.5px;
+  color: #475569;
+  font-family: 'Montserrat', sans-serif;
+  border: 1.5px solid #94a3b8;
+  border-top: none;
+  padding: 1px 4px 0;
+  white-space: nowrap;
 }
 
 /* ── Badge de proyecto activo ─────────────── */
@@ -1279,7 +1273,7 @@ html, body {
 
     <!-- Contenedor del mapa -->
     <div id="mapCanvas">
-      <!-- Mapa OpenLayers -->
+      <!-- Mapa MapLibre GL JS -->
       <div id="map"></div>
 
       <!-- Badge de proyecto activo -->
@@ -1447,8 +1441,8 @@ html, body {
 <!-- Toast -->
 <div id="geoToast"><i class="fa-solid fa-check"></i> <span id="toastMsg"></span></div>
 
-<!-- ── OpenLayers JS ────────────────────────── -->
-<script src="https://cdn.jsdelivr.net/npm/ol@10.10.0/dist/ol.js"></script>
+<!-- ── MapLibre GL JS ───────────────────────── -->
+<script src="https://cdn.jsdelivr.net/npm/maplibre-gl@5.8.0/dist/maplibre-gl.js"></script>
 
 <script>
 /* ══════════════════════════════════════════════
@@ -1555,159 +1549,150 @@ const PROJECT_MARKERS = [
 let activeProject  = null;
 let activeLayerId  = null;
 let openLineaId    = null;
-let vectorLayer    = null;
-let colombiaBorderLayer = null;
-let projectMarkersLayer = null;
-let map, osmLayer, satLayer, relieveLayer, view;
-let toastTimer     = null;
-let currentBasemap = 'sat';
+let map, toastTimer = null;
+let currentBasemap  = 'sat';
+const COLOMBIA_EXTENT_LONLAT = [-78.990935, -4.298187, -66.876326, 12.437303];
+const RELIEVE_EXAGERACION_VERTICAL = 1.5; /* realza el relieve 3D sin distorsionarlo en exceso; usada tanto al construir el estilo del mapa como al activar/desactivar el terreno desde el selector de basemap */
+
+/* Utilidad: bounds MapLibre [[minLon,minLat],[maxLon,maxLat]] a partir de
+   un extent [minLon,minLat,maxLon,maxLat] (mismo formato que usaba OL) */
+function extentToBounds(ext) {
+  return [[ext[0], ext[1]], [ext[2], ext[3]]];
+}
+/* Combina dos extents [minLon,minLat,maxLon,maxLat] */
+function extendExtent(a, b) {
+  if (!a) return b.slice();
+  return [Math.min(a[0], b[0]), Math.min(a[1], b[1]), Math.max(a[2], b[2]), Math.max(a[3], b[3])];
+}
+/* Extent de un array de coordenadas [lon,lat] */
+function extentOfPoints(coordsArr) {
+  let ext = null;
+  coordsArr.forEach(function (c) {
+    const e = [c[0], c[1], c[0], c[1]];
+    ext = extendExtent(ext, e);
+  });
+  return ext;
+}
 
 /* ══════════════════════════════════════════════
    INIT MAP
    ══════════════════════════════════════════════ */
 function initMap() {
-  osmLayer = new ol.layer.Tile({ source: new ol.source.OSM(), visible: false });
-
   /* Mapa base satelital: Sentinel-2 Cloudless (EOX IT Services GmbH), mosaico
      construido a partir de datos abiertos Copernicus/ESA — CC BY 4.0.
      Reemplaza a Esri World Imagery (comercial) para mantener el geovisor
      100% sobre datos y servicios abiertos. Resolución nativa ~10 m/px. */
   const SAT_LAYER_YEAR = '2024';
-  satLayer = new ol.layer.Tile({
-    source: new ol.source.XYZ({
-      url: 'https://tiles.maps.eox.at/wmts/1.0.0/s2cloudless-' + SAT_LAYER_YEAR + '_3857/default/g/{z}/{y}/{x}.jpg',
-      attributions: 'Sentinel-2 cloudless by <a href="https://s2maps.eu" target="_blank" rel="noopener">EOX IT Services GmbH</a> (Contains modified Copernicus Sentinel data ' + SAT_LAYER_YEAR + ')',
-      maxZoom: 14
-    }),
-    visible: true
-  });
 
-  /* Mapa base de relieve: sombreado de terreno (hillshade) calculado en el
-     cliente vía WebGL a partir de AWS Terrain Tiles (formato Terrarium,
-     originalmente del proyecto Mapzen). Se elige sobre OpenTopoMap porque
-     este ultimo esta en modo de supervivencia desde 2025 (datos sin
+  /* Mapa base de relieve: sombreado de terreno (hillshade) + terreno 3D real,
+     ambos nativos de MapLibre GL JS a partir de AWS Terrain Tiles (formato
+     Terrarium, originalmente del proyecto Mapzen). Se elige sobre OpenTopoMap
+     porque este ultimo esta en modo de supervivencia desde 2025 (datos sin
      actualizar desde ene-2023, capacidad limitada por ser financiado con
      donaciones) -- el mismo tipo de riesgo que ya se evito con Esri World
      Imagery al migrar a EOX. AWS Terrain Tiles, en cambio, esta alojado
      como AWS Open Data: sin API key, sin cuota, sin costo de transferencia
      para quien consulta.
 
-     La elevacion viene codificada en los canales R/G/B de cada pixel
-     (formato Terrarium: altura_m = R*256 + G + B/256 - 32768). La funcion
-     'elevacionTerrarium' decodifica esos canales; el resto de expresiones
-     calcula pendiente y orientacion en una vecindad 3x3 de pixeles (para
-     el gradiente dz/dx, dz/dy) y de ahi el sombreado segun la posicion del
-     sol -- el mismo metodo del ejemplo oficial de OpenLayers para relieve
-     sombreado con WebGL. */
-  const RELIEVE_EXAGERACION_VERTICAL = 1.5; /* realza el relieve sin distorsionarlo en exceso */
-  const RELIEVE_SOL_ELEVACION = 45;         /* grados sobre el horizonte */
-  const RELIEVE_SOL_AZIMUT = 315;           /* iluminacion desde el noroeste (convencion cartografica estandar) */
+     A diferencia de la implementación anterior (OpenLayers, sombreado
+     calculado a mano con band-math en WebGL), MapLibre soporta de forma
+     nativa la fuente 'raster-dem' + relieve sombreado (capa 'hillshade')
+     y terreno 3D real (map.setTerrain), sin necesidad de decodificar los
+     canales RGB del formato Terrarium manualmente. */
 
-  function elevacionTerrarium(xOffset, yOffset) {
-    const red   = ['band', 1, xOffset, yOffset];
-    const green = ['band', 2, xOffset, yOffset];
-    const blue  = ['band', 3, xOffset, yOffset];
-    /* band math opera sobre valores normalizados 0-1, de ahi el *255 */
-    return [
-      '+',
-      ['*', 255 * 256, red],
-      ['*', 255, green],
-      ['*', 255 / 256, blue],
-      -32768
-    ];
-  }
-
-  const relieveDp   = ['*', 2, ['resolution']];
-  const relieveZ0x  = ['*', RELIEVE_EXAGERACION_VERTICAL, elevacionTerrarium(-1, 0)];
-  const relieveZ1x  = ['*', RELIEVE_EXAGERACION_VERTICAL, elevacionTerrarium(1, 0)];
-  const relieveDzdx = ['/', ['-', relieveZ1x, relieveZ0x], relieveDp];
-  const relieveZ0y  = ['*', RELIEVE_EXAGERACION_VERTICAL, elevacionTerrarium(0, -1)];
-  const relieveZ1y  = ['*', RELIEVE_EXAGERACION_VERTICAL, elevacionTerrarium(0, 1)];
-  const relieveDzdy = ['/', ['-', relieveZ1y, relieveZ0y], relieveDp];
-  const relieveSlope  = ['atan', ['sqrt', ['+', ['^', relieveDzdx, 2], ['^', relieveDzdy, 2]]]];
-  const relieveAspect  = ['clamp', ['atan', ['-', 0, relieveDzdx], relieveDzdy], -Math.PI, Math.PI];
-  const relieveSunEl = RELIEVE_SOL_ELEVACION * Math.PI / 180;
-  const relieveSunAz = RELIEVE_SOL_AZIMUT * Math.PI / 180;
-  const relieveCosIncidencia = [
-    '+',
-    ['*', Math.sin(relieveSunEl), ['cos', relieveSlope]],
-    ['*', Math.cos(relieveSunEl), ['sin', relieveSlope], ['cos', ['-', relieveSunAz, relieveAspect]]]
-  ];
-  const relieveEscalado = ['*', 255, relieveCosIncidencia];
-
-  relieveLayer = new ol.layer.WebGLTile({
-    visible: false,
-    source: new ol.source.ImageTile({
-      url: 'https://s3.amazonaws.com/elevation-tiles-prod/terrarium/{z}/{x}/{y}.png',
-      maxZoom: 15,
-      attributions: 'Relieve: <a href="https://github.com/tilezen/joerd/blob/master/docs/attribution.md" target="_blank" rel="noopener">AWS Terrain Tiles (Terrarium)</a>, datos SRTM (NASA/USGS)'
-    }),
-    style: { color: ['color', relieveEscalado] }
-  });
-
-  /* Vista inicial: encuadre de todo el país (Colombia continental) */
-  const COLOMBIA_EXTENT_LONLAT = [-78.990935, -4.298187, -66.876326, 12.437303];
-  view = new ol.View({
-    center: ol.proj.fromLonLat([-74.0721, 4.7110]),
+  map = new maplibregl.Map({
+    container: 'map',
+    style: {
+      version: 8,
+      sources: {
+        osm: {
+          type: 'raster',
+          tiles: ['https://a.tile.openstreetmap.org/{z}/{x}/{y}.png', 'https://b.tile.openstreetmap.org/{z}/{x}/{y}.png', 'https://c.tile.openstreetmap.org/{z}/{x}/{y}.png'],
+          tileSize: 256,
+          maxzoom: 19,
+          attribution: '&copy; <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">OpenStreetMap</a> contributors'
+        },
+        sat: {
+          type: 'raster',
+          tiles: ['https://tiles.maps.eox.at/wmts/1.0.0/s2cloudless-' + SAT_LAYER_YEAR + '_3857/default/g/{z}/{y}/{x}.jpg'],
+          tileSize: 256,
+          maxzoom: 14,
+          attribution: 'Sentinel-2 cloudless by <a href="https://s2maps.eu" target="_blank" rel="noopener">EOX IT Services GmbH</a> (Contains modified Copernicus Sentinel data ' + SAT_LAYER_YEAR + ')'
+        },
+        terrarium: {
+          type: 'raster-dem',
+          tiles: ['https://s3.amazonaws.com/elevation-tiles-prod/terrarium/{z}/{x}/{y}.png'],
+          tileSize: 256,
+          maxzoom: 15,
+          encoding: 'terrarium',
+          attribution: 'Relieve: <a href="https://github.com/tilezen/joerd/blob/master/docs/attribution.md" target="_blank" rel="noopener">AWS Terrain Tiles (Terrarium)</a>, datos SRTM (NASA/USGS)'
+        }
+      },
+      layers: [
+        { id: 'osm', type: 'raster', source: 'osm', layout: { visibility: 'none' } },
+        { id: 'sat', type: 'raster', source: 'sat', layout: { visibility: 'visible' } },
+        {
+          id: 'relieve-hillshade', type: 'hillshade', source: 'terrarium',
+          layout: { visibility: 'none' },
+          paint: { 'hillshade-exaggeration': 0.7, 'hillshade-shadow-color': '#3b4045', 'hillshade-highlight-color': '#ffffff' }
+        }
+      ]
+    },
+    center: [-74.0721, 4.7110],
     zoom: 5,
     minZoom: 4,
-    maxZoom: 19
+    maxZoom: 19,
+    pitchWithRotate: true,   /* permite inclinar (3D) con clic derecho + arrastre, o dos dedos */
+    dragRotate: true,
+    attributionControl: false
   });
 
   /* Borde nacional de Colombia (capa de referencia, siempre por encima de los basemaps) */
-  colombiaBorderLayer = new ol.layer.Vector({
-    source: new ol.source.Vector({
-      url: '../data/colombia_border.geojson',
-      format: new ol.format.GeoJSON()
-    }),
-    style: new ol.style.Style({
-      stroke: new ol.style.Stroke({ color: '#FFCC00', width: 2 }),
-      fill: null
-    }),
-    zIndex: 1
-  });
-
-  /* Marcadores de ubicación de los trabajos de grado con área geográfica definida */
-  const markerFeatures = PROJECT_MARKERS.map(function (m) {
-    const proj  = PROJECTS.find(p => p.id === m.proyectoId);
-    const linea = LINEAS.find(l => l.id === proj.lineaId);
-    const feat = new ol.Feature({
-      geometry: new ol.geom.Point(ol.proj.fromLonLat(m.coords))
+  map.on('load', function () {
+    map.addSource('colombia-border', { type: 'geojson', data: '../data/colombia_border.geojson' });
+    map.addLayer({
+      id: 'colombia-border-line',
+      type: 'line',
+      source: 'colombia-border',
+      paint: { 'line-color': '#FFCC00', 'line-width': 2 }
     });
-    feat.set('isProjectMarker', true);
-    feat.set('nombre', proj.nombre);
-    feat.set('autor', proj.autor);
-    feat.set('lugar', m.lugar);
-    feat.set('url', proj.url);
-    feat.set('lineaColor', linea ? linea.color : '#dc2626');
-    feat.set('lineaNombre', linea ? linea.nombre : '');
-    return feat;
-  });
 
-  projectMarkersLayer = new ol.layer.Vector({
-    source: new ol.source.Vector({ features: markerFeatures }),
-    style: function (feature) {
-      return new ol.style.Style({
-        image: new ol.style.Circle({
-          radius: 6,
-          fill:   new ol.style.Fill({ color: feature.get('lineaColor') }),
-          stroke: new ol.style.Stroke({ color: '#ffffff', width: 1.5 })
-        })
-      });
-    },
-    zIndex: 3
-  });
+    /* Marcadores de ubicación de los trabajos de grado con área geográfica definida */
+    const markerFC = {
+      type: 'FeatureCollection',
+      features: PROJECT_MARKERS.map(function (m) {
+        const proj  = PROJECTS.find(p => p.id === m.proyectoId);
+        const linea = LINEAS.find(l => l.id === proj.lineaId);
+        return {
+          type: 'Feature',
+          geometry: { type: 'Point', coordinates: m.coords },
+          properties: {
+            isProjectMarker: true,
+            nombre: proj.nombre,
+            autor: proj.autor,
+            lugar: m.lugar,
+            url: proj.url,
+            lineaColor: linea ? linea.color : '#dc2626',
+            lineaNombre: linea ? linea.nombre : ''
+          }
+        };
+      })
+    };
+    map.addSource('project-markers', { type: 'geojson', data: markerFC });
+    map.addLayer({
+      id: 'project-markers-circle',
+      type: 'circle',
+      source: 'project-markers',
+      paint: {
+        'circle-radius': 6,
+        'circle-color': ['get', 'lineaColor'],
+        'circle-stroke-color': '#ffffff',
+        'circle-stroke-width': 1.5
+      }
+    });
 
-  map = new ol.Map({
-    target: 'map',
-    layers: [osmLayer, satLayer, relieveLayer, colombiaBorderLayer, projectMarkersLayer],
-    view: view,
-    controls: []
+    if (window.__geovisorOnMapReady) window.__geovisorOnMapReady();
   });
-  map.addControl(new ol.control.ScaleLine({
-    units: 'metric',
-    target: document.getElementById('scaleTarget')
-  }));
 
   /* Coordenadas del cursor: formato decimal o sexagesimal (DMS), a elección
      del usuario, recordado entre sesiones vía localStorage. */
@@ -1749,13 +1734,38 @@ function initMap() {
     if (lastCoord) renderCoords(lastCoord);
   });
 
-  map.on('pointermove', function (evt) {
-    lastCoord = ol.proj.toLonLat(evt.coordinate);
+  map.on('mousemove', function (evt) {
+    lastCoord = [evt.lngLat.lng, evt.lngLat.lat];
     renderCoords(lastCoord);
   });
 
+  /* ── Barra de escala custom (equivalente a ol.control.ScaleLine) ──
+     Se recalcula en cada movimiento del mapa: mide la distancia real
+     (Turf) entre dos puntos separados 100px en el centro vertical del
+     mapa, y ajusta la longitud de la barra a un valor "redondo". ── */
+  const SCALE_STEPS = [1, 2, 5, 10, 20, 50, 100, 200, 500, 1000, 2000, 5000, 10000, 20000, 50000];
+  function updateScaleBar() {
+    const el = document.getElementById('scaleTarget');
+    if (!el || !map.getCanvas()) return;
+    const h = map.getCanvas().clientHeight / 2;
+    const p1 = map.unproject([0, h]);
+    const p2 = map.unproject([100, h]);
+    const metersPer100px = turf.distance(turf.point([p1.lng, p1.lat]), turf.point([p2.lng, p2.lat]), { units: 'meters' });
+    if (!isFinite(metersPer100px) || metersPer100px <= 0) return;
+    /* Elegir el step redondo más cercano por debajo de metersPer100px */
+    let chosen = SCALE_STEPS[0];
+    for (let i = 0; i < SCALE_STEPS.length; i++) {
+      if (SCALE_STEPS[i] <= metersPer100px) chosen = SCALE_STEPS[i]; else break;
+    }
+    const widthPx = Math.round((chosen / metersPer100px) * 100);
+    const label = chosen >= 1000 ? (chosen / 1000) + ' km' : chosen + ' m';
+    el.innerHTML = '<div class="geo-scale-line" style="width:' + widthPx + 'px;">' + label + '</div>';
+  }
+  map.on('move', updateScaleBar);
+  map.on('load', updateScaleBar);
+
   /* Click en feature → popup */
-  map.on('singleclick', function (evt) {
+  map.on('click', function (evt) {
     /* Si hay una herramienta de análisis espacial activa en modo de
        selección (Turf.js), ese clic se dedica a la herramienta y no
        debe abrir el popup normal de proyecto. */
@@ -1763,74 +1773,57 @@ function initMap() {
     if (window.MunicipioSearch && window.MunicipioSearch.handleMapClick(evt)) return;
 
     const popup = document.getElementById('geoPopup');
-    let found   = false;
+    const clickableLayers = ['project-markers-circle', 'project-features', 'project-features-fill', 'project-features-line']
+      .filter(function (id) { return !!map.getLayer(id); });
+    const features = clickableLayers.length ? map.queryRenderedFeatures(evt.point, { layers: clickableLayers }) : [];
 
-    map.forEachFeatureAtPixel(evt.pixel, function (feature) {
-      if (found) return;
-      found = true;
-
-      const props = feature.getProperties();
-      const geom  = feature.getGeometry();
-      let pixel;
-
-      if (geom.getType() === 'Point') {
-        pixel = map.getPixelFromCoordinate(geom.getCoordinates());
-      } else if (geom.getType() === 'LineString') {
-        const coords = geom.getCoordinates();
-        const mid    = coords[Math.floor(coords.length / 2)];
-        pixel = map.getPixelFromCoordinate(mid);
-      } else {
-        const ext = geom.getExtent();
-        const ctr = ol.extent.getCenter(ext);
-        pixel = map.getPixelFromCoordinate(ctr);
-      }
-
-      const table = document.getElementById('popupTable');
-      table.innerHTML = '';
-
-      if (props.isProjectMarker) {
-        /* ── Popup de marcador de trabajo de grado: nombre como hipervínculo ── */
-        document.getElementById('popupTitle').textContent = props.lugar;
-        const row = document.createElement('tr');
-        const cell = document.createElement('td');
-        cell.colSpan = 2;
-        cell.innerHTML =
-          '<span style="display:inline-block;font-size:10px;font-weight:600;padding:2px 8px;border-radius:10px;margin-bottom:6px;background:' + escHtml(props.lineaColor) + '22;color:' + escHtml(props.lineaColor) + ';">' +
-            escHtml(props.lineaNombre) +
-          '</span><br>' +
-          '<a href="' + escHtml(props.url) + '" target="_blank" rel="noopener noreferrer" style="color:#1e293b;font-weight:600;font-size:13px;line-height:1.4;">' +
-            escHtml(props.nombre) +
-          '</a><br><span style="color:#64748b;font-size:11px;">' + escHtml(props.autor) + '</span>';
-        row.appendChild(cell);
-        table.appendChild(row);
-      } else {
-        /* Título del popup */
-        const layerName = activeProject
-          ? (activeProject.capas.find(c => c.id === props['__layer']) || { nombre: 'Feature' }).nombre
-          : 'Atributos';
-        document.getElementById('popupTitle').textContent = layerName;
-
-        /* Tabla de atributos */
-        Object.entries(props).forEach(function ([k, v]) {
-          if (k === '__layer' || k === 'geometry') return;
-          const row = document.createElement('tr');
-          row.innerHTML = '<td>' + escHtml(k) + '</td><td>' + escHtml(String(v)) + '</td>';
-          table.appendChild(row);
-        });
-      }
-
-      /* Posicionar popup */
-      popup.style.left = pixel[0] + 'px';
-      popup.style.top  = pixel[1] + 'px';
-      popup.style.display = 'block';
-    }, {
-      hitTolerance: 8,
-      layerFilter: function (layer) { return layer !== colombiaBorderLayer; }
-    });
-
-    if (!found) {
-      document.getElementById('geoPopup').style.display = 'none';
+    if (!features.length) {
+      popup.style.display = 'none';
+      return;
     }
+
+    const feature = features[0];
+    const props   = feature.properties;
+    const pixel   = evt.point;
+
+    const table = document.getElementById('popupTable');
+    table.innerHTML = '';
+
+    if (props.isProjectMarker) {
+      /* ── Popup de marcador de trabajo de grado: nombre como hipervínculo ── */
+      document.getElementById('popupTitle').textContent = props.lugar;
+      const row = document.createElement('tr');
+      const cell = document.createElement('td');
+      cell.colSpan = 2;
+      cell.innerHTML =
+        '<span style="display:inline-block;font-size:10px;font-weight:600;padding:2px 8px;border-radius:10px;margin-bottom:6px;background:' + escHtml(props.lineaColor) + '22;color:' + escHtml(props.lineaColor) + ';">' +
+          escHtml(props.lineaNombre) +
+        '</span><br>' +
+        '<a href="' + escHtml(props.url) + '" target="_blank" rel="noopener noreferrer" style="color:#1e293b;font-weight:600;font-size:13px;line-height:1.4;">' +
+          escHtml(props.nombre) +
+        '</a><br><span style="color:#64748b;font-size:11px;">' + escHtml(props.autor) + '</span>';
+      row.appendChild(cell);
+      table.appendChild(row);
+    } else {
+      /* Título del popup */
+      const layerName = activeProject
+        ? (activeProject.capas.find(c => c.id === props['__layer']) || { nombre: 'Feature' }).nombre
+        : 'Atributos';
+      document.getElementById('popupTitle').textContent = layerName;
+
+      /* Tabla de atributos */
+      Object.entries(props).forEach(function ([k, v]) {
+        if (k === '__layer') return;
+        const row = document.createElement('tr');
+        row.innerHTML = '<td>' + escHtml(k) + '</td><td>' + escHtml(String(v)) + '</td>';
+        table.appendChild(row);
+      });
+    }
+
+    /* Posicionar popup */
+    popup.style.left = pixel.x + 'px';
+    popup.style.top  = pixel.y + 'px';
+    popup.style.display = 'block';
   });
 
   /* Cerrar popup */
@@ -1867,8 +1860,7 @@ function loadProject(proj) {
   renderProjectFeatures(proj);
 
   /* Encuadrar */
-  const ext3857 = ol.proj.transformExtent(proj.extent, 'EPSG:4326', 'EPSG:3857');
-  view.fit(ext3857, { padding: [50, 50, 50, 50], duration: 700 });
+  map.fitBounds(extentToBounds(proj.extent), { padding: 50, duration: 700 });
 
   /* Panel derecho */
   renderPanel(proj);
@@ -1881,76 +1873,63 @@ function loadProject(proj) {
 
 /* ══════════════════════════════════════════════
    RENDERIZAR FEATURES EN EL MAPA
-   ══════════════════════════════════════════════ */
-function renderProjectFeatures(proj) {
-  if (vectorLayer) {
-    map.removeLayer(vectorLayer);
-    vectorLayer = null;
-  }
-
-  const gjFormat = new ol.format.GeoJSON({
-    dataProjection:    'EPSG:4326',
-    featureProjection: 'EPSG:3857'
+   Los trabajos de grado son documentos (sin geometrías propias
+   todavía), así que esta función arma la FeatureCollection con
+   las capas visibles y estilo por tipo de geometría vía expresiones
+   data-driven de MapLibre — el equivalente a buildStyle() en OL. ══*/
+let PROJECT_FEATURES_SOURCE_READY = false;
+function ensureProjectFeaturesLayers() {
+  if (PROJECT_FEATURES_SOURCE_READY) return;
+  map.addSource('project-features', { type: 'geojson', data: { type: 'FeatureCollection', features: [] } });
+  map.addLayer({
+    id: 'project-features-fill',
+    type: 'fill',
+    source: 'project-features',
+    filter: ['==', ['geometry-type'], 'Polygon'],
+    paint: { 'fill-color': ['get', '__color'], 'fill-opacity': 0.33 }
   });
-
-  const features = [];
-  proj.features.forEach(function (f) {
-    const capa = proj.capas.find(c => c.id === f.layer);
-    if (!capa || !capa.visible) return;
-
-    const olFeature = gjFormat.readFeature(f);
-    olFeature.set('__layer', f.layer);
-    olFeature.setStyle(buildStyle(f.geometry.type, capa.color));
-    features.push(olFeature);
+  map.addLayer({
+    id: 'project-features-line',
+    type: 'line',
+    source: 'project-features',
+    filter: ['in', ['geometry-type'], ['literal', ['Polygon', 'LineString']]],
+    paint: { 'line-color': ['get', '__color'], 'line-width': ['case', ['==', ['geometry-type'], 'LineString'], 2.5, 1.5] }
   });
-
-  const source = new ol.source.Vector({ features: features });
-  vectorLayer  = new ol.layer.Vector({ source: source });
-  map.addLayer(vectorLayer);
+  map.addLayer({
+    id: 'project-features',
+    type: 'circle',
+    source: 'project-features',
+    filter: ['==', ['geometry-type'], 'Point'],
+    paint: { 'circle-radius': 7, 'circle-color': ['get', '__color'], 'circle-stroke-color': '#ffffff', 'circle-stroke-width': 2 }
+  });
+  PROJECT_FEATURES_SOURCE_READY = true;
 }
 
-/* ── Estilos por tipo de geometría ─────────── */
-function buildStyle(type, color) {
-  if (type === 'Point') {
-    return new ol.style.Style({
-      image: new ol.style.Circle({
-        radius: 7,
-        fill:   new ol.style.Fill({ color: color }),
-        stroke: new ol.style.Stroke({ color: '#ffffff', width: 2 })
-      })
+function buildFeatureCollection(proj) {
+  const capaColor = {};
+  proj.capas.forEach(function (c) { capaColor[c.id] = c.color; });
+  const features = proj.features
+    .filter(function (f) {
+      const capa = proj.capas.find(c => c.id === f.layer);
+      return capa && capa.visible;
+    })
+    .map(function (f) {
+      return Object.assign({}, f, {
+        properties: Object.assign({}, f.properties, { __layer: f.layer, __color: capaColor[f.layer] })
+      });
     });
-  } else if (type === 'LineString') {
-    return new ol.style.Style({
-      stroke: new ol.style.Stroke({ color: color, width: 2.5 })
-    });
-  } else {
-    /* Polygon */
-    return new ol.style.Style({
-      fill:   new ol.style.Fill({ color: color + '55' }),
-      stroke: new ol.style.Stroke({ color: color, width: 1.5 })
-    });
-  }
+  return { type: 'FeatureCollection', features: features };
+}
+
+function renderProjectFeatures(proj) {
+  ensureProjectFeaturesLayers();
+  map.getSource('project-features').setData(buildFeatureCollection(proj));
 }
 
 /* ── Refrescar capas según visibilidad ─────── */
 function refreshLayers() {
-  if (!activeProject || !vectorLayer) return;
-  const src = vectorLayer.getSource();
-  src.clear();
-
-  const gjFormat = new ol.format.GeoJSON({
-    dataProjection:    'EPSG:4326',
-    featureProjection: 'EPSG:3857'
-  });
-
-  activeProject.features.forEach(function (f) {
-    const capa = activeProject.capas.find(c => c.id === f.layer);
-    if (!capa || !capa.visible) return;
-    const olFeature = gjFormat.readFeature(f);
-    olFeature.set('__layer', f.layer);
-    olFeature.setStyle(buildStyle(f.geometry.type, capa.color));
-    src.addFeature(olFeature);
-  });
+  if (!activeProject || !PROJECT_FEATURES_SOURCE_READY) return;
+  map.getSource('project-features').setData(buildFeatureCollection(activeProject));
 }
 
 /* ══════════════════════════════════════════════
@@ -2008,7 +1987,10 @@ function renderPanel(proj) {
   });
 
   const slider = document.getElementById('bpOpacitySlider');
-  slider.value = vectorLayer ? Math.round(vectorLayer.getOpacity() * 100) : 100;
+  const currentOpacity = PROJECT_FEATURES_SOURCE_READY && map.getLayer('project-features-fill')
+    ? Math.round((map.getPaintProperty('project-features-fill', 'fill-opacity') || 0.33) * 100 / 0.33)
+    : 100;
+  slider.value = 100;
   document.getElementById('bpOpacityVal').textContent = slider.value + '%';
 
   /* ── TAB METADATOS ── */
@@ -2162,29 +2144,25 @@ function initUI() {
 
   /* Zoom in / out */
   document.getElementById('btnZoomIn').addEventListener('click', function () {
-    view.animate({ zoom: view.getZoom() + 1, duration: 250 });
+    map.zoomIn({ duration: 250 });
   });
   document.getElementById('btnZoomOut').addEventListener('click', function () {
-    view.animate({ zoom: view.getZoom() - 1, duration: 250 });
+    map.zoomOut({ duration: 250 });
   });
 
   /* Volver a la vista de Colombia completa */
   document.getElementById('btnColombia').addEventListener('click', function () {
-    const colExt3857 = ol.proj.transformExtent(
-      [-78.990935, -4.298187, -66.876326, 12.437303],
-      'EPSG:4326', 'EPSG:3857'
-    );
-    view.fit(colExt3857, { padding: [30, 30, 30, 30], duration: 600 });
+    map.fitBounds(extentToBounds(COLOMBIA_EXTENT_LONLAT), { padding: 30, duration: 600 });
 
     /* Limpiar proyecto activo */
     activeProject = null;
     activeLayerId = null;
-    if (vectorLayer) { map.removeLayer(vectorLayer); vectorLayer = null; }
+    if (PROJECT_FEATURES_SOURCE_READY) map.getSource('project-features').setData({ type: 'FeatureCollection', features: [] });
     document.getElementById('geoBadge').classList.add('hidden');
     document.getElementById('geoPopup').style.display = 'none';
     document.getElementById('bottomPanel').style.display = 'none';
     document.querySelectorAll('.geo-proj-card').forEach(function (c) { c.classList.remove('active'); });
-    map.updateSize();
+    map.resize();
   });
 
   /* Pantalla completa */
@@ -2221,20 +2199,26 @@ function initUI() {
   document.querySelector('#bottomPanel .bp-topbar').addEventListener('click', function (e) {
     if (e.target.closest('.bp-tab') || e.target.closest('.bp-close')) return;
     document.getElementById('bottomPanel').classList.toggle('collapsed');
-    map.updateSize();
+    map.resize();
   });
 
   /* ── Botón colapsar panel ── */
   document.getElementById('bpClose').addEventListener('click', function (e) {
     e.stopPropagation();
     document.getElementById('bottomPanel').classList.toggle('collapsed');
-    map.updateSize();
+    map.resize();
   });
 
   /* ── Slider de opacidad del panel inferior ── */
   document.getElementById('bpOpacitySlider').addEventListener('input', function () {
     document.getElementById('bpOpacityVal').textContent = this.value + '%';
-    if (vectorLayer) vectorLayer.setOpacity(this.value / 100);
+    if (PROJECT_FEATURES_SOURCE_READY) {
+      const f = this.value / 100;
+      map.setPaintProperty('project-features-fill', 'fill-opacity', 0.33 * f);
+      map.setPaintProperty('project-features-line', 'line-opacity', f);
+      map.setPaintProperty('project-features', 'circle-opacity', f);
+      map.setPaintProperty('project-features', 'circle-stroke-opacity', f);
+    }
   });
 
   /* ── Botón descarga completa ── */
@@ -2247,15 +2231,28 @@ function initUI() {
   const BASEMAP_LABELS = {
     osm:     'OpenStreetMap',
     sat:     'Sentinel-2 Cloudless · EOX/Copernicus',
-    relieve: 'Relieve · AWS Terrain Tiles (Terrarium)',
+    relieve: 'Relieve 3D · AWS Terrain Tiles (Terrarium)',
     blank:   'Sin mapa base'
   };
 
   function setBasemap(value) {
     currentBasemap = value;
-    osmLayer.setVisible(value === 'osm');
-    satLayer.setVisible(value === 'sat');
-    relieveLayer.setVisible(value === 'relieve');
+    map.setLayoutProperty('osm', 'visibility', value === 'osm' ? 'visible' : 'none');
+    map.setLayoutProperty('sat', 'visibility', value === 'sat' ? 'visible' : 'none');
+    map.setLayoutProperty('relieve-hillshade', 'visibility', value === 'relieve' ? 'visible' : 'none');
+
+    /* Terreno 3D real (map.setTerrain) solo se activa en el basemap de
+       relieve: permite inclinar/rotar la vista (clic derecho + arrastre)
+       para ver el relieve extruido, igual que el ejemplo de AWS Open Data.
+       En el resto de basemaps se desactiva para conservar la vista 2D
+       plana que necesitan las herramientas de análisis espacial. */
+    if (value === 'relieve') {
+      map.setTerrain({ source: 'terrarium', exaggeration: RELIEVE_EXAGERACION_VERTICAL });
+    } else {
+      map.setTerrain(null);
+      map.easeTo({ pitch: 0, bearing: 0, duration: 400 });
+    }
+
     document.getElementById('map').style.background = value === 'blank' ? '#f9fafb' : '';
 
     document.querySelectorAll('.bm-option').forEach(function (opt) {
@@ -2291,7 +2288,21 @@ function initUI() {
     }
   });
 
-  setBasemap('sat'); /* estado inicial: satélite, igual que antes */
+  /* Estado inicial: satélite, igual que antes. Se difiere hasta que el
+     estilo del mapa termine de cargar (MapLibre es asíncrono: llamar
+     setLayoutProperty/setTerrain antes de eso lanza "Style is not done
+     loading"), reutilizando el mismo gancho que initMap() dispara al
+     terminar de cargar (window.__geovisorOnMapReady). */
+  if (map.isStyleLoaded()) {
+    setBasemap('sat');
+  } else {
+    const previousReady = window.__geovisorOnMapReady;
+    window.__geovisorOnMapReady = function () {
+      if (previousReady) previousReady();
+      setBasemap('sat');
+    };
+  }
+  window.__setBasemap = setBasemap; /* expuesto para el dispatcher del chat */
 
   /* Hamburger menu del navbar */
   (function () {
@@ -2357,14 +2368,10 @@ window.addEventListener('load', function () {
   /* Forzar recálculo de dimensiones tras render completo del flex layout,
      y encuadrar la vista inicial a todo el país */
   setTimeout(function () {
-    map.updateSize();
-    const colExt3857 = ol.proj.transformExtent(
-      [-78.990935, -4.298187, -66.876326, 12.437303],
-      'EPSG:4326', 'EPSG:3857'
-    );
-    view.fit(colExt3857, { padding: [30, 30, 30, 30] });
+    map.resize();
+    map.fitBounds(extentToBounds(COLOMBIA_EXTENT_LONLAT), { padding: 30 });
   }, 100);
-  window.addEventListener('resize', function () { map.updateSize(); });
+  window.addEventListener('resize', function () { map.resize(); });
 });
 </script>
 
@@ -2450,8 +2457,53 @@ window.TurfPanel = (function () {
 
   let activeTool   = null;
   let picked       = [];        // marcadores (o coords) elegidos durante el picking
-  let lastBuffer   = null;      // { turfPolygon, olFeature, markerIdx, radiusKm }
-  let resultLayer  = null;      // capa OL donde se dibujan buffers/lineas/voronoi/centroide
+  let lastBuffer   = null;      // { turfPolygon, label, radiusKm }
+
+  /* ── Capa de resultados (buffers, líneas, voronoi, centroide) ──
+     Un único source GeoJSON con todas las features del resultado actual;
+     el estilo por feature se resuelve leyendo la propiedad '__style'
+     (equivalente a los ol.style.Style por-feature de la versión OL). ── */
+  let resultFC = { type: 'FeatureCollection', features: [] };
+  let resultLayersReady = false;
+
+  function ensureResultLayer() {
+    if (resultLayersReady) return;
+    map.addSource('turf-result', { type: 'geojson', data: resultFC });
+    map.addLayer({
+      id: 'turf-result-fill',
+      type: 'fill',
+      source: 'turf-result',
+      filter: ['==', ['geometry-type'], 'Polygon'],
+      paint: {
+        'fill-color': ['get', '__fill'],
+        'fill-opacity': ['get', '__fillOpacity']
+      }
+    });
+    map.addLayer({
+      id: 'turf-result-line',
+      type: 'line',
+      source: 'turf-result',
+      filter: ['in', ['geometry-type'], ['literal', ['Polygon', 'LineString']]],
+      paint: {
+        'line-color': ['get', '__stroke'],
+        'line-width': ['get', '__strokeWidth'],
+        'line-dasharray': ['case', ['get', '__dashed'], ['literal', [2, 2]], ['literal', [1, 0]]]
+      }
+    });
+    map.addLayer({
+      id: 'turf-result-point',
+      type: 'circle',
+      source: 'turf-result',
+      filter: ['==', ['geometry-type'], 'Point'],
+      paint: {
+        'circle-radius': 7,
+        'circle-color': ['get', '__fill'],
+        'circle-stroke-color': '#ffffff',
+        'circle-stroke-width': 2
+      }
+    });
+    resultLayersReady = true;
+  }
 
   /* ── Utilidades ─────────────────────────────── */
   function fmtKm(km) {
@@ -2466,16 +2518,26 @@ window.TurfPanel = (function () {
     );
   }
   function clearResultLayer() {
-    if (resultLayer) resultLayer.getSource().clear();
+    resultFC = { type: 'FeatureCollection', features: [] };
+    if (resultLayersReady) map.getSource('turf-result').setData(resultFC);
   }
-  function addOlFeatureFromTurf(turfGeom, style) {
-    const olFeat = new ol.format.GeoJSON().readFeature(turfGeom, {
-      featureProjection: 'EPSG:3857',
-      dataProjection: 'EPSG:4326'
+  /* Agrega una feature de Turf al source de resultados, con un estilo
+     (equivalente a los ol.style.Style de la versión OL) codificado en
+     sus properties, ya que MapLibre estiliza por capa+expresión, no
+     por feature individual. */
+  function addResultFeature(turfGeom, style) {
+    style = style || {};
+    const feat = JSON.parse(JSON.stringify(turfGeom));
+    feat.properties = Object.assign({}, feat.properties, {
+      __fill: style.fill || 'rgba(0,0,0,0)',
+      __fillOpacity: style.fillOpacity != null ? style.fillOpacity : 0,
+      __stroke: style.stroke || '#0F6E56',
+      __strokeWidth: style.strokeWidth != null ? style.strokeWidth : 1.5,
+      __dashed: !!style.dashed
     });
-    if (style) olFeat.setStyle(style);
-    resultLayer.getSource().addFeature(olFeat);
-    return olFeat;
+    resultFC.features.push(feat);
+    if (resultLayersReady) map.getSource('turf-result').setData(resultFC);
+    return feat;
   }
   function nearestMarkerFeature(coordLonLat) {
     /* Encuentra el marcador (PROJECT_MARKERS) más cercano a una coordenada */
@@ -2485,39 +2547,13 @@ window.TurfPanel = (function () {
     return { feature: near, idx: near.properties.featureIndex };
   }
 
-  /* ── Capa de resultados (buffers, líneas, voronoi, centroide) ── */
-  function ensureResultLayer() {
-    if (resultLayer) return;
-    resultLayer = new ol.layer.Vector({
-      source: new ol.source.Vector(),
-      zIndex: 4
-    });
-    map.addLayer(resultLayer);
-  }
-
-  const STYLE_LINE = new ol.style.Style({
-    stroke: new ol.style.Stroke({ color: '#0F6E56', width: 2, lineDash: [6, 6] })
-  });
-  const STYLE_BUFFER = new ol.style.Style({
-    fill:   new ol.style.Fill({ color: 'rgba(15,110,86,0.12)' }),
-    stroke: new ol.style.Stroke({ color: '#0F6E56', width: 1.5 })
-  });
-  const STYLE_HULL = new ol.style.Style({
-    fill:   new ol.style.Fill({ color: 'rgba(11,46,107,0.08)' }),
-    stroke: new ol.style.Stroke({ color: '#0B2E6B', width: 1.5, lineDash: [3, 3] })
-  });
-  const STYLE_VORONOI = new ol.style.Style({
-    fill:   new ol.style.Fill({ color: 'rgba(217,119,6,0.06)' }),
-    stroke: new ol.style.Stroke({ color: '#d97706', width: 1 })
-  });
+  const STYLE_LINE    = { stroke: '#0F6E56', strokeWidth: 2, dashed: true };
+  const STYLE_BUFFER  = { fill: '#0F6E56', fillOpacity: 0.12, stroke: '#0F6E56', strokeWidth: 1.5 };
+  const STYLE_HULL    = { fill: '#0B2E6B', fillOpacity: 0.08, stroke: '#0B2E6B', strokeWidth: 1.5, dashed: true };
+  const STYLE_VORONOI = { fill: '#d97706', fillOpacity: 0.06, stroke: '#d97706', strokeWidth: 1 };
+  const STYLE_INTERSECTION = { fill: '#dc2626', fillOpacity: 0.25, stroke: '#dc2626', strokeWidth: 1.5 };
   function styleForPoint(color) {
-    return new ol.style.Style({
-      image: new ol.style.Circle({
-        radius: 7,
-        fill:   new ol.style.Fill({ color: color }),
-        stroke: new ol.style.Stroke({ color: '#ffffff', width: 2 })
-      })
-    });
+    return { fill: color, fillOpacity: 1, stroke: color, strokeWidth: 0 };
   }
 
   /* ── UI del panel ───────────────────────────── */
@@ -2602,9 +2638,9 @@ window.TurfPanel = (function () {
 
     if (key === 'ctrd') {
       const c = turf.centroid(fc);
-      addOlFeatureFromTurf(c, styleForPoint('#0B2E6B'));
+      addResultFeature(c, styleForPoint('#0B2E6B'));
       const coords = c.geometry.coordinates;
-      map.getView().animate({ center: ol.proj.fromLonLat(coords), duration: 400 });
+      map.easeTo({ center: coords, duration: 400 });
       showResult(
         '<b>Centroide</b> de las ' + PROJECT_MARKERS.length + ' tesis activas<br>' +
         'Lon: ' + coords[0].toFixed(5) + ' &nbsp; Lat: ' + coords[1].toFixed(5)
@@ -2621,7 +2657,7 @@ window.TurfPanel = (function () {
         showResult('No fue posible calcular un polígono envolvente con la disposición actual de las tesis.');
         return;
       }
-      addOlFeatureFromTurf(hull, STYLE_HULL);
+      addResultFeature(hull, STYLE_HULL);
       const areaKm2 = turf.area(hull) / 1e6;
       showResult('<b>Área de cobertura</b> (convex hull)<br>' + fmtKm2(areaKm2));
     }
@@ -2636,7 +2672,7 @@ window.TurfPanel = (function () {
       let count = 0;
       voro.features.forEach(function (f) {
         if (!f) return;
-        addOlFeatureFromTurf(f, STYLE_VORONOI);
+        addResultFeature(f, STYLE_VORONOI);
         count++;
       });
       showResult('<b>Voronoi</b> generado<br>' + count + ' celdas — cada una representa el área del país más cercana a esa tesis que a cualquier otra.');
@@ -2650,10 +2686,10 @@ window.TurfPanel = (function () {
   function labelForClick(evt) {
     let label = null;
 
-    map.forEachFeatureAtPixel(evt.pixel, function (feature) {
-      if (label !== null) return;
-      if (feature.get('isProjectMarker')) label = feature.get('lugar');
-    }, { hitTolerance: 8 });
+    if (map.getLayer('project-markers-circle')) {
+      const hits = map.queryRenderedFeatures(evt.point, { layers: ['project-markers-circle'] });
+      if (hits.length && hits[0].properties.isProjectMarker) label = hits[0].properties.lugar;
+    }
 
     if (label === null && window.MunicipioSearch && window.MunicipioSearch.getFeatureAtPixel) {
       const muniFeat = window.MunicipioSearch.getFeatureAtPixel(evt);
@@ -2669,7 +2705,7 @@ window.TurfPanel = (function () {
     const t = TOOLS[activeTool];
     if (!t.needsPicking) return false;
 
-    const clickLonLat = ol.proj.toLonLat(evt.coordinate);
+    const clickLonLat = [evt.lngLat.lng, evt.lngLat.lat];
     const label = labelForClick(evt);
 
     picked.push({ coord: clickLonLat, label: label });
@@ -2692,7 +2728,7 @@ window.TurfPanel = (function () {
       const a = picked[0], b = picked[1];
       const from = turf.point(a.coord), to = turf.point(b.coord);
       const line = turf.lineString([a.coord, b.coord]);
-      addOlFeatureFromTurf(line, STYLE_LINE);
+      addResultFeature(line, STYLE_LINE);
       const km = turf.distance(from, to);
       showResult(
         '<b>Distancia</b><br>' + escHtml(a.label) + ' &harr; ' + escHtml(b.label) + '<br>' + fmtKm(km)
@@ -2705,8 +2741,8 @@ window.TurfPanel = (function () {
       const { feature, idx } = nearestMarkerFeature(clicked);
       const m = PROJECT_MARKERS[idx];
       const line = turf.lineString([clicked, m.coords]);
-      addOlFeatureFromTurf(line, STYLE_LINE);
-      addOlFeatureFromTurf(turf.point(clicked), styleForPoint('#d97706'));
+      addResultFeature(line, STYLE_LINE);
+      addResultFeature(turf.point(clicked), styleForPoint('#d97706'));
       const km = turf.distance(turf.point(clicked), turf.point(m.coords));
       showResult('<b>Tesis más cercana</b><br>' + escHtml(m.lugar) + '<br>a ' + fmtKm(km) + ' del punto seleccionado');
       resetPicking();
@@ -2718,10 +2754,10 @@ window.TurfPanel = (function () {
         resetPicking();
         return;
       }
-      addOlFeatureFromTurf(lastBuffer.turfPolygon, STYLE_BUFFER);
+      addResultFeature(lastBuffer.turfPolygon, STYLE_BUFFER);
       const clicked = picked[0].coord;
       const inside = turf.booleanPointInPolygon(turf.point(clicked), lastBuffer.turfPolygon);
-      addOlFeatureFromTurf(turf.point(clicked), styleForPoint(inside ? '#0F6E56' : '#dc2626'));
+      addResultFeature(turf.point(clicked), styleForPoint(inside ? '#0F6E56' : '#dc2626'));
       showResult(
         'El punto seleccionado está <b>' + (inside ? 'DENTRO' : 'FUERA') + '</b> del buffer de ' +
         fmtKm(lastBuffer.radiusKm) + ' alrededor de ' + escHtml(lastBuffer.label)
@@ -2739,8 +2775,8 @@ window.TurfPanel = (function () {
       const a = picked[0], b = picked[1];
       const bufA = turf.buffer(turf.point(a.coord), 20, { units: 'kilometers' });
       const bufB = turf.buffer(turf.point(b.coord), 20, { units: 'kilometers' });
-      addOlFeatureFromTurf(bufA, STYLE_BUFFER);
-      addOlFeatureFromTurf(bufB, STYLE_BUFFER);
+      addResultFeature(bufA, STYLE_BUFFER);
+      addResultFeature(bufB, STYLE_BUFFER);
       const intersects = turf.booleanIntersects(bufA, bufB);
       let html = 'Buffers de 20 km alrededor de ' + escHtml(a.label) + ' y ' + escHtml(b.label) + '<br>' +
                  '<b>' + (intersects ? 'SÍ se intersectan' : 'NO se intersectan') + '</b>';
@@ -2748,10 +2784,7 @@ window.TurfPanel = (function () {
         try {
           const inter = turf.intersect(bufA, bufB);
           if (inter) {
-            addOlFeatureFromTurf(inter, new ol.style.Style({
-              fill: new ol.style.Fill({ color: 'rgba(220,38,38,0.25)' }),
-              stroke: new ol.style.Stroke({ color: '#dc2626', width: 1.5 })
-            }));
+            addResultFeature(inter, STYLE_INTERSECTION);
             html += '<br>Área de intersección: ' + fmtKm2(turf.area(inter) / 1e6);
           }
         } catch (e) { /* geometrías muy pequeñas o degeneradas: se ignora el área */ }
@@ -2763,7 +2796,7 @@ window.TurfPanel = (function () {
 
   function generateBuffer(coord, label, radiusKm) {
     const poly = turf.buffer(turf.point(coord), radiusKm, { units: 'kilometers' });
-    addOlFeatureFromTurf(poly, STYLE_BUFFER);
+    addResultFeature(poly, STYLE_BUFFER);
     lastBuffer = { turfPolygon: poly, label: label, radiusKm: radiusKm };
     const areaKm2 = turf.area(poly) / 1e6;
     showResult(
@@ -2813,20 +2846,9 @@ window.MunicipioSearch = (function () {
   const DATA_URL = '../data/municipios.json';
 
   let municipiosFC    = null;   // FeatureCollection GeoJSON (WGS84), tras descomprimir el TopoJSON
-  let hitLayer         = null;  // capa invisible para detección de clic sobre los 1,122 polígonos
-  let highlightLayer   = null;  // capa visible: solo los municipios actualmente seleccionados
   let selectedFeatures = [];    // selección activa (1 o varias, según Ctrl+clic)
   let deptoAreaTotals  = {};    // { [dpto_ccdgo]: área total del departamento en km² }
-
-  const STYLE_INVISIBLE = new ol.style.Style({
-    fill:   new ol.style.Fill({ color: 'rgba(0,0,0,0)' }),
-    stroke: new ol.style.Stroke({ color: 'rgba(0,0,0,0)', width: 1 })
-  });
-  /* Un poco más visible que antes (grosor y opacidad levemente mayores) */
-  const STYLE_HIGHLIGHT = new ol.style.Style({
-    fill:   new ol.style.Fill({ color: 'rgba(15,110,86,0.24)' }),
-    stroke: new ol.style.Stroke({ color: '#0F6E56', width: 2.75 })
-  });
+  let layersReady = false;
 
   function stripAccents(str) {
     return str.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
@@ -2847,6 +2869,9 @@ window.MunicipioSearch = (function () {
         const key = Object.keys(topo.objects)[0];
         municipiosFC = topojson.feature(topo, topo.objects[key]);
 
+        /* índice único por feature (para poder ubicarla luego con rapidez) */
+        municipiosFC.features.forEach(function (f, i) { f.properties.__muniIndex = i; });
+
         /* Área total por departamento, calculada una sola vez sumando
            el área (Turf) de todos sus municipios — no requiere ningún
            dataset adicional de límites departamentales. */
@@ -2856,26 +2881,36 @@ window.MunicipioSearch = (function () {
           deptoAreaTotals[d] = (deptoAreaTotals[d] || 0) + a;
         });
 
-        const gjFormat = new ol.format.GeoJSON();
-        const olFeatures = gjFormat.readFeatures(municipiosFC, {
-          featureProjection: 'EPSG:3857',
-          dataProjection: 'EPSG:4326'
-        });
-        /* índice de vuelta a la feature GeoJSON original (para turf.area) */
-        olFeatures.forEach(function (f, i) { f.set('__muniIndex', i); });
+        function addLayers() {
+          map.addSource('municipios-hit', { type: 'geojson', data: municipiosFC });
+          /* Capa invisible (fill-opacity casi 0) usada solo para
+             detección de clic sobre los 1,122 polígonos — equivalente
+             al STYLE_INVISIBLE de la versión OL. Se necesita opacidad
+             > 0 (no exactamente 0) para que MapLibre siga considerando
+             la capa "renderizada" y por tanto consultable. */
+          map.addLayer({
+            id: 'municipios-hit-fill',
+            type: 'fill',
+            source: 'municipios-hit',
+            paint: { 'fill-color': '#000000', 'fill-opacity': 0.001 }
+          });
+          map.addSource('municipios-highlight', { type: 'geojson', data: { type: 'FeatureCollection', features: [] } });
+          map.addLayer({
+            id: 'municipios-highlight-fill',
+            type: 'fill',
+            source: 'municipios-highlight',
+            paint: { 'fill-color': '#0F6E56', 'fill-opacity': 0.24 }
+          });
+          map.addLayer({
+            id: 'municipios-highlight-line',
+            type: 'line',
+            source: 'municipios-highlight',
+            paint: { 'line-color': '#0F6E56', 'line-width': 2.75 }
+          });
+          layersReady = true;
+        }
 
-        hitLayer = new ol.layer.Vector({
-          source: new ol.source.Vector({ features: olFeatures }),
-          style: STYLE_INVISIBLE,
-          zIndex: 2
-        });
-        highlightLayer = new ol.layer.Vector({
-          source: new ol.source.Vector(),
-          style: STYLE_HIGHLIGHT,
-          zIndex: 2
-        });
-        map.addLayer(hitLayer);
-        map.addLayer(highlightLayer);
+        if (map.loaded()) addLayers(); else map.on('load', addLayers);
       })
       .catch(function (err) {
         console.error('No se pudo cargar data/municipios.json:', err);
@@ -2884,37 +2919,33 @@ window.MunicipioSearch = (function () {
     wireSearchBox();
   }
 
-  /* ── Utilidad interna: feature de municipio bajo un pixel ── */
+  /* ── Utilidad interna: feature de municipio bajo un punto de pantalla ── */
   function findMunicipioAtPixel(evt) {
-    if (!hitLayer) return null;
-    let hit = null;
-    map.forEachFeatureAtPixel(evt.pixel, function (feature, layer) {
-      if (layer === hitLayer) hit = feature;
-    }, { hitTolerance: 2 });
-    if (!hit) return null;
-    return municipiosFC.features[hit.get('__muniIndex')];
+    if (!layersReady) return null;
+    const hits = map.queryRenderedFeatures(evt.point, { layers: ['municipios-hit-fill'] });
+    if (!hits.length) return null;
+    return municipiosFC.features[hits[0].properties.__muniIndex];
   }
 
   /* ── Render de capa resaltada + badge, a partir de selectedFeatures ── */
   function renderSelection(fitView) {
-    highlightLayer.getSource().clear();
-    const gjFormat = new ol.format.GeoJSON();
+    if (!layersReady) return;
+    map.getSource('municipios-highlight').setData({ type: 'FeatureCollection', features: selectedFeatures });
 
     if (selectedFeatures.length === 0) {
       document.getElementById('muniBadge').classList.remove('open');
       return;
     }
 
-    let combinedExtent = null;
-    selectedFeatures.forEach(function (gf) {
-      const olFeat = gjFormat.readFeature(gf, { featureProjection: 'EPSG:3857', dataProjection: 'EPSG:4326' });
-      highlightLayer.getSource().addFeature(olFeat);
-      const ext = olFeat.getGeometry().getExtent();
-      combinedExtent = combinedExtent ? ol.extent.extend(combinedExtent, ext) : ext.slice();
-    });
-
-    if (fitView && combinedExtent) {
-      map.getView().fit(combinedExtent, { padding: [60, 60, 60, 60], duration: 400, maxZoom: 12 });
+    if (fitView) {
+      let combinedExtent = null;
+      selectedFeatures.forEach(function (gf) {
+        const bbox = turf.bbox(gf); // [minLon,minLat,maxLon,maxLat]
+        combinedExtent = combinedExtent ? extendExtent(combinedExtent, bbox) : bbox.slice();
+      });
+      if (combinedExtent) {
+        map.fitBounds(extentToBounds(combinedExtent), { padding: 60, duration: 400, maxZoom: 12 });
+      }
     }
 
     renderBadge();
@@ -2968,7 +2999,7 @@ window.MunicipioSearch = (function () {
   }
   function clearSelection() {
     selectedFeatures = [];
-    if (highlightLayer) highlightLayer.getSource().clear();
+    if (layersReady) map.getSource('municipios-highlight').setData({ type: 'FeatureCollection', features: [] });
     document.getElementById('muniBadge').classList.remove('open');
   }
 
@@ -3176,7 +3207,9 @@ window.MunicipioSearch = (function () {
 window.GeovisorChat = (function () {
   const API_BASE = window.CHAT_API_BASE || 'https://geiper2026.onrender.com';
   let historial = [];
-  let chatMarkerLayer = null;
+  let chatLayersReady = false;
+  let chatMarkerFC = { type: 'FeatureCollection', features: [] };
+  let poisFC = { type: 'FeatureCollection', features: [] };
 
   function addMsg(texto, tipo) {
     const box = document.createElement('div');
@@ -3186,45 +3219,29 @@ window.GeovisorChat = (function () {
     document.getElementById('geoChatMessages').scrollTop = 1e9;
   }
 
-  /* ── Capa dedicada para el marcador de "obtener_coordenadas"/"obtener_elevacion",
-     separada de highlightLayer (municipios) y de las capas de TurfPanel. ── */
-  function ensureChatMarkerLayer() {
-    if (chatMarkerLayer) return chatMarkerLayer;
-    chatMarkerLayer = new ol.layer.Vector({
-      source: new ol.source.Vector(),
-      zIndex: 5,
-      style: new ol.style.Style({
-        image: new ol.style.Circle({
-          radius: 8,
-          fill: new ol.style.Fill({ color: '#B23A48' }),
-          stroke: new ol.style.Stroke({ color: '#fff', width: 2 })
-        })
-      })
+  /* ── Capas dedicadas del chat: marcador de "centrar_coordenadas" y
+     resultados de "buscar_lugares_cercanos" (Overpass). Se crean una
+     sola vez, la primera vez que se necesitan. ── */
+  function ensureChatLayers() {
+    if (chatLayersReady) return;
+    map.addSource('chat-marker', { type: 'geojson', data: chatMarkerFC });
+    map.addLayer({
+      id: 'chat-marker-circle',
+      type: 'circle',
+      source: 'chat-marker',
+      paint: { 'circle-radius': 8, 'circle-color': '#B23A48', 'circle-stroke-color': '#fff', 'circle-stroke-width': 2 }
     });
-    map.addLayer(chatMarkerLayer);
-    return chatMarkerLayer;
+    map.addSource('chat-pois', { type: 'geojson', data: poisFC });
+    map.addLayer({
+      id: 'chat-pois-circle',
+      type: 'circle',
+      source: 'chat-pois',
+      paint: { 'circle-radius': 6, 'circle-color': '#1D6FE0', 'circle-stroke-color': '#fff', 'circle-stroke-width': 1.5 }
+    });
+    chatLayersReady = true;
   }
 
-  /* ── Capa para los resultados de "buscar_lugares_cercanos" (Overpass) ── */
-  let poisLayer = null;
-  function ensurePoisLayer() {
-    if (poisLayer) return poisLayer;
-    poisLayer = new ol.layer.Vector({
-      source: new ol.source.Vector(),
-      zIndex: 5,
-      style: new ol.style.Style({
-        image: new ol.style.Circle({
-          radius: 6,
-          fill: new ol.style.Fill({ color: '#1D6FE0' }),
-          stroke: new ol.style.Stroke({ color: '#fff', width: 1.5 })
-        })
-      })
-    });
-    map.addLayer(poisLayer);
-    return poisLayer;
-  }
-
-  const BASEMAP_LABELS = { osm: 'callejero (OpenStreetMap)', sat: 'satelital', relieve: 'de relieve (sombreado del terreno)', blank: 'sin fondo' };
+  const BASEMAP_LABELS = { osm: 'callejero (OpenStreetMap)', sat: 'satelital', relieve: 'de relieve (terreno 3D)', blank: 'sin fondo' };
   const HERRAMIENTA_LABELS = {
     dist: 'distancia', area: 'área de cobertura', buff: 'buffer', ctrd: 'centroide',
     near: 'vecino más cercano', pip: 'punto en polígono', intx: 'intersección', voro: 'Voronoi'
@@ -3268,23 +3285,12 @@ window.GeovisorChat = (function () {
         return 'Cambié el mapa base a vista ' + (BASEMAP_LABELS[args.tipo] || args.tipo) + '.';
       }
       case 'centrar_coordenadas': {
-        // El texto (con lat/lon) ya lo manda el backend en data.response,
-        // aquí solo se ejecuta la parte visual: mover el mapa y marcar el punto.
-        const layer = ensureChatMarkerLayer();
-        layer.getSource().clear();
-        const coord3857 = ol.proj.fromLonLat([args.lon, args.lat]);
-        layer.getSource().addFeature(new ol.Feature({ geometry: new ol.geom.Point(coord3857) }));
-        map.getView().animate({ center: coord3857, zoom: Math.max(map.getView().getZoom(), 11), duration: 500 });
-        return null;
-      }
-      case 'centrar_coordenadas': {
         // El texto (con lat/lon o elevación) ya lo manda el backend en
         // data.response; aquí solo se ejecuta la parte visual.
-        const layer = ensureChatMarkerLayer();
-        layer.getSource().clear();
-        const coord3857 = ol.proj.fromLonLat([args.lon, args.lat]);
-        layer.getSource().addFeature(new ol.Feature({ geometry: new ol.geom.Point(coord3857) }));
-        map.getView().animate({ center: coord3857, zoom: Math.max(map.getView().getZoom(), 11), duration: 500 });
+        ensureChatLayers();
+        chatMarkerFC = { type: 'FeatureCollection', features: [{ type: 'Feature', geometry: { type: 'Point', coordinates: [args.lon, args.lat] }, properties: {} }] };
+        map.getSource('chat-marker').setData(chatMarkerFC);
+        map.easeTo({ center: [args.lon, args.lat], zoom: Math.max(map.getZoom(), 11), duration: 500 });
         return null;
       }
       case 'comparar_municipios': {
@@ -3308,20 +3314,20 @@ window.GeovisorChat = (function () {
           proyectos.map(function (p) { return p.nombre || 'Sin título'; }).join('; ') + '.';
       }
       case 'mostrar_pois': {
-        const layer = ensurePoisLayer();
-        layer.getSource().clear();
+        ensureChatLayers();
         const lugares = args.lugares || [];
-        let combinedExtent = null;
-        lugares.forEach(function (l) {
-          const c = ol.proj.fromLonLat([l.lon, l.lat]);
-          const feat = new ol.Feature({ geometry: new ol.geom.Point(c) });
-          feat.set('nombre', l.nombre);
-          layer.getSource().addFeature(feat);
-          const ext = feat.getGeometry().getExtent();
-          combinedExtent = combinedExtent ? ol.extent.extend(combinedExtent, ext) : ext.slice();
-        });
-        if (combinedExtent) {
-          map.getView().fit(combinedExtent, { padding: [80, 80, 80, 80], duration: 500, maxZoom: 15 });
+        poisFC = {
+          type: 'FeatureCollection',
+          features: lugares.map(function (l) {
+            return { type: 'Feature', geometry: { type: 'Point', coordinates: [l.lon, l.lat] }, properties: { nombre: l.nombre } };
+          })
+        };
+        map.getSource('chat-pois').setData(poisFC);
+        if (lugares.length) {
+          const combinedExtent = extentOfPoints(lugares.map(function (l) { return [l.lon, l.lat]; }));
+          if (combinedExtent) {
+            map.fitBounds(extentToBounds(combinedExtent), { padding: 80, duration: 500, maxZoom: 15 });
+          }
         }
         return null; // el conteo ya viene en el texto del backend
       }
