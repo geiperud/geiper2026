@@ -286,7 +286,14 @@ html, body {
 #map {
   position: absolute;
   top: 0; left: 0; right: 0; bottom: 0;
-  background: #f9fafb;
+  /* Negro, no gris: con la proyección de globo (ver initMap), la esfera
+     no cubre todo el viewport a zoom bajo -- el área alrededor debe
+     verse como el vacío del espacio, igual que en el ejemplo oficial
+     de MapLibre ("Display a globe with an atmosphere"), no como un
+     fondo neutro de UI. El modo "Sin fondo" del selector de basemap
+     sigue forzando #f9fafb explícitamente (ver setBasemap) porque ahí
+     sí se quiere un fondo neutro de trabajo, no el efecto espacial. */
+  background: #000;
 }
 
 /* Ocultar controles nativos de MapLibre (usamos los propios del riel derecho) */
@@ -435,6 +442,25 @@ html, body {
 }
 .bm-info-link:hover { color: #0F6E56; }
 
+.bm-divider { height: 1px; background: #eef1f6; margin: 6px 0; }
+
+.bm-toggle-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 4px;
+  cursor: pointer;
+}
+.bm-toggle-row-label {
+  display: flex;
+  flex-direction: column;
+  font-size: 12px;
+  color: #1e293b;
+  gap: 1px;
+}
+.bm-toggle-row-label i { color: #64748b; margin-right: 4px; }
+.bm-toggle-row-sub { font-size: 9.5px; color: #94a3b8; font-weight: 400; }
+
 /* ── Panel de análisis espacial (Turf.js) — MISMO tamaño/estilo que .geo-btn ── */
 .turf-rail {
   display: flex;
@@ -542,6 +568,97 @@ html, body {
   padding: 8px 10px;
   margin-bottom: 10px;
 }
+
+.turf-rail-divider {
+  height: 1px;
+  background: #e2e8f0;
+  margin: 3px 4px;
+}
+
+.sar-field-label {
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: #94a3b8;
+  margin: 10px 0 6px;
+}
+.sar-field-label:first-of-type { margin-top: 0; }
+
+.sar-mode-row {
+  display: flex;
+  gap: 6px;
+  margin-bottom: 8px;
+}
+.sar-mode-btn {
+  flex: 1;
+  font-size: 10.5px;
+  font-weight: 600;
+  padding: 6px 4px;
+  border: 1px solid #e2e8f0;
+  border-radius: 7px;
+  background: #ffffff;
+  color: #64748b;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+.sar-mode-btn:hover { border-color: #86efac; color: #0F6E56; }
+.sar-mode-btn.active { background: #0F6E56; color: #fff; border-color: #0F6E56; }
+
+.sar-area-status {
+  font-size: 11px;
+  line-height: 1.4;
+  color: #64748b;
+  background: #f8fafc;
+  border: 1px solid #eef1f6;
+  border-radius: 7px;
+  padding: 7px 9px;
+  margin-bottom: 4px;
+}
+.sar-area-status.ready { color: #0F6E56; background: #f0fdf4; border-color: #bbf7d0; font-weight: 600; }
+.sar-area-status.drawing { color: #b45309; background: #fffbeb; border-color: #fde68a; font-weight: 600; }
+
+.sar-date-row { display: flex; gap: 8px; margin-bottom: 12px; }
+.sar-date-col { flex: 1; display: flex; flex-direction: column; gap: 3px; }
+.sar-date-col label { font-size: 10px; color: #94a3b8; font-weight: 600; }
+.sar-date-col input[type="date"] {
+  font-size: 11.5px;
+  padding: 6px 6px;
+  border: 1px solid #e2e8f0;
+  border-radius: 7px;
+  color: #1e293b;
+  font-family: 'Montserrat', sans-serif;
+}
+
+.sar-analyze-btn {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  font-size: 12px;
+  font-weight: 700;
+  padding: 9px;
+  border: none;
+  border-radius: 8px;
+  background: #0F6E56;
+  color: #fff;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+.sar-analyze-btn:hover { background: #0c5945; }
+.sar-analyze-btn:disabled { background: #94a3b8; cursor: default; }
+
+.sar-legend {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-top: 8px;
+  font-size: 10.5px;
+  color: #64748b;
+}
+.sar-legend-swatch { display: inline-flex; align-items: center; gap: 4px; }
+.sar-legend-dot { width: 9px; height: 9px; border-radius: 2px; flex-shrink: 0; }
 
 .turf-panel-result {
   font-size: 12.5px;
@@ -1304,6 +1421,8 @@ html, body {
           <button class="turf-btn" data-tool="pip"   title="Punto en polígono"><i class="fa-solid fa-map-pin"></i></button>
           <button class="turf-btn" data-tool="intx"  title="Intersección"><i class="fa-solid fa-code-compare"></i></button>
           <button class="turf-btn" data-tool="voro"  title="Voronoi"><i class="fa-solid fa-chess-board"></i></button>
+          <div class="turf-rail-divider"></div>
+          <button class="turf-btn" id="sarRailBtn" title="Detección de cambios (radar Sentinel-1)"><i class="fa-solid fa-satellite-dish"></i></button>
         </div>
       </div>
 
@@ -1326,6 +1445,20 @@ html, body {
           <div class="bm-thumb blank"></div> Sin fondo
           <i class="fa-solid fa-check bm-check"></i>
         </label>
+
+        <div class="bm-divider"></div>
+        <div class="basemap-pop-title">Capas adicionales</div>
+        <label class="bm-toggle-row" for="bm3dBuildingsToggle">
+          <span class="bm-toggle-row-label">
+            <i class="fa-solid fa-building"></i> Edificios 3D
+            <span class="bm-toggle-row-sub">OpenFreeMap · datos OpenStreetMap</span>
+          </span>
+          <label class="bp-toggle" style="margin-left:auto;">
+            <input type="checkbox" id="bm3dBuildingsToggle">
+            <span class="bp-toggle-slider"></span>
+          </label>
+        </label>
+
         <a href="mapas-base.html" target="_blank" rel="noopener" class="bm-info-link">
           <i class="fa-solid fa-circle-info"></i> Ver documentación de fuentes
         </a>
@@ -1377,6 +1510,41 @@ html, body {
         <div class="turf-panel-hint" id="turfHint" style="display:none;"></div>
         <div class="turf-panel-result" id="turfResult" style="display:none;"></div>
       </div>
+
+      <!-- Panel de detección de cambios SAR (Sentinel-1 · Copernicus Data Space Ecosystem) -->
+      <div class="turf-panel" id="sarPanel">
+        <button class="turf-panel-close" id="sarPanelClose"><i class="fa-solid fa-xmark"></i></button>
+        <div class="turf-panel-eyebrow">Percepción remota · Radar</div>
+        <div class="turf-panel-title">Detección de cambios (SAR)</div>
+        <div class="turf-panel-desc">Compara dos periodos de tiempo usando radar Sentinel-1 (Copernicus). A diferencia del satélite óptico, el radar atraviesa nubes y funciona de noche.</div>
+
+        <div class="sar-field-label">1. Área a analizar</div>
+        <div class="sar-mode-row">
+          <button class="sar-mode-btn active" id="sarModeMunicipio" type="button">Municipio seleccionado</button>
+          <button class="sar-mode-btn" id="sarModeDraw" type="button">Dibujar rectángulo</button>
+        </div>
+        <div class="sar-area-status" id="sarAreaStatus">Selecciona un municipio con el buscador de arriba.</div>
+
+        <div class="sar-field-label">2. Periodo a comparar</div>
+        <div class="sar-date-row">
+          <div class="sar-date-col">
+            <label>Antes</label>
+            <input type="date" id="sarFechaInicio">
+          </div>
+          <div class="sar-date-col">
+            <label>Después</label>
+            <input type="date" id="sarFechaFin">
+          </div>
+        </div>
+
+        <button class="sar-analyze-btn" id="sarAnalyzeBtn" type="button">
+          <i class="fa-solid fa-satellite-dish"></i> Analizar cambios
+        </button>
+
+        <div class="turf-panel-hint" id="sarHint" style="display:none;"></div>
+        <div class="turf-panel-result" id="sarResult" style="display:none;"></div>
+      </div>
+
       <!-- ── Barra inferior unificada: escala · proveedor de mapa base · coordenadas ── -->
       <div class="bottom-info-bar" id="bottomInfoBar">
         <div class="bib-section" id="scaleTarget"></div>
@@ -1604,6 +1772,17 @@ function initMap() {
     container: 'map',
     style: {
       version: 8,
+      /* Proyección de globo (esfera 3D real, no Mercator plano) con
+         atmósfera -- primera impresión al abrir el geovisor. Se
+         desvanece automáticamente hacia Mercator estándar alrededor
+         del zoom 12, así que el resto de la aplicación (herramientas
+         de análisis, selección de municipios, etc.) sigue funcionando
+         exactamente igual una vez la cámara aterriza sobre Colombia. */
+      projection: { type: 'globe' },
+      sky: {
+        'atmosphere-blend': ['interpolate', ['linear'], ['zoom'], 0, 1, 5, 1, 7, 0]
+      },
+      light: { anchor: 'map', position: [1.5, 90, 80] },
       sources: {
         osm: {
           type: 'raster',
@@ -1638,9 +1817,9 @@ function initMap() {
         }
       ]
     },
-    center: [-74.0721, 4.7110],
-    zoom: 5,
-    minZoom: 4,
+    center: [-90, 12],   /* vista inicial: globo mostrando América desde el espacio */
+    zoom: 1.5,
+    minZoom: 0,           /* se restringe a 4 (ver más abajo) una vez aterriza el flyTo de entrada */
     maxZoom: 19,
     pitchWithRotate: true,   /* permite inclinar (3D) con clic derecho + arrastre, o dos dedos */
     dragRotate: true,
@@ -2303,6 +2482,62 @@ function initUI() {
     }
   });
 
+  /* ── Edificios 3D (OpenFreeMap, vector tiles + fill-extrusion) ──────
+     Capa adicional independiente del mapa base: se superpone a
+     cualquiera de los 4 basemaps. Se crea de forma diferida (solo la
+     primera vez que se activa) porque son tiles vectoriales del país
+     completo -- no tiene sentido cargarlas si el usuario nunca usa
+     esta opción. Combina especialmente bien con el basemap "Relieve"
+     (cámara inclinada), pero funciona en cualquiera.
+
+     Nota de cobertura: la altura de los edificios en OpenStreetMap está
+     mapeada de forma desigual -- buena en el centro de Bogotá y otras
+     zonas con mapatones activos, escasa en municipios pequeños/rurales
+     (que es donde se ubican la mayoría de los trabajos de este
+     semillero). En esas zonas los edificios igual se muestran, pero
+     con una altura genérica por defecto en vez de su altura real. */
+  let buildings3DReady = false;
+  function ensureBuildings3DLayer() {
+    if (buildings3DReady) return;
+    map.addSource('openfreemap', { type: 'vector', url: 'https://tiles.openfreemap.org/planet' });
+    const beforeId = map.getLayer('colombia-border-line') ? 'colombia-border-line' : undefined;
+    map.addLayer({
+      id: '3d-buildings',
+      source: 'openfreemap',
+      'source-layer': 'building',
+      type: 'fill-extrusion',
+      minzoom: 14,
+      filter: ['!=', ['get', 'hide_3d'], true],
+      paint: {
+        'fill-extrusion-color': [
+          'interpolate', ['linear'], ['get', 'render_height'],
+          0, '#e2e8f0',
+          40, '#0F6E56',
+          150, '#0b2e6b'
+        ],
+        'fill-extrusion-height': [
+          'interpolate', ['linear'], ['zoom'],
+          14, 0,
+          16, ['get', 'render_height']
+        ],
+        'fill-extrusion-base': [
+          'case', ['>=', ['get', 'zoom'], 16], ['get', 'render_min_height'], 0
+        ],
+        'fill-extrusion-opacity': 0.88
+      }
+    }, beforeId);
+    buildings3DReady = true;
+  }
+
+  document.getElementById('bm3dBuildingsToggle').addEventListener('change', function () {
+    if (this.checked) {
+      ensureBuildings3DLayer();
+      map.setLayoutProperty('3d-buildings', 'visibility', 'visible');
+    } else if (buildings3DReady) {
+      map.setLayoutProperty('3d-buildings', 'visibility', 'none');
+    }
+  });
+
   /* Estado inicial: satélite, igual que antes. Se difiere hasta que el
      estilo del mapa termine de cargar (MapLibre es asíncrono: llamar
      setLayoutProperty/setTerrain antes de eso lanza "Style is not done
@@ -2380,11 +2615,28 @@ window.addEventListener('load', function () {
   initMap();
   initUI();
   renderProjectList();
-  /* Forzar recálculo de dimensiones tras render completo del flex layout,
-     y encuadrar la vista inicial a todo el país */
+  /* Forzar recálculo de dimensiones tras render completo del flex layout */
   setTimeout(function () {
     map.resize();
-    map.fitBounds(extentToBounds(COLOMBIA_EXTENT_LONLAT), { padding: 30 });
+
+    /* ── Intro cinematográfica: el geovisor abre mostrando la Tierra
+       como globo 3D con atmósfera (ver `projection`/`sky`/`light` en
+       initMap), y a los ~700ms "vuela" hacia Colombia. MapLibre
+       desvanece la proyección de globo a Mercator automáticamente
+       cerca del zoom 12, así que al aterrizar en zoom 5 el resto del
+       geovisor funciona exactamente igual que antes. No se fuerza la
+       animación (`essential` no se marca como true) para respetar la
+       preferencia de "movimiento reducido" del sistema operativo, en
+       cuyo caso el navegador salta directo a la vista final. */
+    setTimeout(function () {
+      map.flyTo({
+        center: [-74.0721, 4.7110],
+        zoom: 5,
+        duration: 3200,
+        curve: 1.4
+      });
+      setTimeout(function () { map.setMinZoom(4); }, 3300);
+    }, 700);
   }, 100);
   window.addEventListener('resize', function () { map.resize(); });
 });
@@ -2609,7 +2861,7 @@ window.TurfPanel = (function () {
   }
 
   function setActiveButton(key) {
-    document.querySelectorAll('.turf-btn').forEach(function (b) {
+    document.querySelectorAll('.turf-btn[data-tool]').forEach(function (b) {
       b.classList.toggle('active', b.dataset.tool === key);
     });
   }
@@ -2627,6 +2879,8 @@ window.TurfPanel = (function () {
       deactivate();
       return;
     }
+
+    if (window.SarCambios) window.SarCambios.closePanel(); /* solo un panel abierto a la vez */
 
     activeTool = key;
     resetPicking();
@@ -2822,7 +3076,7 @@ window.TurfPanel = (function () {
 
   /* ── Wiring de UI (se llama una vez el DOM está listo) ─── */
   function initUIWiring() {
-    document.querySelectorAll('.turf-btn').forEach(function (btn) {
+    document.querySelectorAll('.turf-btn[data-tool]').forEach(function (btn) {
       btn.addEventListener('click', function () { selectTool(btn.dataset.tool); });
     });
     document.getElementById('turfPanelClose').addEventListener('click', deactivate);
@@ -2842,7 +3096,8 @@ window.TurfPanel = (function () {
 
   return {
     handleMapClick: handleMapClick,
-    activateTool: function (key) { if (TOOLS[key]) selectTool(key); }
+    activateTool: function (key) { if (TOOLS[key]) selectTool(key); },
+    closePanel: deactivate /* usado por el panel SAR para cerrar este cuando se abre el otro */
   };
 })();
 </script>
@@ -2949,6 +3204,7 @@ window.MunicipioSearch = (function () {
 
     if (selectedFeatures.length === 0) {
       document.getElementById('muniBadge').classList.remove('open');
+      if (window.SarCambios) window.SarCambios.refreshFromMunicipioSelection();
       return;
     }
 
@@ -2964,6 +3220,7 @@ window.MunicipioSearch = (function () {
     }
 
     renderBadge();
+    if (window.SarCambios) window.SarCambios.refreshFromMunicipioSelection();
   }
 
   function renderBadge() {
@@ -3154,6 +3411,20 @@ window.MunicipioSearch = (function () {
     }
   }
 
+  /* ── Bounds combinados de la selección actual (usado por el panel de
+     detección de cambios SAR, para reutilizar el municipio ya elegido
+     con el buscador en vez de duplicar la lógica de búsqueda) ── */
+  function getSelectedBounds() {
+    if (!selectedFeatures.length) return null;
+    let combinedExtent = null;
+    selectedFeatures.forEach(function (gf) {
+      const bbox = turf.bbox(gf);
+      combinedExtent = combinedExtent ? extendExtent(combinedExtent, bbox) : bbox.slice();
+    });
+    const nombres = selectedFeatures.map(function (f) { return f.properties.mpio_cnmbr; });
+    return { bbox: combinedExtent, etiqueta: nombres.join(', ') };
+  }
+
   window.addEventListener('load', init);
 
   return {
@@ -3162,7 +3433,8 @@ window.MunicipioSearch = (function () {
     selectByName: selectByName,
     selectByDepartamento: selectByDepartamento,
     compareTwo: compareTwo,
-    clearSelection: clearSelection
+    clearSelection: clearSelection,
+    getSelectedBounds: getSelectedBounds
   };
 })();
 </script>
@@ -3408,6 +3680,297 @@ window.GeovisorChat = (function () {
 
   window.addEventListener('load', init);
   return {};
+})();
+</script>
+
+<!-- ══════════════════════════════════════════════
+     DETECCIÓN DE CAMBIOS SAR (Sentinel-1)
+     Copernicus Data Space Ecosystem — Sentinel Hub Process API
+     ══════════════════════════════════════════════ -->
+<script>
+window.SarCambios = (function () {
+  const API_BASE = window.CHAT_API_BASE || 'https://geiper2026.onrender.com';
+
+  let areaMode   = 'municipio'; // 'municipio' | 'draw'
+  let areaBbox   = null;        // [minLon, minLat, maxLon, maxLat]
+  let areaLabel  = '';
+  let drawing    = false;
+  let drawStart  = null;        // [lon, lat] del primer clic al dibujar
+  let resultLayersReady = false;
+
+  const COLOR_AUMENTO     = '#dc2626'; // rojo — más retrodispersión (posible construcción)
+  const COLOR_DISMINUCION = '#2563eb'; // azul — menos retrodispersión (posible inundación/tala)
+
+  function ensureResultLayer() {
+    if (resultLayersReady) return;
+    map.addSource('sar-cambios-result', {
+      type: 'image',
+      url: '', // se reemplaza en cada análisis con updateImage()
+      coordinates: [[0, 1], [1, 1], [1, 0], [0, 0]]
+    });
+    map.addLayer({
+      id: 'sar-cambios-layer',
+      type: 'raster',
+      source: 'sar-cambios-result',
+      paint: { 'raster-opacity': 0.78 },
+      layout: { visibility: 'none' }
+    });
+    resultLayersReady = true;
+  }
+
+  function limpiarResultado() {
+    if (resultLayersReady) map.setLayoutProperty('sar-cambios-layer', 'visibility', 'none');
+  }
+
+  /* ── Estado del área seleccionada (municipio o rectángulo dibujado) ── */
+  function actualizarEstadoArea() {
+    const el = document.getElementById('sarAreaStatus');
+    el.classList.remove('ready', 'drawing');
+    if (drawing) {
+      el.textContent = 'Haz clic y arrastra sobre el mapa para dibujar el área.';
+      el.classList.add('drawing');
+      return;
+    }
+    if (areaBbox) {
+      el.textContent = '✓ Área lista: ' + areaLabel;
+      el.classList.add('ready');
+    } else if (areaMode === 'municipio') {
+      el.textContent = 'Selecciona un municipio con el buscador de arriba.';
+    } else {
+      el.textContent = 'Haz clic en "Dibujar rectángulo" y luego arrastra sobre el mapa.';
+    }
+  }
+
+  function setAreaMode(mode) {
+    areaMode = mode;
+    areaBbox = null;
+    document.getElementById('sarModeMunicipio').classList.toggle('active', mode === 'municipio');
+    document.getElementById('sarModeDraw').classList.toggle('active', mode === 'draw');
+    if (drawing) terminarDibujo(false);
+    if (mode === 'municipio') {
+      const sel = window.MunicipioSearch && window.MunicipioSearch.getSelectedBounds();
+      if (sel) { areaBbox = sel.bbox; areaLabel = sel.etiqueta; }
+    }
+    actualizarEstadoArea();
+  }
+
+  /* ── Dibujo de rectángulo libre sobre el mapa ── */
+  function iniciarDibujo() {
+    if (areaMode !== 'draw') return;
+    drawing = true;
+    drawStart = null;
+    map.getCanvas().style.cursor = 'crosshair';
+    map.dragPan.disable(); // evitar que el arrastre mueva el mapa mientras se dibuja
+    actualizarEstadoArea();
+  }
+
+  function terminarDibujo(mantenerBbox) {
+    drawing = false;
+    drawStart = null;
+    map.getCanvas().style.cursor = '';
+    map.dragPan.enable();
+    if (resultLayersReady === false) { /* nada que limpiar */ }
+    if (map.getLayer('sar-draw-preview-fill')) {
+      map.getSource('sar-draw-preview').setData({ type: 'FeatureCollection', features: [] });
+    }
+    if (!mantenerBbox) actualizarEstadoArea();
+  }
+
+  function ensureDrawPreviewLayer() {
+    if (map.getSource('sar-draw-preview')) return;
+    map.addSource('sar-draw-preview', { type: 'geojson', data: { type: 'FeatureCollection', features: [] } });
+    map.addLayer({
+      id: 'sar-draw-preview-fill', type: 'fill', source: 'sar-draw-preview',
+      paint: { 'fill-color': '#0F6E56', 'fill-opacity': 0.12 }
+    });
+    map.addLayer({
+      id: 'sar-draw-preview-line', type: 'line', source: 'sar-draw-preview',
+      paint: { 'line-color': '#0F6E56', 'line-width': 1.5, 'line-dasharray': [2, 2] }
+    });
+  }
+
+  function bboxPolygon(bbox) {
+    return {
+      type: 'Feature',
+      properties: {},
+      geometry: {
+        type: 'Polygon',
+        coordinates: [[
+          [bbox[0], bbox[1]], [bbox[2], bbox[1]], [bbox[2], bbox[3]], [bbox[0], bbox[3]], [bbox[0], bbox[1]]
+        ]]
+      }
+    };
+  }
+
+  function onMapMouseDown(e) {
+    if (!drawing) return;
+    drawStart = [e.lngLat.lng, e.lngLat.lat];
+    ensureDrawPreviewLayer();
+  }
+  function onMapMouseMove(e) {
+    if (!drawing || !drawStart) return;
+    const cur = [e.lngLat.lng, e.lngLat.lat];
+    const bbox = [
+      Math.min(drawStart[0], cur[0]), Math.min(drawStart[1], cur[1]),
+      Math.max(drawStart[0], cur[0]), Math.max(drawStart[1], cur[1])
+    ];
+    map.getSource('sar-draw-preview').setData({ type: 'FeatureCollection', features: [bboxPolygon(bbox)] });
+  }
+  function onMapMouseUp(e) {
+    if (!drawing || !drawStart) return;
+    const cur = [e.lngLat.lng, e.lngLat.lat];
+    const bbox = [
+      Math.min(drawStart[0], cur[0]), Math.min(drawStart[1], cur[1]),
+      Math.max(drawStart[0], cur[0]), Math.max(drawStart[1], cur[1])
+    ];
+    const anchoKm = turf.distance(turf.point([bbox[0], bbox[1]]), turf.point([bbox[2], bbox[1]]));
+    if (anchoKm < 0.3) {
+      /* rectángulo demasiado pequeño (probablemente un clic accidental): se ignora */
+      drawStart = null;
+      return;
+    }
+    areaBbox = bbox;
+    areaLabel = 'rectángulo dibujado (' + anchoKm.toFixed(1) + ' km de ancho aprox.)';
+    terminarDibujo(true);
+    actualizarEstadoArea();
+  }
+
+  /* ── Llamada al backend + overlay del resultado ── */
+  function mostrarResultado(html) {
+    const el = document.getElementById('sarResult');
+    el.innerHTML = html;
+    el.style.display = 'block';
+    document.getElementById('sarHint').style.display = 'none';
+  }
+  function mostrarHint(texto) {
+    const el = document.getElementById('sarHint');
+    el.textContent = texto;
+    el.style.display = 'block';
+    document.getElementById('sarResult').style.display = 'none';
+  }
+
+  function analizar() {
+    if (!areaBbox) { mostrarHint('Primero define un área: selecciona un municipio o dibuja un rectángulo.'); return; }
+    const fechaInicio = document.getElementById('sarFechaInicio').value;
+    const fechaFin    = document.getElementById('sarFechaFin').value;
+    if (!fechaInicio || !fechaFin) { mostrarHint('Elige las dos fechas del periodo a comparar.'); return; }
+    if (fechaInicio >= fechaFin) { mostrarHint('La fecha "Antes" debe ser anterior a la fecha "Después".'); return; }
+
+    const btn = document.getElementById('sarAnalyzeBtn');
+    btn.disabled = true;
+    btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Analizando…';
+    mostrarHint('Consultando Sentinel-1 en Copernicus Data Space Ecosystem, puede tardar unos segundos…');
+
+    fetch(API_BASE + '/sar-cambios', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ bbox: areaBbox, fecha_inicio: fechaInicio, fecha_fin: fechaFin })
+    })
+      .then(function (r) {
+        if (!r.ok) return r.json().then(function (err) { throw new Error(err.detail || 'Error del servidor.'); });
+        return r.json();
+      })
+      .then(function (data) {
+        ensureResultLayer();
+        const b = data.bbox;
+        const coords = [[b[0], b[3]], [b[2], b[3]], [b[2], b[1]], [b[0], b[1]]]; // top-left, top-right, bottom-right, bottom-left
+        map.getSource('sar-cambios-result').updateImage({ url: 'data:image/png;base64,' + data.imagen_base64, coordinates: coords });
+        map.setLayoutProperty('sar-cambios-layer', 'visibility', 'visible');
+        map.fitBounds(extentToBounds(b), { padding: 60, duration: 600 });
+
+        mostrarResultado(
+          '<b>Cambios detectados</b><br>' + escHtml(areaLabel) + '<br>' +
+          escHtml(data.fecha_antes) + ' → ' + escHtml(data.fecha_despues) +
+          '<div class="sar-legend">' +
+            '<span class="sar-legend-swatch"><span class="sar-legend-dot" style="background:' + COLOR_AUMENTO + '"></span>Aumento</span>' +
+            '<span class="sar-legend-swatch"><span class="sar-legend-dot" style="background:' + COLOR_DISMINUCION + '"></span>Disminución</span>' +
+          '</div>'
+        );
+      })
+      .catch(function (err) {
+        mostrarHint(err.message || 'No se pudo completar el análisis. Intenta con otras fechas.');
+      })
+      .finally(function () {
+        btn.disabled = false;
+        btn.innerHTML = '<i class="fa-solid fa-satellite-dish"></i> Analizar cambios';
+      });
+  }
+
+  /* ── Abrir / cerrar panel ── */
+  function openPanel() {
+    if (window.TurfPanel) window.TurfPanel.closePanel(); /* solo un panel abierto a la vez */
+
+    const railEl   = document.getElementById('turfRail');
+    const canvasEl = document.getElementById('mapCanvas');
+    if (railEl && canvasEl) {
+      const railRect   = railEl.getBoundingClientRect();
+      const canvasRect = canvasEl.getBoundingClientRect();
+      document.getElementById('sarPanel').style.top = (railRect.top - canvasRect.top) + 'px';
+    }
+    document.getElementById('sarPanel').classList.add('open');
+    document.getElementById('sarRailBtn').classList.add('active');
+
+    if (areaMode === 'municipio') {
+      const sel = window.MunicipioSearch && window.MunicipioSearch.getSelectedBounds();
+      if (sel) { areaBbox = sel.bbox; areaLabel = sel.etiqueta; }
+    }
+    actualizarEstadoArea();
+  }
+
+  function closePanel() {
+    document.getElementById('sarPanel').classList.remove('open');
+    document.getElementById('sarRailBtn').classList.remove('active');
+    if (drawing) terminarDibujo(true);
+  }
+
+  function togglePanel() {
+    const isOpen = document.getElementById('sarPanel').classList.contains('open');
+    if (isOpen) closePanel(); else openPanel();
+  }
+
+  /* Llamado por MunicipioSearch cada vez que cambia la selección, para
+     mantener el área sincronizada si el panel SAR está abierto en modo
+     "municipio" y el usuario elige otro municipio sin cerrar el panel. */
+  function refreshFromMunicipioSelection() {
+    if (areaMode !== 'municipio') return;
+    if (!document.getElementById('sarPanel').classList.contains('open')) return;
+    const sel = window.MunicipioSearch && window.MunicipioSearch.getSelectedBounds();
+    areaBbox  = sel ? sel.bbox : null;
+    areaLabel = sel ? sel.etiqueta : '';
+    actualizarEstadoArea();
+  }
+
+  function init() {
+    document.getElementById('sarRailBtn').addEventListener('click', togglePanel);
+    document.getElementById('sarPanelClose').addEventListener('click', closePanel);
+
+    document.getElementById('sarModeMunicipio').addEventListener('click', function () { setAreaMode('municipio'); });
+    document.getElementById('sarModeDraw').addEventListener('click', function () {
+      setAreaMode('draw');
+      iniciarDibujo();
+    });
+
+    document.getElementById('sarAnalyzeBtn').addEventListener('click', analizar);
+
+    map.on('mousedown', onMapMouseDown);
+    map.on('mousemove', onMapMouseMove);
+    map.on('mouseup', onMapMouseUp);
+
+    // fechas por defecto razonables: hace un año vs. hoy
+    const hoy = new Date();
+    const haceUnAño = new Date(); haceUnAño.setFullYear(hoy.getFullYear() - 1);
+    document.getElementById('sarFechaFin').value = hoy.toISOString().slice(0, 10);
+    document.getElementById('sarFechaInicio').value = haceUnAño.toISOString().slice(0, 10);
+  }
+
+  window.addEventListener('load', init);
+
+  return {
+    openPanel: openPanel,
+    closePanel: closePanel,
+    limpiarResultado: limpiarResultado,
+    refreshFromMunicipioSelection: refreshFromMunicipioSelection
+  };
 })();
 </script>
 </body>
