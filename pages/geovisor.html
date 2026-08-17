@@ -2231,14 +2231,23 @@ function initUI() {
   const BASEMAP_LABELS = {
     osm:     'OpenStreetMap',
     sat:     'Sentinel-2 Cloudless · EOX/Copernicus',
-    relieve: 'Relieve 3D · AWS Terrain Tiles (Terrarium)',
+    relieve: 'Relieve 3D sobre satélite · Sentinel-2 + AWS Terrain Tiles',
     blank:   'Sin mapa base'
   };
 
   function setBasemap(value) {
     currentBasemap = value;
+    /* La capa satelital (EOX) también se muestra en el basemap de
+       relieve: es la que aporta la TEXTURA visible (fotos reales),
+       mientras que 'terrarium' (más abajo, vía setTerrain) solo aporta
+       la FORMA -- la geometría 3D del terreno -- igual que en el
+       ejemplo de AWS Open Data / Made with MapLibre que compartiste
+       (satélite como color, terrarium solo como fuente de elevación).
+       El hillshade se mantiene encima como acento adicional: en zonas
+       planas es transparente y no tapa la foto satelital; en laderas
+       añade sombra/luz extra sobre la textura para remarcar el relieve. */
     map.setLayoutProperty('osm', 'visibility', value === 'osm' ? 'visible' : 'none');
-    map.setLayoutProperty('sat', 'visibility', value === 'sat' ? 'visible' : 'none');
+    map.setLayoutProperty('sat', 'visibility', (value === 'sat' || value === 'relieve') ? 'visible' : 'none');
     map.setLayoutProperty('relieve-hillshade', 'visibility', value === 'relieve' ? 'visible' : 'none');
 
     /* Terreno 3D real (map.setTerrain) solo se activa en el basemap de
