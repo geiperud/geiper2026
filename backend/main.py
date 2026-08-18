@@ -64,8 +64,11 @@ EMBED_MODEL  = "gemini-embedding-001"
 GEMINI_URL   = f"https://generativelanguage.googleapis.com/v1beta/models/{GEMINI_MODEL}:generateContent"
 EMBED_URL    = f"https://generativelanguage.googleapis.com/v1beta/models/{EMBED_MODEL}:embedContent"
 
-GROQ_MODEL = "llama-3.3-70b-versatile"
+GROQ_MODEL = "openai/gpt-oss-120b"
 GROQ_URL   = "https://api.groq.com/openai/v1/chat/completions"
+
+CEREBRAS_MODEL = "gpt-oss-120b"
+CEREBRAS_URL   = "https://api.cerebras.ai/v1/chat/completions"
 
 SALUDOS = {"hola", "hi", "hello", "buenas", "buen día", "buen dia", "buenos días",
            "buenos dias", "hey", "saludos", "qué tal", "que tal", "ola"}
@@ -257,6 +260,7 @@ vectorstore = None
 vectorstore_investigacion = None
 api_token   = None
 groq_token   = None
+cerebras_token = None
 glm_token   = None
 sh_client_id     = None
 sh_client_secret = None
@@ -377,6 +381,63 @@ def groq_generate(prompt, api_key, nombre_asistente="Asistente Académico"):
     return resp.json()["choices"][0]["message"]["content"]
 
 
+# ── LLM Cerebras via REST (respaldo intermedio, entre Groq y GLM) ───────────
+# Mismo modelo (gpt-oss-120b) que Groq: si Groq cae, la calidad de respuesta
+# se mantiene practicamente identica, solo cambia el proveedor de inferencia.
+# API compatible con el formato OpenAI, igual que Groq y GLM.
+def cerebras_generate(prompt, api_key, nombre_asistente="Asistente Académico"):
+    headers = {
+        "Content-Type": "application/json",
+        "Authorization": f"Bearer {api_key}"
+    }
+    payload = {
+        "model": CEREBRAS_MODEL,
+        "messages": [
+            {
+                "role": "system",
+                "content": construir_system_prompt(nombre_asistente)
+            },
+            {
+                "role": "user",
+                "content": prompt
+            }
+        ],
+        "max_tokens": 1500,
+        "temperature": 0.1,
+        "stream": False
+    }
+    MAX_REINTENTOS = 2
+    for intento in range(MAX_REINTENTOS):
+        try:
+            resp = requests.post(CEREBRAS_URL, json=payload, headers=headers, timeout=40)
+        except (requests.exceptions.Timeout, requests.exceptions.ConnectionError) as e:
+            if intento < MAX_REINTENTOS - 1:
+                espera = 5 * (intento + 1)
+                logger.warning(f"Timeout de red con Cerebras ({e}), esperando {espera}s antes de reintentar...")
+                time.sleep(espera)
+                continue
+            else:
+                logger.error(f"Timeout de red con Cerebras agotado tras reintentos: {e}")
+                raise HTTPException(
+                    status_code=503,
+                    detail="El servicio de IA está temporalmente lento. Por favor, intenta de nuevo en unos segundos."
+                )
+        if resp.status_code == 429:
+            if intento < MAX_REINTENTOS - 1:
+                espera = 5 * (intento + 1)
+                logger.warning(f"Rate limit Cerebras (429), esperando {espera}s antes de reintentar...")
+                time.sleep(espera)
+                continue
+            else:
+                logger.error("Rate limit Cerebras (429) agotado tras reintentos.")
+                raise HTTPException(
+                    status_code=429,
+                    detail="El servicio de IA está temporalmente saturado. Por favor, espera unos segundos e intenta de nuevo."
+                )
+        resp.raise_for_status()
+        return resp.json()["choices"][0]["message"]["content"]
+
+
 # ── LLM Gemini via REST (fallback) ───────────────────────────────────────────
 def gemini_generate(prompt, api_key, nombre_asistente="Asistente Académico"):
     url = GEMINI_URL + f"?key={api_key}"
@@ -432,7 +493,25 @@ def glm_generate(prompt, api_key, nombre_asistente="Asistente Académico"):
     }
     MAX_REINTENTOS = 2
     for intento in range(MAX_REINTENTOS):
-        resp = requests.post(GLM_URL, headers=headers, json=payload, timeout=25)
+        try:
+            resp = requests.post(GLM_URL, headers=headers, json=payload, timeout=40)
+        except (requests.exceptions.Timeout, requests.exceptions.ConnectionError) as e:
+            # Antes, un timeout de red (ReadTimeoutError) no estaba
+            # contemplado aqui: al no ser un status_code 429, se escapaba
+            # del bucle de reintentos y tumbaba toda la peticion /chat con
+            # un 500 crudo. Ahora se trata igual que un 429: se reintenta
+            # con backoff antes de rendirse.
+            if intento < MAX_REINTENTOS - 1:
+                espera = 5 * (intento + 1)
+                logger.warning(f"Timeout de red con GLM ({e}), esperando {espera}s antes de reintentar...")
+                time.sleep(espera)
+                continue
+            else:
+                logger.error(f"Timeout de red con GLM agotado tras reintentos: {e}")
+                raise HTTPException(
+                    status_code=503,
+                    detail="El servicio de IA está temporalmente lento. Por favor, intenta de nuevo en unos segundos."
+                )
         if resp.status_code == 429:
             if intento < MAX_REINTENTOS - 1:
                 espera = 5 * (intento + 1)
@@ -1135,13 +1214,19 @@ def construir_prompt_conversacional(contexto_docs, contexto_web, transcripcion, 
 
 
 def init_services():
-    global vectorstore, vectorstore_investigacion, api_token, groq_token, glm_token
+    global vectorstore, vectorstore_investigacion, api_token, groq_token, cerebras_token, glm_token
 
     groq_token  = os.environ.get("GROQ_API_KEY", "")
     if groq_token:
         logger.info("Groq API Key encontrada (modelo primario).")
     else:
         logger.warning("No se encontro GROQ_API_KEY.")
+
+    cerebras_token = os.environ.get("CEREBRAS_API_KEY", "").strip()
+    if cerebras_token:
+        logger.info("Cerebras API Key encontrada (modelo fallback intermedio).")
+    else:
+        logger.warning("No se encontro CEREBRAS_API_KEY.")
 
     glm_token = os.environ.get("GLM_API_KEY", "").strip()
     if glm_token:
@@ -1285,7 +1370,7 @@ def construir_consulta_efectiva(chat_request):
 
 @app.get("/status")
 def status():
-    return {"status": "ok", "cloud_ready": bool(groq_token or glm_token)}
+    return {"status": "ok", "cloud_ready": bool(groq_token or cerebras_token or glm_token)}
 
 @app.get("/documentos")
 def documentos(modo: str = "tematico"):
@@ -1304,7 +1389,7 @@ def documentos(modo: str = "tematico"):
 @app.post("/chat")
 @limiter.limit("10/minute")
 def chat(request: Request, chat_request: ChatRequest):
-    if not groq_token and not glm_token:
+    if not groq_token and not cerebras_token and not glm_token:
         raise HTTPException(status_code=500, detail="Sin configuracion de API.")
 
     # ── Filtro de obscenidades: corte inmediato, sin gastar API ni web ───────
@@ -1358,12 +1443,26 @@ def chat(request: Request, chat_request: ChatRequest):
                 except Exception as e:
                     # Antes, un HTTPException (ej. 429 de Groq saturado) se
                     # relanzaba directo al usuario sin darle oportunidad al
-                    # respaldo de GLM de abajo. Ahora CUALQUIER falla de
+                    # respaldo de abajo. Ahora CUALQUIER falla de
                     # Groq (429, error de red, lo que sea) cae al respaldo.
                     logger.warning(f"Groq fallo en saludo: {e}")
+            if cerebras_token:
+                try:
+                    respuesta = cerebras_generate(saludo_prompt, cerebras_token, nombre_asistente)
+                    return {"response": respuesta}
+                except Exception as e:
+                    logger.warning(f"Cerebras fallo en saludo: {e}")
             if glm_token:
-                respuesta = glm_generate(saludo_prompt, glm_token, nombre_asistente)
-                return {"response": respuesta}
+                try:
+                    respuesta = glm_generate(saludo_prompt, glm_token, nombre_asistente)
+                    return {"response": respuesta}
+                except Exception as e:
+                    # Igual que arriba: si el ultimo respaldo (GLM) tambien
+                    # falla, no queremos que la excepcion suba sin control
+                    # hasta el 500 generico. Se deja caer al flujo normal de
+                    # /chat (RAG + generacion mas abajo), que tiene su propio
+                    # manejo de fallos en cascada Groq -> Cerebras -> GLM.
+                    logger.warning(f"GLM fallo en saludo: {e}")
 
         # ── "¿Qué documentos tienes?": se responde directo, sin pasar por el LLM ─
         if es_pregunta_de_listado(chat_request.query):
@@ -1452,19 +1551,27 @@ def chat(request: Request, chat_request: ChatRequest):
             contexto_docs, contexto_web, transcripcion, chat_request.query, respuesta_corta=respuesta_corta
         )
 
-        # ── Generar respuesta (Groq primero, GLM fallback) ─────────────────
+        # ── Generar respuesta (Groq -> Cerebras -> GLM en cascada) ─────────
         respuesta = None
         if groq_token:
             try:
-                logger.info(f"Enviando a Groq (Llama 3.3 70B) (modo: {chat_request.mode})")
+                logger.info(f"Enviando a Groq (gpt-oss-120b) (modo: {chat_request.mode})")
                 respuesta = groq_generate(user_prompt, groq_token, nombre_asistente)
                 logger.info("Respuesta recibida de Groq.")
             except Exception as e:
                 # Antes, un HTTPException (ej. 429 de Groq saturado) se
-                # relanzaba directo al usuario sin darle oportunidad al
-                # respaldo de GLM de abajo. Ahora CUALQUIER falla de
-                # Groq (429, error de red, lo que sea) cae al respaldo.
-                logger.warning(f"Groq falló, intentando con GLM: {e}")
+                # relanzaba directo al usuario sin darle oportunidad a los
+                # respaldos de abajo. Ahora CUALQUIER falla de Groq (429,
+                # error de red, lo que sea) cae al siguiente proveedor.
+                logger.warning(f"Groq falló, intentando con Cerebras: {e}")
+
+        if respuesta is None and cerebras_token:
+            try:
+                logger.info(f"Enviando a Cerebras (gpt-oss-120b) (modo: {chat_request.mode})")
+                respuesta = cerebras_generate(user_prompt, cerebras_token, nombre_asistente)
+                logger.info("Respuesta recibida de Cerebras.")
+            except Exception as e:
+                logger.warning(f"Cerebras falló, intentando con GLM: {e}")
 
         if respuesta is None:
             if not glm_token:
@@ -2111,10 +2218,36 @@ def groq_generate_with_tools(mensajes, api_key):
     return resp.json()["choices"][0]["message"]
 
 
+def cerebras_generate_with_tools(mensajes, api_key):
+    """Respaldo de groq_generate_with_tools sobre Cerebras (mismo modelo
+    gpt-oss-120b, mismo formato de tools compatible con OpenAI)."""
+    headers = {
+        "Content-Type": "application/json",
+        "Authorization": f"Bearer {api_key}"
+    }
+    payload = {
+        "model": CEREBRAS_MODEL,
+        "messages": mensajes,
+        "tools": GEOVISOR_TOOLS,
+        "tool_choice": "auto",
+        "max_tokens": 400,
+        "temperature": 0.1,
+        "stream": False
+    }
+    resp = requests.post(CEREBRAS_URL, json=payload, headers=headers, timeout=30)
+    if resp.status_code == 429:
+        raise HTTPException(
+            status_code=429,
+            detail="El servicio de IA está temporalmente saturado. Por favor, espera unos segundos e intenta de nuevo."
+        )
+    resp.raise_for_status()
+    return resp.json()["choices"][0]["message"]
+
+
 @app.post("/geovisor-chat")
 @limiter.limit("15/minute")
 def geovisor_chat(request: Request, chat_request: GeovisorChatRequest):
-    if not groq_token:
+    if not groq_token and not cerebras_token:
         raise HTTPException(status_code=500, detail="Sin configuración de API.")
 
     if contiene_contenido_bloqueado(chat_request.query):
@@ -2132,13 +2265,23 @@ def geovisor_chat(request: Request, chat_request: GeovisorChatRequest):
         mensajes.append({"role": turno.role, "content": turno.content})
     mensajes.append({"role": "user", "content": chat_request.query})
 
-    try:
-        mensaje_modelo = groq_generate_with_tools(mensajes, groq_token)
-    except HTTPException:
-        raise
-    except Exception as e:
-        logger.error(f"Error en geovisor-chat: {e}")
-        raise HTTPException(status_code=500, detail="Servicio temporalmente no disponible.")
+    mensaje_modelo = None
+    if groq_token:
+        try:
+            mensaje_modelo = groq_generate_with_tools(mensajes, groq_token)
+        except Exception as e:
+            logger.warning(f"Groq falló en geovisor-chat, intentando con Cerebras: {e}")
+
+    if mensaje_modelo is None:
+        if not cerebras_token:
+            raise HTTPException(status_code=500, detail="Servicio temporalmente no disponible.")
+        try:
+            mensaje_modelo = cerebras_generate_with_tools(mensajes, cerebras_token)
+        except HTTPException:
+            raise
+        except Exception as e:
+            logger.error(f"Error en geovisor-chat (Cerebras): {e}")
+            raise HTTPException(status_code=500, detail="Servicio temporalmente no disponible.")
 
     tool_calls = mensaje_modelo.get("tool_calls") or []
     acciones = []
