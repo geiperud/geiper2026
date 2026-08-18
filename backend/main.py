@@ -7,6 +7,7 @@ import traceback
 import unicodedata
 import requests
 import numpy as np
+from datetime import datetime, timedelta
 from typing import List
 from fastapi import FastAPI, HTTPException, Request, Response
 try:
@@ -2330,6 +2331,7 @@ def geovisor_chat(request: Request, chat_request: GeovisorChatRequest):
 
 SH_TOKEN_URL   = "https://identity.dataspace.copernicus.eu/auth/realms/CDSE/protocol/openid-connect/token"
 SH_PROCESS_URL = "https://sh.dataspace.copernicus.eu/api/v1/process"
+SH_CATALOG_URL = "https://sh.dataspace.copernicus.eu/catalog/v1/search"
 
 SAR_EVALSCRIPT = """
 //VERSION=3
@@ -2339,13 +2341,26 @@ function setup() {
       { datasource: "antes",   bands: ["VV"] },
       { datasource: "despues", bands: ["VV"] }
     ],
-    output: { bands: 3, sampleType: "AUTO" }
+    output: { bands: 4, sampleType: "AUTO" }
   };
 }
 
 function evaluatePixel(samples) {
-  let antes   = Math.max(samples.antes[0].VV,   1e-6);
-  let despues = Math.max(samples.despues[0].VV, 1e-6);
+  let antes   = samples.antes[0].VV;
+  let despues = samples.despues[0].VV;
+
+  // Sentinel-1 GRD usa 0 como valor de "sin dato" fuera de la franja de
+  // barrido del satélite (la franja de una pasada no siempre cubre el
+  // rectángulo completo elegido). Sin este chequeo, dividir por un valor
+  // casi cero dispara la razón al máximo y esa zona se pinta de rojo
+  // sólido como si fuera un cambio enorme -- siendo en realidad ausencia
+  // de dato, no una detección real. Se pinta transparente en su lugar,
+  // dejando ver el mapa base debajo, para no confundir "sin dato" con
+  // "cambio detectado".
+  if (antes <= 0 || despues <= 0) {
+    return [0, 0, 0, 0];
+  }
+
   let ratioDb = 10 * Math.log10(despues / antes);
 
   // Rango tipico de cambio real en SAR: -6 dB a +6 dB. Se recorta (clamp)
@@ -2356,11 +2371,11 @@ function evaluatePixel(samples) {
   if (t < 0.5) {
     // disminución de retrodispersión -> azul (posible inundación / tala)
     let f = t * 2;
-    return [0.85 * f, 0.85 * f, 1];
+    return [0.85 * f, 0.85 * f, 1, 1];
   } else {
     // aumento de retrodispersión -> rojo (posible construcción / superficie nueva)
     let f = (t - 0.5) * 2;
-    return [1, 0.85 * (1 - f), 0.85 * (1 - f)];
+    return [1, 0.85 * (1 - f), 0.85 * (1 - f), 1];
   }
 }
 """
@@ -2402,7 +2417,6 @@ def _ventana_de_dias(fecha_iso: str, margen_dias: int = 4):
     """Convierte una fecha puntual (YYYY-MM-DD) en una ventana [inicio, fin]
     de +/- margen_dias, para aumentar la probabilidad de encontrar una
     escena Sentinel-1 real dentro del rango (revisita ~6 días)."""
-    from datetime import datetime, timedelta
     base = datetime.strptime(fecha_iso, "%Y-%m-%d")
     inicio = (base - timedelta(days=margen_dias)).strftime("%Y-%m-%dT00:00:00Z")
     fin    = (base + timedelta(days=margen_dias)).strftime("%Y-%m-%dT23:59:59Z")
@@ -2413,6 +2427,77 @@ class SarCambiosRequest(BaseModel):
     bbox: List[float] = Field(min_length=4, max_length=4)  # [minLon, minLat, maxLon, maxLat] EPSG:4326
     fecha_inicio: str  # YYYY-MM-DD ("antes")
     fecha_fin: str     # YYYY-MM-DD ("después")
+
+
+class SarDisponibilidadRequest(BaseModel):
+    bbox: List[float] = Field(min_length=4, max_length=4)  # [minLon, minLat, maxLon, maxLat] EPSG:4326
+
+
+@app.post("/sar-disponibilidad")
+@limiter.limit("15/minute")
+def sar_disponibilidad(request: Request, body: SarDisponibilidadRequest):
+    """Consulta el catálogo STAC de Sentinel Hub (Copernicus Data Space
+    Ecosystem) para averiguar qué escenas Sentinel-1 GRD de los últimos
+    2 años cubren el área solicitada COMPLETA -- es decir, filtra de
+    antemano las fechas que dejarían huecos sin dato en el análisis,
+    en vez de dejar que el usuario elija una fecha a ciegas y descubra
+    el hueco después de haber esperado el procesamiento completo."""
+    if body.bbox[0] >= body.bbox[2] or body.bbox[1] >= body.bbox[3]:
+        raise HTTPException(status_code=400, detail="bbox inválido.")
+
+    try:
+        token = get_sentinelhub_token()
+
+        hoy = datetime.utcnow()
+        desde = hoy - timedelta(days=730)  # últimos 2 años
+
+        payload = {
+            "bbox": body.bbox,
+            "datetime": desde.strftime("%Y-%m-%dT00:00:00Z") + "/" + hoy.strftime("%Y-%m-%dT23:59:59Z"),
+            "collections": ["sentinel-1-grd"],
+            "limit": 100,
+        }
+        resp = requests.post(
+            SH_CATALOG_URL,
+            json=payload,
+            headers={"Authorization": f"Bearer {token}"},
+            timeout=30,
+        )
+        resp.raise_for_status()
+        data = resp.json()
+
+        fechas_completas = set()
+        for item in data.get("features", []):
+            item_bbox = item.get("bbox")
+            if not item_bbox or len(item_bbox) < 4:
+                continue
+            # La escena debe cubrir el bbox solicitado COMPLETO (los 4
+            # bordes), no solo tocarlo -- comparación de cajas
+            # (aproximación conservadora: no usa la geometría exacta,
+            # que suele ser un paralelogramo rotado siguiendo la órbita,
+            # pero evita depender de una librería de geometría adicional
+            # y es más que suficiente para áreas del tamaño de un
+            # municipio).
+            cubre_completo = (
+                item_bbox[0] <= body.bbox[0] and item_bbox[1] <= body.bbox[1]
+                and item_bbox[2] >= body.bbox[2] and item_bbox[3] >= body.bbox[3]
+            )
+            if cubre_completo:
+                fecha_iso = (item.get("properties", {}) or {}).get("datetime", "")
+                if fecha_iso:
+                    fechas_completas.add(fecha_iso[:10])  # YYYY-MM-DD
+
+        fechas_ordenadas = sorted(fechas_completas, reverse=True)[:30]
+        return {"fechas_disponibles": fechas_ordenadas}
+
+    except HTTPException:
+        raise
+    except requests.exceptions.RequestException as e:
+        logger.error(f"Error de red en sar-disponibilidad: {e}")
+        raise HTTPException(status_code=502, detail="No se pudo contactar el catálogo de Copernicus Data Space Ecosystem.")
+    except Exception as e:
+        logger.error(f"Error en sar-disponibilidad: {e}\n{traceback.format_exc()}")
+        raise HTTPException(status_code=500, detail="Error interno consultando el catálogo.")
 
 
 @app.post("/sar-cambios")
@@ -2433,8 +2518,13 @@ def sar_cambios(request: Request, body: SarCambiosRequest):
     try:
         token = get_sentinelhub_token()
 
-        antes_ini, antes_fin     = _ventana_de_dias(body.fecha_inicio)
-        despues_ini, despues_fin = _ventana_de_dias(body.fecha_fin)
+        # Margen angosto (±1 día): las fechas ya vienen confirmadas del
+        # catálogo STAC (ver /sar-disponibilidad), así que no hace falta
+        # un margen amplio -- uno amplio incluso podría hacer que el
+        # Process API elija por error una escena vecina con peor
+        # cobertura en vez de la exacta que ya se confirmó completa.
+        antes_ini, antes_fin     = _ventana_de_dias(body.fecha_inicio, margen_dias=1)
+        despues_ini, despues_fin = _ventana_de_dias(body.fecha_fin, margen_dias=1)
 
         payload = {
             "input": {

@@ -607,26 +607,6 @@ html, body {
 }
 .sar-field-label:first-of-type { margin-top: 0; }
 
-.sar-mode-row {
-  display: flex;
-  gap: 6px;
-  margin-bottom: 8px;
-}
-.sar-mode-btn {
-  flex: 1;
-  font-size: 10.5px;
-  font-weight: 600;
-  padding: 6px 4px;
-  border: 1px solid #e2e8f0;
-  border-radius: 7px;
-  background: #ffffff;
-  color: #64748b;
-  cursor: pointer;
-  transition: all 0.15s;
-}
-.sar-mode-btn:hover { border-color: #86efac; color: #0F6E56; }
-.sar-mode-btn.active { background: #0F6E56; color: #fff; border-color: #0F6E56; }
-
 .sar-area-status {
   font-size: 11px;
   line-height: 1.4;
@@ -638,19 +618,71 @@ html, body {
   margin-bottom: 4px;
 }
 .sar-area-status.ready { color: #0F6E56; background: #f0fdf4; border-color: #bbf7d0; font-weight: 600; }
-.sar-area-status.drawing { color: #b45309; background: #fffbeb; border-color: #fde68a; font-weight: 600; }
 
-.sar-date-row { display: flex; gap: 8px; margin-bottom: 12px; }
-.sar-date-col { flex: 1; display: flex; flex-direction: column; gap: 3px; }
-.sar-date-col label { font-size: 10px; color: #94a3b8; font-weight: 600; }
-.sar-date-col input[type="date"] {
+/* Botón "Ver fechas disponibles" -- consulta el catálogo STAC de
+   Copernicus para saber, de verdad, qué escenas Sentinel-1 cubren el
+   municipio completo, en vez de dejar que el usuario adivine fechas al
+   azar (que es justo lo que causaba los huecos de cobertura). */
+.sar-check-btn {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
   font-size: 11.5px;
-  padding: 6px 6px;
-  border: 1px solid #e2e8f0;
-  border-radius: 7px;
-  color: #1e293b;
-  font-family: 'Montserrat', sans-serif;
+  font-weight: 600;
+  padding: 8px;
+  border: 1.5px solid #0F6E56;
+  border-radius: 8px;
+  background: #ffffff;
+  color: #0F6E56;
+  cursor: pointer;
+  transition: all 0.15s;
+  margin-bottom: 8px;
 }
+.sar-check-btn:hover { background: #f0fdf4; }
+.sar-check-btn:disabled { border-color: #cbd5e1; color: #94a3b8; cursor: default; }
+
+.sar-dates-list {
+  max-height: 160px;
+  overflow-y: auto;
+  border: 1px solid #eef1f6;
+  border-radius: 8px;
+  padding: 6px;
+  margin-bottom: 10px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px;
+  align-content: flex-start;
+}
+.sar-date-chip {
+  font-size: 10.5px;
+  font-weight: 600;
+  padding: 5px 9px;
+  border-radius: 6px;
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  color: #475569;
+  cursor: pointer;
+  transition: all 0.12s;
+}
+.sar-date-chip:hover { border-color: #0F6E56; color: #0F6E56; }
+.sar-date-chip.picked-antes { background: #0F6E56; border-color: #0F6E56; color: #fff; }
+.sar-date-chip.picked-despues { background: #1d4ed8; border-color: #1d4ed8; color: #fff; }
+.sar-dates-empty { font-size: 11px; color: #94a3b8; padding: 4px; }
+
+.sar-dates-picked { display: flex; gap: 8px; margin-bottom: 10px; }
+.sar-date-chip-picked {
+  flex: 1;
+  border-radius: 8px;
+  padding: 6px 8px;
+  font-size: 12px;
+  font-weight: 700;
+  color: #fff;
+}
+.sar-date-chip-picked span { display: block; font-size: 9px; font-weight: 600; opacity: 0.85; text-transform: uppercase; letter-spacing: 0.03em; }
+.sar-date-chip-picked.sar-antes { background: #0F6E56; }
+.sar-date-chip-picked.sar-despues { background: #1d4ed8; }
 
 .sar-analyze-btn {
   width: 100%;
@@ -681,6 +713,15 @@ html, body {
 }
 .sar-legend-swatch { display: inline-flex; align-items: center; gap: 4px; }
 .sar-legend-dot { width: 9px; height: 9px; border-radius: 2px; flex-shrink: 0; }
+
+.sar-legend-note {
+  margin-top: 8px;
+  padding-top: 8px;
+  border-top: 1px solid #e2e8f0;
+  font-size: 10px;
+  line-height: 1.5;
+  color: #94a3b8;
+}
 
 .turf-panel-result {
   font-size: 12.5px;
@@ -1541,25 +1582,19 @@ html, body {
         <div class="turf-panel-desc">Compara dos periodos de tiempo usando radar Sentinel-1 (Copernicus). A diferencia del satélite óptico, el radar atraviesa nubes y funciona de noche.</div>
 
         <div class="sar-field-label">1. Área a analizar</div>
-        <div class="sar-mode-row">
-          <button class="sar-mode-btn active" id="sarModeMunicipio" type="button">Municipio seleccionado</button>
-          <button class="sar-mode-btn" id="sarModeDraw" type="button">Dibujar rectángulo</button>
-        </div>
         <div class="sar-area-status" id="sarAreaStatus">Selecciona un municipio con el buscador de arriba.</div>
 
-        <div class="sar-field-label">2. Periodo a comparar</div>
-        <div class="sar-date-row">
-          <div class="sar-date-col">
-            <label>Antes</label>
-            <input type="date" id="sarFechaInicio">
-          </div>
-          <div class="sar-date-col">
-            <label>Después</label>
-            <input type="date" id="sarFechaFin">
-          </div>
+        <div class="sar-field-label">2. Fechas con cobertura confirmada</div>
+        <button class="sar-check-btn" id="sarCheckBtn" type="button" disabled>
+          <i class="fa-solid fa-satellite"></i> Ver fechas disponibles
+        </button>
+        <div class="sar-dates-picked" id="sarDatesPicked" style="display:none;">
+          <div class="sar-date-chip-picked sar-antes"><span>Antes</span><b id="sarPickedAntes">—</b></div>
+          <div class="sar-date-chip-picked sar-despues"><span>Después</span><b id="sarPickedDespues">—</b></div>
         </div>
+        <div class="sar-dates-list" id="sarDatesList" style="display:none;"></div>
 
-        <button class="sar-analyze-btn" id="sarAnalyzeBtn" type="button">
+        <button class="sar-analyze-btn" id="sarAnalyzeBtn" type="button" disabled>
           <i class="fa-solid fa-satellite-dish"></i> Analizar cambios
         </button>
 
@@ -3732,11 +3767,11 @@ window.GeovisorChat = (function () {
 window.SarCambios = (function () {
   const API_BASE = window.CHAT_API_BASE || 'https://geiper2026.onrender.com';
 
-  let areaMode   = 'municipio'; // 'municipio' | 'draw'
-  let areaBbox   = null;        // [minLon, minLat, maxLon, maxLat]
+  let areaBbox   = null;   // [minLon, minLat, maxLon, maxLat] -- siempre viene de un municipio
   let areaLabel  = '';
-  let drawing    = false;
-  let drawStart  = null;        // [lon, lat] del primer clic al dibujar
+  let fechasDisponibles = []; // fechas (YYYY-MM-DD) con cobertura completa confirmada
+  let fechaAntes   = null;
+  let fechaDespues = null;
   let resultLayersReady = false;
 
   const COLOR_AUMENTO     = '#dc2626'; // rojo — más retrodispersión (posible construcción)
@@ -3763,128 +3798,142 @@ window.SarCambios = (function () {
     if (resultLayersReady) map.setLayoutProperty('sar-cambios-layer', 'visibility', 'none');
   }
 
-  /* ── Estado del área seleccionada (municipio o rectángulo dibujado) ── */
+  /* ── Estado del área seleccionada (siempre un municipio) ── */
   function actualizarEstadoArea() {
     const el = document.getElementById('sarAreaStatus');
-    el.classList.remove('ready', 'drawing');
-    if (drawing) {
-      el.textContent = 'Haz clic y arrastra sobre el mapa para dibujar el área.';
-      el.classList.add('drawing');
-      return;
-    }
+    const checkBtn = document.getElementById('sarCheckBtn');
+    el.classList.remove('ready');
     if (areaBbox) {
       el.textContent = '✓ Área lista: ' + areaLabel;
       el.classList.add('ready');
-    } else if (areaMode === 'municipio') {
-      el.textContent = 'Selecciona un municipio con el buscador de arriba.';
+      checkBtn.disabled = false;
     } else {
-      el.textContent = 'Haz clic en "Dibujar rectángulo" y luego arrastra sobre el mapa.';
+      el.textContent = 'Selecciona un municipio con el buscador de arriba.';
+      checkBtn.disabled = true;
     }
   }
 
-  function setAreaMode(mode) {
-    areaMode = mode;
-    areaBbox = null;
-    document.getElementById('sarModeMunicipio').classList.toggle('active', mode === 'municipio');
-    document.getElementById('sarModeDraw').classList.toggle('active', mode === 'draw');
-    if (drawing) terminarDibujo(false);
-    if (mode === 'municipio') {
-      const sel = window.MunicipioSearch && window.MunicipioSearch.getSelectedBounds();
-      if (sel) { areaBbox = sel.bbox; areaLabel = sel.etiqueta; }
+  /* Llamado por MunicipioSearch cada vez que cambia la selección */
+  function refreshFromMunicipioSelection() {
+    if (!document.getElementById('sarPanel').classList.contains('open')) return;
+    const sel = window.MunicipioSearch && window.MunicipioSearch.getSelectedBounds();
+    const bboxAnterior = areaBbox;
+    areaBbox  = sel ? sel.bbox : null;
+    areaLabel = sel ? sel.etiqueta : '';
+    /* Si cambió el municipio, las fechas ya consultadas ya no aplican */
+    if (JSON.stringify(bboxAnterior) !== JSON.stringify(areaBbox)) {
+      resetearFechas();
     }
     actualizarEstadoArea();
   }
 
-  /* ── Dibujo de rectángulo libre sobre el mapa ── */
-  function iniciarDibujo() {
-    if (areaMode !== 'draw') return;
-    drawing = true;
-    drawStart = null;
-    map.getCanvas().style.cursor = 'crosshair';
-    map.dragPan.disable(); // evitar que el arrastre mueva el mapa mientras se dibuja
-    actualizarEstadoArea();
+  function resetearFechas() {
+    fechasDisponibles = [];
+    fechaAntes = null;
+    fechaDespues = null;
+    document.getElementById('sarDatesList').style.display = 'none';
+    document.getElementById('sarDatesList').innerHTML = '';
+    document.getElementById('sarDatesPicked').style.display = 'none';
+    document.getElementById('sarAnalyzeBtn').disabled = true;
   }
 
-  function terminarDibujo(mantenerBbox) {
-    drawing = false;
-    drawStart = null;
-    map.getCanvas().style.cursor = '';
-    map.dragPan.enable();
-    if (resultLayersReady === false) { /* nada que limpiar */ }
-    if (map.getLayer('sar-draw-preview-fill')) {
-      map.getSource('sar-draw-preview').setData({ type: 'FeatureCollection', features: [] });
-    }
-    if (!mantenerBbox) actualizarEstadoArea();
+  /* ── Consultar el catálogo STAC: qué fechas tienen cobertura completa ── */
+  function verFechasDisponibles() {
+    if (!areaBbox) return;
+    const btn = document.getElementById('sarCheckBtn');
+    btn.disabled = true;
+    btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Consultando catálogo…';
+    mostrarHint('Consultando qué escenas Sentinel-1 cubren el municipio completo en los últimos 2 años…');
+
+    fetch(API_BASE + '/sar-disponibilidad', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ bbox: areaBbox })
+    })
+      .then(function (r) {
+        if (!r.ok) return r.json().then(function (err) { throw new Error(err.detail || 'Error del servidor.'); });
+        return r.json();
+      })
+      .then(function (data) {
+        fechasDisponibles = data.fechas_disponibles || [];
+        renderListaFechas();
+        if (fechasDisponibles.length === 0) {
+          mostrarError('No se encontró ninguna escena Sentinel-1 con cobertura completa de este municipio en los últimos 2 años. Prueba con un municipio distinto.');
+        } else {
+          document.getElementById('sarHint').style.display = 'none';
+        }
+      })
+      .catch(function (err) {
+        mostrarError(err.message || 'No se pudo consultar el catálogo de Copernicus.');
+      })
+      .finally(function () {
+        btn.disabled = false;
+        btn.innerHTML = '<i class="fa-solid fa-satellite"></i> Ver fechas disponibles';
+      });
   }
 
-  function ensureDrawPreviewLayer() {
-    if (map.getSource('sar-draw-preview')) return;
-    map.addSource('sar-draw-preview', { type: 'geojson', data: { type: 'FeatureCollection', features: [] } });
-    map.addLayer({
-      id: 'sar-draw-preview-fill', type: 'fill', source: 'sar-draw-preview',
-      paint: { 'fill-color': '#0F6E56', 'fill-opacity': 0.12 }
-    });
-    map.addLayer({
-      id: 'sar-draw-preview-line', type: 'line', source: 'sar-draw-preview',
-      paint: { 'line-color': '#0F6E56', 'line-width': 1.5, 'line-dasharray': [2, 2] }
-    });
-  }
-
-  function bboxPolygon(bbox) {
-    return {
-      type: 'Feature',
-      properties: {},
-      geometry: {
-        type: 'Polygon',
-        coordinates: [[
-          [bbox[0], bbox[1]], [bbox[2], bbox[1]], [bbox[2], bbox[3]], [bbox[0], bbox[3]], [bbox[0], bbox[1]]
-        ]]
-      }
-    };
-  }
-
-  function onMapMouseDown(e) {
-    if (!drawing) return;
-    drawStart = [e.lngLat.lng, e.lngLat.lat];
-    ensureDrawPreviewLayer();
-  }
-  function onMapMouseMove(e) {
-    if (!drawing || !drawStart) return;
-    const cur = [e.lngLat.lng, e.lngLat.lat];
-    const bbox = [
-      Math.min(drawStart[0], cur[0]), Math.min(drawStart[1], cur[1]),
-      Math.max(drawStart[0], cur[0]), Math.max(drawStart[1], cur[1])
-    ];
-    map.getSource('sar-draw-preview').setData({ type: 'FeatureCollection', features: [bboxPolygon(bbox)] });
-  }
-  function onMapMouseUp(e) {
-    if (!drawing || !drawStart) return;
-    const cur = [e.lngLat.lng, e.lngLat.lat];
-    const bbox = [
-      Math.min(drawStart[0], cur[0]), Math.min(drawStart[1], cur[1]),
-      Math.max(drawStart[0], cur[0]), Math.max(drawStart[1], cur[1])
-    ];
-    const anchoKm = turf.distance(turf.point([bbox[0], bbox[1]]), turf.point([bbox[2], bbox[1]]));
-    if (anchoKm < 0.3) {
-      /* rectángulo demasiado pequeño (probablemente un clic accidental): se ignora */
-      drawStart = null;
+  function renderListaFechas() {
+    const listEl = document.getElementById('sarDatesList');
+    listEl.innerHTML = '';
+    if (fechasDisponibles.length === 0) {
+      listEl.innerHTML = '<div class="sar-dates-empty">Sin fechas con cobertura completa.</div>';
+      listEl.style.display = 'block';
       return;
     }
-    areaBbox = bbox;
-    areaLabel = 'rectángulo dibujado (' + anchoKm.toFixed(1) + ' km de ancho aprox.)';
-    terminarDibujo(true);
-    actualizarEstadoArea();
+    fechasDisponibles.forEach(function (fecha) {
+      const chip = document.createElement('div');
+      chip.className = 'sar-date-chip';
+      chip.textContent = fecha;
+      chip.dataset.fecha = fecha;
+      chip.addEventListener('click', function () { elegirFecha(fecha); });
+      listEl.appendChild(chip);
+    });
+    listEl.style.display = 'flex';
+    actualizarChipsSeleccionados();
   }
 
-  /* ── Llamada al backend + overlay del resultado ── */
+  /* Primer clic -> "antes". Segundo clic (fecha distinta) -> "después".
+     Tercer clic -> reinicia el ciclo, esa fecha vuelve a ser "antes". */
+  function elegirFecha(fecha) {
+    if (!fechaAntes || (fechaAntes && fechaDespues)) {
+      fechaAntes = fecha;
+      fechaDespues = null;
+    } else if (fecha === fechaAntes) {
+      fechaAntes = null;
+    } else {
+      // fechaAntes ya elegida, esta es la segunda -- se ordenan cronológicamente
+      if (fecha < fechaAntes) { fechaDespues = fechaAntes; fechaAntes = fecha; }
+      else { fechaDespues = fecha; }
+    }
+    actualizarChipsSeleccionados();
+  }
+
+  function actualizarChipsSeleccionados() {
+    document.querySelectorAll('.sar-date-chip').forEach(function (chip) {
+      chip.classList.remove('picked-antes', 'picked-despues');
+      if (chip.dataset.fecha === fechaAntes) chip.classList.add('picked-antes');
+      if (chip.dataset.fecha === fechaDespues) chip.classList.add('picked-despues');
+    });
+
+    const pickedEl = document.getElementById('sarDatesPicked');
+    if (fechaAntes || fechaDespues) {
+      pickedEl.style.display = 'flex';
+      document.getElementById('sarPickedAntes').textContent = fechaAntes || '—';
+      document.getElementById('sarPickedDespues').textContent = fechaDespues || '—';
+    } else {
+      pickedEl.style.display = 'none';
+    }
+
+    document.getElementById('sarAnalyzeBtn').disabled = !(fechaAntes && fechaDespues);
+  }
+
+  /* ── Mensajes del panel ── */
   function mostrarResultado(html) {
     const el = document.getElementById('sarResult');
     el.innerHTML = html;
     el.style.display = 'block';
     document.getElementById('sarHint').style.display = 'none';
   }
-  /* Aviso neutro (falta seleccionar área/fechas, etc.) -- mismo estilo
-     verde que el resto de hints informativos del geovisor. */
   function mostrarHint(texto) {
     const el = document.getElementById('sarHint');
     el.classList.remove('sar-hint-error');
@@ -3892,11 +3941,6 @@ window.SarCambios = (function () {
     el.style.display = 'block';
     document.getElementById('sarResult').style.display = 'none';
   }
-  /* Error real (falla del backend, sin credenciales, sin conexión, etc.)
-     -- estilo rojo, deliberadamente distinto al hint neutro, para que
-     sea imposible confundirlo con "nada pasó" o con una instrucción
-     más. Incluye un ícono de alerta para reforzar que es un problema,
-     no un paso a seguir. */
   function mostrarError(texto) {
     const el = document.getElementById('sarHint');
     el.classList.add('sar-hint-error');
@@ -3905,22 +3949,19 @@ window.SarCambios = (function () {
     document.getElementById('sarResult').style.display = 'none';
   }
 
+  /* ── Ejecutar el análisis con las dos fechas ya confirmadas ── */
   function analizar() {
-    if (!areaBbox) { mostrarHint('Primero define un área: selecciona un municipio o dibuja un rectángulo.'); return; }
-    const fechaInicio = document.getElementById('sarFechaInicio').value;
-    const fechaFin    = document.getElementById('sarFechaFin').value;
-    if (!fechaInicio || !fechaFin) { mostrarHint('Elige las dos fechas del periodo a comparar.'); return; }
-    if (fechaInicio >= fechaFin) { mostrarHint('La fecha "Antes" debe ser anterior a la fecha "Después".'); return; }
+    if (!areaBbox || !fechaAntes || !fechaDespues) return;
 
     const btn = document.getElementById('sarAnalyzeBtn');
     btn.disabled = true;
     btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Analizando…';
-    mostrarHint('Consultando Sentinel-1 en Copernicus Data Space Ecosystem, puede tardar unos segundos…');
+    mostrarHint('Procesando la comparación en Copernicus Data Space Ecosystem, puede tardar unos segundos…');
 
     fetch(API_BASE + '/sar-cambios', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ bbox: areaBbox, fecha_inicio: fechaInicio, fecha_fin: fechaFin })
+      body: JSON.stringify({ bbox: areaBbox, fecha_inicio: fechaAntes, fecha_fin: fechaDespues })
     })
       .then(function (r) {
         if (!r.ok) return r.json().then(function (err) { throw new Error(err.detail || 'Error del servidor.'); });
@@ -3940,7 +3981,8 @@ window.SarCambios = (function () {
           '<div class="sar-legend">' +
             '<span class="sar-legend-swatch"><span class="sar-legend-dot" style="background:' + COLOR_AUMENTO + '"></span>Aumento</span>' +
             '<span class="sar-legend-swatch"><span class="sar-legend-dot" style="background:' + COLOR_DISMINUCION + '"></span>Disminución</span>' +
-          '</div>'
+          '</div>' +
+          '<div class="sar-legend-note">El "grano" rojo/azul disperso es ruido normal del radar (speckle) — lo relevante son zonas o parches consistentes de un mismo color, no puntos sueltos. Las fechas elegidas ya tienen cobertura completa confirmada, así que no deberían aparecer zonas transparentes.</div>'
         );
       })
       .catch(function (err) {
@@ -3966,17 +4008,14 @@ window.SarCambios = (function () {
     document.getElementById('sarPanel').classList.add('open');
     document.getElementById('sarRailBtn').classList.add('active');
 
-    if (areaMode === 'municipio') {
-      const sel = window.MunicipioSearch && window.MunicipioSearch.getSelectedBounds();
-      if (sel) { areaBbox = sel.bbox; areaLabel = sel.etiqueta; }
-    }
+    const sel = window.MunicipioSearch && window.MunicipioSearch.getSelectedBounds();
+    if (sel) { areaBbox = sel.bbox; areaLabel = sel.etiqueta; }
     actualizarEstadoArea();
   }
 
   function closePanel() {
     document.getElementById('sarPanel').classList.remove('open');
     document.getElementById('sarRailBtn').classList.remove('active');
-    if (drawing) terminarDibujo(true);
   }
 
   function togglePanel() {
@@ -3984,39 +4023,11 @@ window.SarCambios = (function () {
     if (isOpen) closePanel(); else openPanel();
   }
 
-  /* Llamado por MunicipioSearch cada vez que cambia la selección, para
-     mantener el área sincronizada si el panel SAR está abierto en modo
-     "municipio" y el usuario elige otro municipio sin cerrar el panel. */
-  function refreshFromMunicipioSelection() {
-    if (areaMode !== 'municipio') return;
-    if (!document.getElementById('sarPanel').classList.contains('open')) return;
-    const sel = window.MunicipioSearch && window.MunicipioSearch.getSelectedBounds();
-    areaBbox  = sel ? sel.bbox : null;
-    areaLabel = sel ? sel.etiqueta : '';
-    actualizarEstadoArea();
-  }
-
   function init() {
     document.getElementById('sarRailBtn').addEventListener('click', togglePanel);
     document.getElementById('sarPanelClose').addEventListener('click', closePanel);
-
-    document.getElementById('sarModeMunicipio').addEventListener('click', function () { setAreaMode('municipio'); });
-    document.getElementById('sarModeDraw').addEventListener('click', function () {
-      setAreaMode('draw');
-      iniciarDibujo();
-    });
-
+    document.getElementById('sarCheckBtn').addEventListener('click', verFechasDisponibles);
     document.getElementById('sarAnalyzeBtn').addEventListener('click', analizar);
-
-    map.on('mousedown', onMapMouseDown);
-    map.on('mousemove', onMapMouseMove);
-    map.on('mouseup', onMapMouseUp);
-
-    // fechas por defecto razonables: hace un año vs. hoy
-    const hoy = new Date();
-    const haceUnAño = new Date(); haceUnAño.setFullYear(hoy.getFullYear() - 1);
-    document.getElementById('sarFechaFin').value = hoy.toISOString().slice(0, 10);
-    document.getElementById('sarFechaInicio').value = haceUnAño.toISOString().slice(0, 10);
   }
 
   window.addEventListener('load', init);
