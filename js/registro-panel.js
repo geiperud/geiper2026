@@ -45,7 +45,7 @@
         '<p class="rp-title">' + PANEL_TITLE + '</p>' +
         '<p class="rp-desc">' + PANEL_DESC + '</p>' +
         '<div class="rp-frame-wrap">' +
-          '<iframe src="' + FORM_IFRAME_SRC + '" frameborder="0" marginwidth="0" marginheight="0" allowfullscreen webkitallowfullscreen mozallowfullscreen msallowfullscreen title="Formulario de registro GEIPER"></iframe>' +
+          '<iframe data-src="' + FORM_IFRAME_SRC + '" frameborder="0" marginwidth="0" marginheight="0" allowfullscreen webkitallowfullscreen mozallowfullscreen msallowfullscreen title="Formulario de registro GEIPER"></iframe>' +
         '</div>' +
       '</div>';
 
@@ -58,10 +58,24 @@
     document.body.appendChild(reopenBtn);
 
     var closeBtn = document.getElementById('registroPanelClose');
+    var iframeEl = panel.querySelector('iframe');
+    var iframeLoaded = false;
+
+    function loadIframeIfNeeded() {
+      if (iframeLoaded) return;
+      iframeLoaded = true;
+      // Se asigna el src solo cuando el panel ya es visible en pantalla:
+      // si Microsoft Forms detecta el iframe oculto o fuera de vista al
+      // cargar, sirve una tarjeta de vista previa en vez del formulario.
+      iframeEl.src = iframeEl.getAttribute('data-src');
+    }
 
     function showPanel() {
       panel.classList.add('rp-visible');
       reopenBtn.classList.remove('rp-reopen-visible');
+      // Espera a que termine la transición de entrada antes de cargar
+      // el formulario, para asegurar que el iframe ya tiene tamaño real.
+      setTimeout(loadIframeIfNeeded, 550);
     }
 
     function hidePanel(remember) {
