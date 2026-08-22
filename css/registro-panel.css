@@ -1,0 +1,118 @@
+/* ============================================
+   GEIPER - Panel de registro (temporal)
+   ============================================ */
+
+#registroPanel {
+    position: fixed;
+    bottom: 20px;
+    right: 20px;
+    width: 320px;
+    max-width: calc(100vw - 32px);
+    background: var(--blanco);
+    border-radius: 14px;
+    box-shadow: 0 8px 28px rgba(11,46,107,0.22);
+    overflow: hidden;
+    z-index: 1500;
+    transform: translateY(140%);
+    opacity: 0;
+    transition: transform 0.5s cubic-bezier(0.22, 1, 0.36, 1), opacity 0.4s ease;
+}
+
+#registroPanel.rp-visible {
+    transform: translateY(0);
+    opacity: 1;
+}
+
+.rp-header {
+    background: var(--azul-medio);
+    padding: 12px 16px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+}
+
+.rp-header span {
+    color: var(--blanco);
+    font-size: 13px;
+    font-weight: 600;
+}
+
+.rp-close {
+    background: none;
+    border: none;
+    color: var(--blanco);
+    font-size: 18px;
+    line-height: 1;
+    cursor: pointer;
+    padding: 2px 4px;
+    opacity: 0.85;
+    transition: opacity 0.2s;
+}
+
+.rp-close:hover { opacity: 1; }
+
+.rp-body {
+    padding: 14px 16px 16px;
+}
+
+.rp-title {
+    font-family: 'Playfair Display', serif;
+    font-size: 16px;
+    font-weight: 700;
+    color: var(--azul-oscuro);
+    margin: 0 0 4px;
+}
+
+.rp-desc {
+    font-size: 12px;
+    color: var(--gris);
+    line-height: 1.5;
+    margin: 0 0 12px;
+}
+
+.rp-frame-wrap {
+    border-radius: 8px;
+    overflow: hidden;
+    border: 1px solid var(--fondo-alt);
+    background: var(--fondo-alt);
+}
+
+.rp-frame-wrap iframe {
+    width: 100%;
+    height: 420px;
+    border: none;
+    display: block;
+}
+
+/* Botón flotante para reabrir el panel si se cerró */
+#registroPanelReopen {
+    position: fixed;
+    bottom: 20px;
+    right: 20px;
+    background: var(--azul-medio);
+    color: var(--blanco);
+    border: none;
+    border-radius: 30px;
+    padding: 10px 18px;
+    font-size: 13px;
+    font-weight: 600;
+    font-family: 'Montserrat', sans-serif;
+    box-shadow: 0 6px 18px rgba(11,46,107,0.25);
+    cursor: pointer;
+    z-index: 1500;
+    display: none;
+    align-items: center;
+    gap: 8px;
+    transition: transform 0.2s ease;
+}
+
+#registroPanelReopen:hover { transform: translateY(-2px); }
+
+#registroPanelReopen.rp-reopen-visible { display: inline-flex; }
+
+@media (max-width: 480px) {
+    #registroPanel { right: 16px; bottom: 16px; width: calc(100vw - 32px); }
+    .rp-frame-wrap iframe { height: 380px; }
+    #registroPanelReopen { right: 16px; bottom: 16px; }
+}
