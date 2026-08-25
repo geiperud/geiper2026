@@ -15,7 +15,9 @@
   var CAMPAIGN_START = '2026-08-22';
   var CAMPAIGN_END   = '2026-09-30';
 
-  var FORM_IFRAME_SRC = 'https://forms.cloud.microsoft/Pages/ResponsePage.aspx?id=74gT1bBqY0OflNVmRKRZcHVPAxNIpkBCmaAAujrqeu1UQU1RN1BCN0pXSTVXRTFCRDFJQjc3WjRETi4u&embed=true';
+  // Link directo al formulario (sin &embed=true): se abre en pestaña nueva,
+  // evitando el bloqueo de cookies de terceros que impide el iframe.
+  var FORM_URL = 'https://forms.cloud.microsoft/Pages/ResponsePage.aspx?id=74gT1bBqY0OflNVmRKRZcHVPAxNIpkBCmaAAujrqeu1UQU1RN1BCN0pXSTVXRTFCRDFJQjc3WjRETi4u';
 
   var PANEL_TITLE = 'Regístrate a la sesión';
   var PANEL_DESC  = 'Te enviaremos el link de conexión por correo.';
@@ -44,9 +46,7 @@
       '<div class="rp-body">' +
         '<p class="rp-title">' + PANEL_TITLE + '</p>' +
         '<p class="rp-desc">' + PANEL_DESC + '</p>' +
-        '<div class="rp-frame-wrap">' +
-          '<iframe data-src="' + FORM_IFRAME_SRC + '" frameborder="0" marginwidth="0" marginheight="0" allowfullscreen webkitallowfullscreen mozallowfullscreen msallowfullscreen title="Formulario de registro GEIPER"></iframe>' +
-        '</div>' +
+        '<a href="' + FORM_URL + '" target="_blank" rel="noopener" class="rp-cta">Abrir formulario de registro</a>' +
       '</div>';
 
     var reopenBtn = document.createElement('button');
@@ -58,24 +58,10 @@
     document.body.appendChild(reopenBtn);
 
     var closeBtn = document.getElementById('registroPanelClose');
-    var iframeEl = panel.querySelector('iframe');
-    var iframeLoaded = false;
-
-    function loadIframeIfNeeded() {
-      if (iframeLoaded) return;
-      iframeLoaded = true;
-      // Se asigna el src solo cuando el panel ya es visible en pantalla:
-      // si Microsoft Forms detecta el iframe oculto o fuera de vista al
-      // cargar, sirve una tarjeta de vista previa en vez del formulario.
-      iframeEl.src = iframeEl.getAttribute('data-src');
-    }
 
     function showPanel() {
       panel.classList.add('rp-visible');
       reopenBtn.classList.remove('rp-reopen-visible');
-      // Espera a que termine la transición de entrada antes de cargar
-      // el formulario, para asegurar que el iframe ya tiene tamaño real.
-      setTimeout(loadIframeIfNeeded, 550);
     }
 
     function hidePanel(remember) {
