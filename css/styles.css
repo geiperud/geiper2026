@@ -3,7 +3,7 @@
    Estilos globales compartidos
    ============================================ */
 
-@import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;700&family=Montserrat:wght@300;400;500;600&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Noto+Serif:wght@400;700&family=Inter:wght@300;400;500;700&display=swap');
 
 /* VARIABLES */
 :root {
@@ -19,7 +19,7 @@
 *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
 
 body {
-    font-family: 'Montserrat', sans-serif;
+    font-family: 'Inter', sans-serif;
     color: var(--gris);
     background: white;
     line-height: 1.6;
@@ -153,7 +153,7 @@ nav .nav-brand {
 .hero-text { flex: 1; text-align: left; }
 
 .hero-text h1 {
-    font-family: 'Playfair Display', serif;
+    font-family: 'Noto Serif', serif;
     font-size: 52px; margin-bottom: 20px;
 }
 
@@ -177,7 +177,7 @@ section { padding: 100px 80px; }
 
 .section-title {
     text-align: center;
-    font-family: 'Playfair Display', serif;
+    font-family: 'Noto Serif', serif;
     color: var(--azul-oscuro);
     margin-bottom: 40px;
     font-size: 32px;
@@ -225,14 +225,14 @@ section { padding: 100px 80px; }
 }
 .linea-fila:last-child { border-bottom: 1px solid rgba(11,46,107,0.15); }
 .linea-num {
-    font-family: 'Playfair Display', serif;
+    font-family: 'Noto Serif', serif;
     font-weight: 700;
     font-size: 30px;
     color: var(--azul-claro);
     line-height: 1;
 }
 .linea-fila h3 {
-    font-family: 'Playfair Display', serif;
+    font-family: 'Noto Serif', serif;
     font-weight: 700;
     font-size: 19px;
     color: var(--azul-oscuro);
@@ -336,7 +336,7 @@ section { padding: 100px 80px; }
     border: 1px solid var(--azul-medio);
     background: transparent; color: var(--azul-medio);
     font-size: 13px; cursor: pointer; transition: all 0.2s;
-    font-family: 'Montserrat', sans-serif;
+    font-family: 'Inter', sans-serif;
 }
 .filtro-btn.active { background: var(--azul-oscuro); color: white; border-color: var(--azul-oscuro); }
 .filtro-btn:hover:not(.active) { background: #f0f4fb; }
@@ -375,7 +375,7 @@ section { padding: 100px 80px; }
     margin-top: 8px; padding: 10px 28px; border-radius: 30px;
     border: 1px solid; background: transparent;
     font-size: 13px; cursor: pointer;
-    font-family: 'Montserrat', sans-serif;
+    font-family: 'Inter', sans-serif;
     transition: opacity 0.2s; text-decoration: none; display: inline-block;
 }
 .repo-btn:hover { opacity: 0.8; }
@@ -398,7 +398,7 @@ section { padding: 100px 80px; }
     margin-top: 76px;
 }
 .page-hero h1 {
-    font-family: 'Playfair Display', serif;
+    font-family: 'Noto Serif', serif;
     font-size: 42px; margin-bottom: 12px;
 }
 .page-hero p { font-size: 16px; opacity: 0.85; max-width: 560px; }
@@ -432,7 +432,7 @@ section { padding: 100px 80px; }
     display: flex; align-items: center; justify-content: center;
 }
 .sub-card-icon i { font-size: 30px; color: var(--azul-medio); }
-.sub-card h3 { font-family: 'Playfair Display', serif; font-size: 20px; color: var(--azul-oscuro); margin: 0; }
+.sub-card h3 { font-family: 'Noto Serif', serif; font-size: 20px; color: var(--azul-oscuro); margin: 0; }
 .sub-card p  { font-size: 13px; color: var(--gris); margin: 0; }
 
 /* ── FOOTER ──────────────────────────────────── */
@@ -619,7 +619,7 @@ header.mobile-nav .nav-links a.active {
 /* ── BOLETÍN "NOVEDADES & CONVOCATORIAS" ────────
    Sin tarjetas ni pastillas de color: filas separadas por
    una línea fina, fecha grande tipo "número de revista" y
-   título en Playfair Display, igual que los encabezados del
+   título en Noto Serif, igual que los encabezados del
    sitio. Se usa igual en el resumen del home y en la página
    completa de eventos (mismo contenedor #rssFeedContainer). */
 .feed-list { max-width: 880px; margin: 20px auto 0; }
@@ -630,10 +630,10 @@ header.mobile-nav .nav-links a.active {
 .feed-list .feed-row:first-child { padding-top: 0; }
 .feed-list .feed-row:last-child { border-bottom: none; padding-bottom: 4px; }
 .feed-date-block { text-align: right; }
-.feed-date-block .feed-day { font-family: 'Playfair Display', serif; font-weight: 700; font-size: 34px; color: var(--azul-oscuro); line-height: 1; }
+.feed-date-block .feed-day { font-family: 'Noto Serif', serif; font-weight: 700; font-size: 34px; color: var(--azul-oscuro); line-height: 1; }
 .feed-date-block .feed-month { font-size: 11px; color: var(--gris); text-transform: uppercase; letter-spacing: 1px; margin-top: 4px; }
 .feed-type { font-size: 10.5px; font-weight: 700; letter-spacing: 1.5px; text-transform: uppercase; color: var(--azul-claro); margin-bottom: 6px; }
-.feed-title { font-family: 'Playfair Display', serif; font-size: 21px; color: var(--azul-oscuro); margin-bottom: 8px; line-height: 1.25; font-weight: 700; }
+.feed-title { font-family: 'Noto Serif', serif; font-size: 21px; color: var(--azul-oscuro); margin-bottom: 8px; line-height: 1.25; font-weight: 700; }
 .feed-desc { font-size: 14px; color: var(--gris); line-height: 1.6; margin-bottom: 12px; }
 .feed-tags { font-size: 12px; color: var(--azul-medio); }
 .feed-tags span:not(:last-child)::after { content: '·'; margin: 0 6px; color: #c7cfe3; }
@@ -682,7 +682,7 @@ header.mobile-nav .nav-links a.active {
     justify-content: space-between;
     align-items: center;
     transition: color 0.2s;
-    font-family: 'Montserrat', sans-serif;
+    font-family: 'Inter', sans-serif;
 }
 .faq-question:hover {
     color: var(--azul-claro);
@@ -734,7 +734,7 @@ header.mobile-nav .nav-links a.active {
     margin-bottom: 20px;
 }
 .contact-wide-top h2 {
-    font-family: 'Playfair Display', serif;
+    font-family: 'Noto Serif', serif;
     color: var(--azul-oscuro);
     font-size: 22px;
 }
@@ -769,7 +769,7 @@ header.mobile-nav .nav-links a.active {
     white-space: nowrap;
     flex-shrink: 0;
     transition: background 0.2s;
-    font-family: 'Montserrat', sans-serif;
+    font-family: 'Inter', sans-serif;
 }
 .submit-btn-inline:hover { background: var(--azul-oscuro); }
 
@@ -788,7 +788,7 @@ header.mobile-nav .nav-links a.active {
     padding: 12px 15px;
     border: 1px solid #d1d5db;
     border-radius: 8px;
-    font-family: 'Montserrat', sans-serif;
+    font-family: 'Inter', sans-serif;
     font-size: 14px;
     color: #374151;
     transition: border-color 0.2s;
@@ -814,7 +814,7 @@ textarea.form-input {
     font-weight: 600;
     cursor: pointer;
     transition: background 0.2s;
-    font-family: 'Montserrat', sans-serif;
+    font-family: 'Inter', sans-serif;
 }
 .submit-btn:hover {
     background: var(--azul-oscuro);
