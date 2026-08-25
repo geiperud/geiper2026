@@ -214,33 +214,33 @@ section { padding: 100px 80px; }
 .card h3 { color: var(--azul-oscuro); margin-bottom: 10px; }
 
 /* ── LÍNEAS DE INVESTIGACIÓN (lista por filas) ───────────── */
-.lineas-lista { display: flex; flex-direction: column; }
+.lineas-lista { display: flex; flex-direction: column; max-width: 1100px; margin: 0 auto; }
 .linea-fila {
     display: grid;
-    grid-template-columns: 56px 260px 1fr;
-    gap: 24px;
+    grid-template-columns: 64px 280px 1fr;
+    gap: 32px;
     align-items: start;
-    padding: 30px 0;
+    padding: 34px 0;
     border-top: 1px solid rgba(11,46,107,0.15);
 }
 .linea-fila:last-child { border-bottom: 1px solid rgba(11,46,107,0.15); }
 .linea-num {
     font-family: 'Playfair Display', serif;
     font-weight: 700;
-    font-size: 26px;
+    font-size: 30px;
     color: var(--azul-claro);
     line-height: 1;
 }
 .linea-fila h3 {
     font-family: 'Playfair Display', serif;
     font-weight: 700;
-    font-size: 17px;
+    font-size: 19px;
     color: var(--azul-oscuro);
     margin: 0;
     line-height: 1.35;
 }
 .linea-fila p {
-    font-size: 13px;
+    font-size: 14.5px;
     color: #5F5E5A;
     line-height: 1.65;
     margin: 0;
