@@ -1,0 +1,29 @@
+[
+  {
+    "id": 1,
+    "title": "XI Simposio Mexicano-Colombiano de Investigación Geográfica",
+    "date": "2026-09-02",
+    "type": "Simposio",
+    "description": "La Universidad Autónoma del Estado de Quintana Roo, en colaboración con la UPTC a través del Doctorado en Geografía, invita a participar bajo el eje 'Geografía: adaptación ante los cambios y retos'. Aula Magna I, Campus Chetumal Bahía.",
+    "link": "https://dcit.uqroo.mx/doctorado-en-geografia/",
+    "tags": ["Internacional", "UPTC", "Geografía"]
+  },
+  {
+    "id": 2,
+    "title": "FOSS4G North America 2026",
+    "date": "2026-11-02",
+    "type": "Congreso",
+    "description": "Conferencia sobre software libre y de código abierto para geomática. Bajo los ejes de Resiliencia e Innovación, se realizará en el Downtown Sheraton Grand Sacramento, California. Inscripciones abiertas.",
+    "link": "https://www.foss4gna.org/",
+    "tags": ["Internacional", "Open Source", "FOSS4G"]
+  },
+  {
+    "id": 3,
+    "title": "XXII Simposio Internacional SELPER 2026",
+    "date": "2026-11-10",
+    "type": "Simposio",
+    "description": "La Sociedad Latinoamericana en Percepción Remota y Sistemas de Información Espacial (SELPER) invita bajo el lema 'Del sensor a la gestión: innovación geoespacial para un futuro sostenible', en Buenos Aires, Argentina.",
+    "link": "https://selperargentina.org/",
+    "tags": ["Internacional", "SELPER", "Percepción Remota"]
+  }
+]
