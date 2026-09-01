@@ -31,7 +31,22 @@ body {
 }
 
 .section-title {
+    font-size: 42px;
     line-height: 1.25;
+}
+
+/* ── LÍNEAS DE INVESTIGACIÓN: más aire y tamaño ─ */
+.linea-num {
+    font-size: 38px;
+}
+.linea-fila h3 {
+    font-size: 25px;
+    line-height: 1.45;
+    letter-spacing: 0.2px;
+}
+.linea-fila p {
+    font-size: 17.5px;
+    line-height: 1.7;
 }
 
 /* ── BOTÓN PRIMARIO: pill + hover por opacidad ── */
