@@ -12,9 +12,22 @@
 
 @import url('https://fonts.googleapis.com/css2?family=DM+Serif+Text:ital@0;1&family=Inter:wght@400;500;600;700&display=swap');
 
+/* ── ESCALA TIPOGRÁFICA UNIFICADA ─────────────
+   Antes había ~20 tamaños distintos regados por el
+   sitio (8.5px, 10px, 10.5px, 11px, 11.5px, 13px,
+   13.5px, 14.5px...). Se consolidan en 6 pasos: */
+:root {
+    --text-2xs:  12px;  /* etiquetas/meta en mayúsculas: badges, fechas, tags */
+    --text-sm:   14px;  /* texto de apoyo: tarjetas secundarias, botones, formularios */
+    --text-base: 16px;  /* texto de lectura estándar (también body) */
+    --text-md:   18px;  /* párrafos destacados dentro de tarjetas/listas */
+    --text-lg:   22px;  /* subtítulos de tarjeta/sección secundaria */
+    --text-xl:   25px;  /* titular de ítem numerado (líneas de investigación) */
+}
+
 /* ── TIPOGRAFÍA BASE ─────────────────────────── */
 body {
-    font-size: 16px;
+    font-size: var(--text-base);
 }
 
 /* ── TÍTULOS SERIF → DM Serif Text ──────────── */
@@ -36,31 +49,83 @@ body {
     line-height: 1.25;
 }
 
-/* ── QUIÉNES SOMOS / MISIÓN / VISIÓN (index) ──── */
-#quienes > p {
-    font-size: 19.5px;
-    line-height: 1.75;
+/* ── TAMAÑO 2XS: etiquetas y metadatos ────────── */
+.badge,
+.footer-info span,
+.footer-bottom span,
+.feed-date-block .feed-month,
+.feed-type,
+.footer-col h3 {
+    font-size: var(--text-2xs);
 }
-.card.justify h3 {
-    font-size: 23px;
+
+/* ── TAMAÑO SM: texto de apoyo ─────────────────── */
+.repo-card p,
+.sub-card p,
+.footer-col p,
+.contact-wide-top p,
+.form-group label,
+.filtro-btn,
+.repo-btn,
+.feed-link {
+    font-size: var(--text-sm);
 }
-.card.justify p {
-    font-size: 18px;
+
+/* ── TAMAÑO BASE: texto de lectura estándar ───── */
+.stat-desc,
+.faq-answer p {
+    font-size: var(--text-base);
+}
+
+/* ── TAMAÑO MD: párrafos destacados ───────────── */
+#quienes > p,
+.card.justify p,
+.linea-fila p {
+    font-size: var(--text-md);
     line-height: 1.75;
 }
 
-/* ── LÍNEAS DE INVESTIGACIÓN: más aire y tamaño ─ */
+/* ── TAMAÑO LG: subtítulos de tarjeta/sección ─── */
+.repo-card h3,
+.sub-card h3,
+.card.justify h3,
+.contact-wide-top h2,
+.feed-title {
+    font-size: var(--text-lg);
+}
+
+/* ── TAMAÑO XL: titular de ítem numerado ──────── */
 .linea-num {
     font-size: 38px;
 }
 .linea-fila h3 {
-    font-size: 25px;
+    font-size: var(--text-xl);
     line-height: 1.45;
     letter-spacing: 0.2px;
 }
-.linea-fila p {
-    font-size: 17.5px;
-    line-height: 1.7;
+
+/* ── TARJETAS MISIÓN / VISIÓN: ícono + alineación izquierda ── */
+.card.justify {
+    text-align: left;
+    border-top: 3px solid var(--azul-medio);
+}
+.card.justify h3,
+.card.justify p {
+    text-align: left;
+}
+.card-icon {
+    width: 52px;
+    height: 52px;
+    border-radius: 0;
+    background: #E6F1FB;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-bottom: 18px;
+}
+.card-icon i {
+    font-size: 22px;
+    color: var(--azul-medio);
 }
 
 /* ── BOTÓN PRIMARIO: pill + hover por opacidad ── */
@@ -68,7 +133,7 @@ body {
     border-radius: 999px;
     padding: 14px 30px;
     font-weight: 600;
-    font-size: 15px;
+    font-size: var(--text-sm);
     transition: opacity 0.15s ease;
 }
 .btn:hover {
@@ -79,6 +144,13 @@ body {
 /* ── CONTENEDORES: ancho unificado a 1200px ──── */
 .lineas-lista {
     max-width: 1200px;
+}
+.grid.two,
+.grid.integrantes,
+.grid.profesores,
+.repos-grid {
+    max-width: 1200px;
+    margin: 0 auto;
 }
 .footer-container {
     max-width: 1200px;
