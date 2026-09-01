@@ -1,0 +1,73 @@
+/* ============================================
+   GEIPER - Tipografía y estructura alternativa
+   DM Serif Text + Inter
+   Se carga SOLO en: index.html, pages/lineas.html,
+   pages/integrantes.html, pages/repositorios.html,
+   pages/eventos.html.
+   NO se incluye en pages/geovisor.html ni en
+   pages/chatbots.html, que conservan Noto Serif + Inter.
+   Debe cargarse después de css/styles.css para que
+   estas reglas ganen la cascada por orden de fuente.
+   ============================================ */
+
+@import url('https://fonts.googleapis.com/css2?family=DM+Serif+Text:ital@0;1&family=Inter:wght@400;500;600;700&display=swap');
+
+/* ── TIPOGRAFÍA BASE ─────────────────────────── */
+body {
+    font-size: 16px;
+}
+
+/* ── TÍTULOS SERIF → DM Serif Text ──────────── */
+.hero-text h1,
+.page-hero h1,
+.section-title,
+.linea-num,
+.linea-fila h3,
+.sub-card h3,
+.feed-date-block .feed-day,
+.feed-title,
+.contact-wide-top h2 {
+    font-family: 'DM Serif Text', serif;
+}
+
+.section-title {
+    line-height: 1.25;
+}
+
+/* ── BOTÓN PRIMARIO: pill + hover por opacidad ── */
+.btn {
+    border-radius: 999px;
+    padding: 14px 30px;
+    font-weight: 600;
+    font-size: 15px;
+    transition: opacity 0.15s ease;
+}
+.btn:hover {
+    background: var(--azul-medio);
+    opacity: 0.88;
+}
+
+/* ── CONTENEDORES: ancho unificado a 1200px ──── */
+.lineas-lista {
+    max-width: 1200px;
+}
+.footer-container {
+    max-width: 1200px;
+    padding: 36px 40px 0;
+}
+.footer-divider {
+    max-width: 1200px;
+    padding: 0 40px;
+}
+.footer-info {
+    max-width: 1200px;
+    padding: 12px 40px 0;
+}
+.footer-divider-bottom {
+    max-width: 1200px;
+    padding: 0 40px;
+}
+.footer-bottom {
+    max-width: 1200px;
+    padding: 10px 40px 14px;
+}
