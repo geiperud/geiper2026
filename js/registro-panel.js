@@ -12,8 +12,8 @@
 
   // Rango de fechas de la campaña (formato YYYY-MM-DD).
   // Si hoy está fuera de este rango, el popup no aparece.
-  var CAMPAIGN_START = '2026-08-22';
-  var CAMPAIGN_END   = '2026-09-04';
+  var CAMPAIGN_START = '2026-09-16';
+  var CAMPAIGN_END   = '2026-09-25';
 
   // Link directo al formulario (se abre en pestaña nueva; evita el
   // bloqueo de cookies de terceros que rompe el embebido por iframe).
@@ -23,9 +23,9 @@
   var SIDE_TITLE   = 'GEIPER';
 
   var MAIN_EYEBROW = 'Registro abierto';
-  var MEETING_DATE = 'Viernes 25 de septiembre · 10:00 a.m.';
+  var MAIN_TITLE   = 'Reunión informativa 2026-III';
 
-  var MEETING_DATE = 'Viernes 4 de septiembre · 10:00 a.m.';
+  var MEETING_DATE = 'Viernes 25 de septiembre · 10:00 a.m.';
   var MEETING_SUB  = 'Virtual · el link llega a tu correo';
 
   var DESC_TEXT = 'Presentamos las líneas de investigación, los proyectos en curso y el proceso de vinculación al semillero. Cupos limitados.';
