@@ -987,7 +987,8 @@ html, body {
   position: absolute;
   z-index: 20;
   display: none;
-  transform: translate(-50%, calc(-100% - 14px));
+  /* left/top se calculan en positionPopup(): el popup se mantiene
+     siempre dentro del área visible del mapa (arriba o abajo del clic) */
   pointer-events: auto;
 }
 
@@ -1005,7 +1006,7 @@ html, body {
   content: '';
   position: absolute;
   bottom: -8px;
-  left: 50%;
+  left: var(--arrow-x, 50%);
   transform: translateX(-50%);
   width: 16px;
   height: 8px;
@@ -1013,6 +1014,13 @@ html, body {
   clip-path: polygon(0 0, 100% 0, 50% 100%);
   border-left: 1px solid #e2e8f0;
   border-right: 1px solid #e2e8f0;
+}
+
+/* Popup debajo del clic: la flecha apunta hacia arriba */
+.geo-popup.below::after {
+  bottom: auto;
+  top: -8px;
+  clip-path: polygon(50% 0, 0 100%, 100% 100%);
 }
 
 .geo-popup-header {
@@ -1049,8 +1057,17 @@ html, body {
 .geo-popup-body {
   padding: 8px 12px 10px;
   overflow-y: auto;
-  max-height: 200px;
+  max-height: 260px;
 }
+/* Encabezado de cada elemento cuando el clic cae sobre varios polígonos superpuestos */
+.geo-popup-table tr.geo-popup-section td {
+  padding-top: 8px;
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: none;
+  letter-spacing: 0;
+}
+.geo-popup-table tr.geo-popup-section:first-child td { padding-top: 0; }
 
 .geo-popup-table {
   width: 100%;
@@ -1681,8 +1698,9 @@ html, body {
 <script>
 /* ══════════════════════════════════════════════
    DATOS DE PROYECTOS (trabajos de grado reales — GEIPER / NIDE)
-   Nota: sin geometrías/capas propias (son documentos, no datasets
-   georreferenciados); "extent" define el encuadre al abrir la tarjeta.
+   Nota: la mayoría no tiene capas propias (son documentos, no datasets
+   georreferenciados); los que sí, declaran sus capas con "url" hacia
+   /data y se cargan al abrir la tarjeta. "extent" define el encuadre.
    Enlace provisional al RIUD general — se reemplaza por el enlace
    directo de cada trabajo cuando esté disponible.
    ══════════════════════════════════════════════ */
@@ -1760,6 +1778,31 @@ const PROJECTS = [
     capas: [],
     features: []
   },
+  {
+    id: 5,
+    nombre: 'Análisis espaciotemporal y multisensor de la dinámica territorial en la Sabana Occidental de Bogotá',
+    lineaId: 'cambios',
+    año: 2026,
+    sensor: 'RADARSAT-1 (SAR) · Landsat 7 ETM+ · POT homologados a clasificación CIAF (1996–2016)',
+    escala: 'Regional',
+    crs: 'MAGNA-SIRGAS 2018 / Origen Nacional (EPSG:9377)',
+    autor: 'Castillo Meneses, S. & Muñoz Gamba, Y. S.',
+    url: RIUD_URL,
+    ubicacion: 'Facatativá, Funza, Madrid, Mosquera, El Rosal y Tenjo (Cundinamarca)',
+    extent: [-74.43, 4.61, -74.07, 4.95],
+    /* Capas con "url": se descargan (GeoJSON, EPSG:4326) solo al abrir
+       el proyecto. Atributos originales de cada POT, sin homogeneizar. */
+    capas: [
+      { id: 'pot-facatativa', nombre: 'POT Facatativá', color: '#e11d48', visible: true,  url: '../data/pot_sabana/facatativa.geojson' },
+      { id: 'pot-funza',      nombre: 'POT Funza',      color: '#2563eb', visible: true,  url: '../data/pot_sabana/funza.geojson' },
+      { id: 'pot-madrid',     nombre: 'POT Madrid',     color: '#d97706', visible: true,  url: '../data/pot_sabana/madrid.geojson' },
+      { id: 'pot-mosquera',   nombre: 'POT Mosquera',   color: '#16a34a', visible: true,  url: '../data/pot_sabana/mosquera.geojson' },
+      { id: 'pot-rosal',      nombre: 'POT El Rosal',   color: '#7c3aed', visible: true,  url: '../data/pot_sabana/rosal.geojson' },
+      { id: 'pot-tenjo',      nombre: 'POT Tenjo',      color: '#0891b2', visible: true,  url: '../data/pot_sabana/tenjo.geojson' },
+      { id: 'radar-sabana',   nombre: 'Clasificación CIAF 1996 (RADARSAT-1)', color: '#f59e0b', visible: false, url: '../data/pot_sabana/radar_1.geojson' }
+    ],
+    features: []
+  },
 ];
 
 /* ══════════════════════════════════════════════
@@ -1775,6 +1818,7 @@ const PROJECT_MARKERS = [
   { proyectoId: 2, lugar: 'Arbeláez (Cundinamarca)',  coords: [-74.4200, 4.2700] },
   { proyectoId: 2, lugar: 'La Mesa (Cundinamarca)',   coords: [-74.4625, 4.6303] },
   { proyectoId: 2, lugar: 'Tocancipá (Cundinamarca)', coords: [-73.9167, 4.9667] },
+  { proyectoId: 5, lugar: 'Sabana Occidental de Bogotá (Cundinamarca)', coords: [-74.2640, 4.7330] },
 ];
 
 /* ══════════════════════════════════════════════
@@ -2015,8 +2059,11 @@ function initMap() {
        selección (Turf.js), ese clic se dedica a la herramienta y no
        debe abrir el popup normal de proyecto. */
     if (window.TurfPanel && window.TurfPanel.handleMapClick(evt)) return;
-    if (window.MunicipioSearch && window.MunicipioSearch.handleMapClick(evt)) return;
 
+    /* Prioridad: capas del proyecto y marcadores > buscador de municipios.
+       Antes el buscador se evaluaba primero y, como su capa de selección
+       cubre todo el país, capturaba todos los clics y el popup de
+       atributos nunca llegaba a abrirse. */
     const popup = document.getElementById('geoPopup');
     const clickableLayers = ['project-markers-circle', 'project-features', 'project-features-fill', 'project-features-line']
       .filter(function (id) { return !!map.getLayer(id); });
@@ -2024,10 +2071,23 @@ function initMap() {
 
     if (!features.length) {
       popup.style.display = 'none';
+      if (window.MunicipioSearch) window.MunicipioSearch.handleMapClick(evt);
       return;
     }
 
-    const feature = features[0];
+    /* queryRenderedFeatures devuelve el mismo polígono una vez por cada
+       capa de estilo (relleno + borde): se deduplica por id de feature
+       (la fuente usa generateId). */
+    const vistos = new Set();
+    const unicos = features.filter(function (f) {
+      if (f.properties.isProjectMarker) return true;
+      const key = f.source + ':' + f.id;
+      if (vistos.has(key)) return false;
+      vistos.add(key);
+      return true;
+    });
+
+    const feature = unicos[0];
     const props   = feature.properties;
     const pixel   = evt.point;
 
@@ -2050,31 +2110,98 @@ function initMap() {
       row.appendChild(cell);
       table.appendChild(row);
     } else {
-      /* Título del popup */
-      const layerName = activeProject
-        ? (activeProject.capas.find(c => c.id === props['__layer']) || { nombre: 'Feature' }).nombre
-        : 'Atributos';
-      document.getElementById('popupTitle').textContent = layerName;
+      /* Solo elementos de capas de proyecto (no marcadores) */
+      const capasFeat = unicos.filter(function (f) { return !f.properties.isProjectMarker; });
+      const nombreCapa = function (p) {
+        return activeProject
+          ? (activeProject.capas.find(c => c.id === p['__layer']) || { nombre: 'Feature' }).nombre
+          : 'Atributos';
+      };
 
-      /* Tabla de atributos */
-      Object.entries(props).forEach(function ([k, v]) {
-        if (k === '__layer') return;
-        const row = document.createElement('tr');
-        row.innerHTML = '<td>' + escHtml(k) + '</td><td>' + escHtml(String(v)) + '</td>';
-        table.appendChild(row);
+      /* Título del popup: nombre de la capa, o conteo si hay superposición */
+      document.getElementById('popupTitle').textContent = capasFeat.length > 1
+        ? capasFeat.length + ' elementos en este punto'
+        : nombreCapa(props);
+
+      /* Tabla de atributos: una sección por elemento (orden: el de encima primero) */
+      capasFeat.forEach(function (f) {
+        const p = f.properties;
+        if (capasFeat.length > 1) {
+          const sec = document.createElement('tr');
+          sec.className = 'geo-popup-section';
+          const color = String(p['__color'] || '#475569');
+          sec.innerHTML = '<td colspan="2" style="color:' + escHtml(color) + ';">' + escHtml(nombreCapa(p)) + '</td>';
+          table.appendChild(sec);
+        }
+        Object.entries(p).forEach(function ([k, v]) {
+          if (k === '__layer' || k === '__color') return;
+          const row = document.createElement('tr');
+          row.innerHTML = '<td>' + escHtml(k) + '</td><td>' + escHtml(String(v)) + '</td>';
+          table.appendChild(row);
+        });
       });
     }
 
-    /* Posicionar popup */
-    popup.style.left = pixel.x + 'px';
-    popup.style.top  = pixel.y + 'px';
-    popup.style.display = 'block';
+    /* Posicionar popup dentro del área visible y anclarlo al punto */
+    popupLngLat = evt.lngLat;
+    positionPopup(pixel);
+  });
+
+  /* El popup sigue al punto clicado al desplazar o hacer zoom */
+  map.on('move', function () {
+    const popup = document.getElementById('geoPopup');
+    if (popupLngLat && popup.style.display === 'block') positionPopup(map.project(popupLngLat));
+  });
+
+  /* Rueda y arrastre dentro del popup: solo hacen scroll en la tabla */
+  ['wheel', 'mousedown', 'touchstart'].forEach(function (ev) {
+    document.getElementById('geoPopup').addEventListener(ev, function (e) { e.stopPropagation(); }, { passive: true });
   });
 
   /* Cerrar popup */
   document.getElementById('popupClose').addEventListener('click', function () {
     document.getElementById('geoPopup').style.display = 'none';
   });
+}
+
+/* ══════════════════════════════════════════════
+   POSICIÓN DEL POPUP
+   Coloca el popup encima del clic si cabe (o si hay más espacio
+   arriba que abajo); si no, debajo. Ajusta la altura de la tabla al
+   espacio disponible (con scroll interno) y lo mantiene dentro de los
+   bordes del mapa, moviendo la flecha para que apunte al clic.
+   ══════════════════════════════════════════════ */
+let popupLngLat = null;
+function positionPopup(pixel) {
+  const popup  = document.getElementById('geoPopup');
+  const box    = popup.querySelector('.geo-popup');
+  const body   = popup.querySelector('.geo-popup-body');
+  const header = popup.querySelector('.geo-popup-header');
+  const cont   = document.getElementById('mapCanvas');
+  const W = cont.clientWidth, H = cont.clientHeight;
+  const M = 10, GAP = 14;
+
+  /* Medir con la tabla completa, sin mostrar todavía */
+  popup.style.visibility = 'hidden';
+  popup.style.display = 'block';
+  body.style.maxHeight = 'none';
+  const fullH = box.offsetHeight;
+
+  const spaceAbove = pixel.y - GAP - M;
+  const spaceBelow = H - pixel.y - GAP - M;
+  const above = fullH <= spaceAbove || spaceAbove >= spaceBelow;
+  const avail = above ? spaceAbove : spaceBelow;
+  body.style.maxHeight = Math.max(80, Math.min(320, avail - header.offsetHeight - 4)) + 'px';
+
+  const w = box.offsetWidth, h = box.offsetHeight;
+  const left = Math.max(M, Math.min(pixel.x - w / 2, W - w - M));
+  const top  = Math.max(M, Math.min(above ? pixel.y - GAP - h : pixel.y + GAP, H - h - M));
+
+  popup.style.left = left + 'px';
+  popup.style.top  = top + 'px';
+  box.classList.toggle('below', !above);
+  box.style.setProperty('--arrow-x', Math.max(14, Math.min(w - 14, pixel.x - left)) + 'px');
+  popup.style.visibility = 'visible';
 }
 
 /* Escapar HTML para evitar XSS */
@@ -2101,8 +2228,10 @@ function loadProject(proj) {
   document.getElementById('badgeSub').textContent =
     (linea ? linea.nombre : '') + ' · ' + proj.sensor + ' · ' + proj.año;
 
-  /* Renderizar features */
+  /* Renderizar features (si el proyecto trae capas externas, se
+     descargan la primera vez y se vuelve a pintar al terminar) */
   renderProjectFeatures(proj);
+  loadExternalLayers(proj);
 
   /* Encuadrar */
   map.fitBounds(extentToBounds(proj.extent), { padding: 50, duration: 700 });
@@ -2123,28 +2252,59 @@ function loadProject(proj) {
    las capas visibles y estilo por tipo de geometría vía expresiones
    data-driven de MapLibre — el equivalente a buildStyle() en OL. ══*/
 let PROJECT_FEATURES_SOURCE_READY = false;
+
+/* ── Capas externas (GeoJSON en /data) ─────────
+   Las capas con "url" se descargan una sola vez; sus features se
+   agregan a proj.features con la propiedad "layer" = id de la capa,
+   igual que las features escritas directamente en PROJECTS. */
+function loadExternalLayers(proj) {
+  const pendientes = proj.capas.filter(function (c) { return c.url && !c._loaded && !c._loading; });
+  if (!pendientes.length) return;
+  showToast('Cargando capas del proyecto…');
+  pendientes.forEach(function (c) { c._loading = true; });
+  Promise.all(pendientes.map(function (capa) {
+    return fetch(capa.url)
+      .then(function (r) { if (!r.ok) throw new Error(r.status); return r.json(); })
+      .then(function (fc) {
+        (fc.features || []).forEach(function (f) {
+          if (!f.geometry) return; /* registros sin geometría: no se dibujan */
+          proj.features.push({ type: 'Feature', layer: capa.id, geometry: f.geometry, properties: f.properties || {} });
+        });
+        capa._loaded = true;
+      })
+      .catch(function (err) {
+        console.error('No se pudo cargar la capa ' + capa.nombre, err);
+        showToast('No se pudo cargar la capa ' + capa.nombre);
+      })
+      .finally(function () { capa._loading = false; });
+  })).then(function () {
+    if (activeProject === proj) renderProjectFeatures(proj);
+  });
+}
+
 function ensureProjectFeaturesLayers() {
   if (PROJECT_FEATURES_SOURCE_READY) return;
-  map.addSource('project-features', { type: 'geojson', data: { type: 'FeatureCollection', features: [] } });
+  map.addSource('project-features', { type: 'geojson', data: { type: 'FeatureCollection', features: [] }, generateId: true });
   map.addLayer({
     id: 'project-features-fill',
     type: 'fill',
     source: 'project-features',
-    filter: ['==', ['geometry-type'], 'Polygon'],
+    /* Incluye MultiPolygon: MapLibre 5 reporta el tipo multi por separado */
+    filter: ['in', ['geometry-type'], ['literal', ['Polygon', 'MultiPolygon']]],
     paint: { 'fill-color': ['get', '__color'], 'fill-opacity': 0.33 }
   });
   map.addLayer({
     id: 'project-features-line',
     type: 'line',
     source: 'project-features',
-    filter: ['in', ['geometry-type'], ['literal', ['Polygon', 'LineString']]],
-    paint: { 'line-color': ['get', '__color'], 'line-width': ['case', ['==', ['geometry-type'], 'LineString'], 2.5, 1.5] }
+    filter: ['in', ['geometry-type'], ['literal', ['Polygon', 'MultiPolygon', 'LineString', 'MultiLineString']]],
+    paint: { 'line-color': ['get', '__color'], 'line-width': ['case', ['in', ['geometry-type'], ['literal', ['LineString', 'MultiLineString']]], 2.5, 1.5] }
   });
   map.addLayer({
     id: 'project-features',
     type: 'circle',
     source: 'project-features',
-    filter: ['==', ['geometry-type'], 'Point'],
+    filter: ['in', ['geometry-type'], ['literal', ['Point', 'MultiPoint']]],
     paint: { 'circle-radius': 7, 'circle-color': ['get', '__color'], 'circle-stroke-color': '#ffffff', 'circle-stroke-width': 2 }
   });
   PROJECT_FEATURES_SOURCE_READY = true;
@@ -2218,7 +2378,10 @@ function renderPanel(proj) {
         '<span class="bp-toggle-slider"></span>' +
       '</label>';
     row.addEventListener('click', function (e) {
-      if (e.target.tagName === 'INPUT') return;
+      /* Un clic en el interruptor (input, label o el slider visual) no
+         debe re-dibujar el panel: eso destruía el input antes de que
+         cambiara su estado y la capa no se prendía/apagaba. */
+      if (e.target.closest('.bp-toggle')) return;
       activeLayerId = capa.id;
       renderPanel(activeProject);
       refreshLayers();
