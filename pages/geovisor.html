@@ -1214,6 +1214,31 @@ html, body {
   width: 100%;
 }
 
+/* Leyenda de clases CIAF (proyectos con "ciafField" en sus capas) */
+#bpLegend {
+  display: none;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px 12px;
+  margin-top: 8px;
+  font-size: 11px;
+  color: #475569;
+}
+#bpLegend .bp-legend-title { font-weight: 700; color: #0F6E56; margin-right: 4px; }
+#bpLegend .bp-legend-item {
+  display: inline-flex; align-items: center; gap: 5px;
+  padding: 3px 8px; border: 1px solid #e2e8f0; border-radius: 14px;
+  background: #f8fafc; color: #334155; font: inherit; cursor: pointer;
+  transition: opacity 0.15s, background 0.15s;
+}
+#bpLegend .bp-legend-item:hover { background: #eef2f7; }
+#bpLegend .bp-legend-item.off { opacity: 0.4; text-decoration: line-through; }
+#bpLegend .bp-legend-action {
+  border: none; background: none; color: #0F6E56; font: inherit;
+  font-weight: 600; cursor: pointer; padding: 3px 4px; text-decoration: underline;
+}
+#bpLegend .bp-legend-swatch { width: 14px; height: 10px; border: 1px solid #232323; border-radius: 2px; }
+
 #bpLayerList {
   display: flex;
   flex-direction: row;
@@ -1660,6 +1685,7 @@ html, body {
         <!-- Tab: Capas -->
         <div class="bp-tab-content" id="tab-capas">
           <div id="bpLayerList"></div>
+          <div id="bpLegend"></div>
           <div class="bp-opacity-row">
             <span class="bp-opacity-label">Opacidad</span>
             <input type="range" id="bpOpacitySlider" min="0" max="100" value="100" class="bp-slider">
@@ -1716,6 +1742,33 @@ const LINEAS = [
   { id: 'ide',            nombre: 'Infraestructuras de Datos Espaciales y Estandarización', color: '#be185d' },
   { id: 'cartografia',    nombre: 'Cartografía Aplicada a la Gestión de Recursos y Ordenamiento Territorial', color: '#dc2626' },
 ];
+
+/* ── Paleta CIAF (2.º nivel) ──────────────────
+   Colores del estilo 2NivelCIAF.qml entregado para el proyecto de la
+   Sabana Occidental. 3a, 4a y 5b no venían en el estilo: tienen color
+   PROVISIONAL hasta que se confirme. "__otros" = valor vacío o sin clase. */
+const CIAF_COLORS = {
+  '1a': 'rgb(239,33,22)',
+  '1b': 'rgb(216,108,84)',
+  '2b': 'rgb(206,159,19)',
+  '2c': 'rgb(218,83,213)',
+  '3a': 'rgb(0,128,128)',    /* PROVISIONAL */
+  '3b': 'rgb(12,240,35)',
+  '4a': 'rgb(0,100,0)',      /* PROVISIONAL */
+  '4b': 'rgb(20,168,32)',
+  '5a': 'rgb(16,171,249)',
+  '5b': 'rgb(0,90,200)',     /* PROVISIONAL */
+  '6a': 'rgb(247,216,14)',
+  '__otros': 'rgb(213,132,226)'
+};
+const CIAF_OUTLINE = '#232323';
+function ciafKey(v) {
+  const k = (v === null || v === undefined) ? '' : String(v).trim();
+  return (CIAF_COLORS[k] && k !== '__otros') ? k : '__otros';
+}
+function ciafColor(v) { return CIAF_COLORS[ciafKey(v)]; }
+/* Clases CIAF apagadas desde la leyenda (se aplica a todos los municipios) */
+const CIAF_HIDDEN = new Set();
 
 const PROJECTS = [
   {
@@ -1793,13 +1846,13 @@ const PROJECTS = [
     /* Capas con "url": se descargan (GeoJSON, EPSG:4326) solo al abrir
        el proyecto. Atributos originales de cada POT, sin homogeneizar. */
     capas: [
-      { id: 'pot-facatativa', nombre: 'POT Facatativá', color: '#e11d48', visible: true,  url: '../data/pot_sabana/facatativa.geojson' },
-      { id: 'pot-funza',      nombre: 'POT Funza',      color: '#2563eb', visible: true,  url: '../data/pot_sabana/funza.geojson' },
-      { id: 'pot-madrid',     nombre: 'POT Madrid',     color: '#d97706', visible: true,  url: '../data/pot_sabana/madrid.geojson' },
-      { id: 'pot-mosquera',   nombre: 'POT Mosquera',   color: '#16a34a', visible: true,  url: '../data/pot_sabana/mosquera.geojson' },
-      { id: 'pot-rosal',      nombre: 'POT El Rosal',   color: '#7c3aed', visible: true,  url: '../data/pot_sabana/rosal.geojson' },
-      { id: 'pot-tenjo',      nombre: 'POT Tenjo',      color: '#0891b2', visible: true,  url: '../data/pot_sabana/tenjo.geojson' },
-      { id: 'radar-sabana',   nombre: 'Clasificación CIAF 1996 (RADARSAT-1)', color: '#f59e0b', visible: false, url: '../data/pot_sabana/radar_1.geojson' }
+      { id: 'pot-facatativa', nombre: 'POT Facatativá', color: '#e11d48', visible: true,  ciafField: 'clas_CIAF', url: '../data/pot_sabana/facatativa.geojson' },
+      { id: 'pot-funza',      nombre: 'POT Funza',      color: '#2563eb', visible: true,  ciafField: 'CLAS_CIAF', url: '../data/pot_sabana/funza.geojson' },
+      { id: 'pot-madrid',     nombre: 'POT Madrid',     color: '#d97706', visible: true,  ciafField: 'clas_CIAF', url: '../data/pot_sabana/madrid.geojson' },
+      { id: 'pot-mosquera',   nombre: 'POT Mosquera',   color: '#16a34a', visible: true,  ciafField: 'CLAS_CIAF', url: '../data/pot_sabana/mosquera.geojson' },
+      { id: 'pot-rosal',      nombre: 'POT El Rosal',   color: '#7c3aed', visible: true,  ciafField: 'Clas_CIAF', url: '../data/pot_sabana/rosal.geojson' },
+      { id: 'pot-tenjo',      nombre: 'POT Tenjo',      color: '#0891b2', visible: true,  ciafField: 'clas_CIAF', url: '../data/pot_sabana/tenjo.geojson' },
+      { id: 'radar-sabana',   nombre: 'Clasificación CIAF 1996 (RADARSAT-1)', color: '#f59e0b', visible: false, ciafField: 'CIAF-2', url: '../data/pot_sabana/radar_1.geojson' }
     ],
     features: []
   },
@@ -2252,6 +2305,9 @@ function loadProject(proj) {
    las capas visibles y estilo por tipo de geometría vía expresiones
    data-driven de MapLibre — el equivalente a buildStyle() en OL. ══*/
 let PROJECT_FEATURES_SOURCE_READY = false;
+/* Opacidad base del relleno (el slider la escala de 0 a 100 %). Se sube
+   de 0.33 a 0.6 para que las clases CIAF se lean sobre la imagen satelital. */
+const PROJECT_FILL_OPACITY = 0.6;
 
 /* ── Capas externas (GeoJSON en /data) ─────────
    Las capas con "url" se descargan una sola vez; sus features se
@@ -2291,14 +2347,20 @@ function ensureProjectFeaturesLayers() {
     source: 'project-features',
     /* Incluye MultiPolygon: MapLibre 5 reporta el tipo multi por separado */
     filter: ['in', ['geometry-type'], ['literal', ['Polygon', 'MultiPolygon']]],
-    paint: { 'fill-color': ['get', '__color'], 'fill-opacity': 0.33 }
+    paint: { 'fill-color': ['get', '__color'], 'fill-opacity': PROJECT_FILL_OPACITY }
   });
   map.addLayer({
     id: 'project-features-line',
     type: 'line',
     source: 'project-features',
     filter: ['in', ['geometry-type'], ['literal', ['Polygon', 'MultiPolygon', 'LineString', 'MultiLineString']]],
-    paint: { 'line-color': ['get', '__color'], 'line-width': ['case', ['in', ['geometry-type'], ['literal', ['LineString', 'MultiLineString']]], 2.5, 1.5] }
+    paint: {
+      'line-color': ['coalesce', ['get', '__line'], ['get', '__color']],
+      'line-width': ['case',
+        ['in', ['geometry-type'], ['literal', ['LineString', 'MultiLineString']]], 2.5,
+        ['has', '__line'], 0.7,
+        1.5]
+    }
   });
   map.addLayer({
     id: 'project-features',
@@ -2311,30 +2373,85 @@ function ensureProjectFeaturesLayers() {
 }
 
 function buildFeatureCollection(proj) {
-  const capaColor = {};
-  proj.capas.forEach(function (c) { capaColor[c.id] = c.color; });
+  const capaColor = {}, capaCiaf = {};
+  proj.capas.forEach(function (c) { capaColor[c.id] = c.color; capaCiaf[c.id] = c.ciafField; });
   const features = proj.features
     .filter(function (f) {
       const capa = proj.capas.find(c => c.id === f.layer);
-      return capa && capa.visible;
+      if (!capa || !capa.visible) return false;
+      /* Filtro por clase CIAF (leyenda) */
+      if (capa.ciafField && CIAF_HIDDEN.has(ciafKey(f.properties[capa.ciafField]))) return false;
+      return true;
     })
     .map(function (f) {
       return Object.assign({}, f, {
-        properties: Object.assign({}, f.properties, { __layer: f.layer, __color: capaColor[f.layer] })
+        /* Capas con ciafField: relleno por clase CIAF y borde oscuro (como
+           el estilo QGIS); el resto: color fijo de la capa. */
+        properties: Object.assign({}, f.properties, capaCiaf[f.layer]
+          ? { __layer: f.layer, __color: ciafColor(f.properties[capaCiaf[f.layer]]), __line: CIAF_OUTLINE }
+          : { __layer: f.layer, __color: capaColor[f.layer] })
       });
     });
   return { type: 'FeatureCollection', features: features };
 }
 
+/* Leyenda CIAF interactiva: muestra las clases presentes en las capas
+   encendidas; clic en una clase la prende/apaga en TODOS los municipios.
+   "Todas" / "Ninguna" encienden o apagan todas las clases a la vez. */
+function renderCiafLegend(proj) {
+  const el = document.getElementById('bpLegend');
+  if (!el) return;
+  const conCiaf = proj ? proj.capas.filter(function (c) { return c.ciafField; }) : [];
+  if (!conCiaf.length) { el.style.display = 'none'; el.innerHTML = ''; return; }
+  const presentes = new Set();
+  proj.features.forEach(function (f) {
+    const capa = proj.capas.find(function (c) { return c.id === f.layer; });
+    if (!capa || !capa.visible || !capa.ciafField) return;
+    presentes.add(ciafKey(f.properties[capa.ciafField]));
+  });
+  const orden = Object.keys(CIAF_COLORS).filter(function (k) { return presentes.has(k); });
+  if (!orden.length) { el.style.display = 'none'; el.innerHTML = ''; return; }
+
+  let html = '<span class="bp-legend-title">Clasificación CIAF</span>';
+  orden.forEach(function (k) {
+    const etiqueta = k === '__otros' ? 'Sin clase' : k;
+    html += '<button type="button" class="bp-legend-item' + (CIAF_HIDDEN.has(k) ? ' off' : '') + '" data-k="' + escHtml(k) + '" title="Clic para prender/apagar esta clase">' +
+      '<span class="bp-legend-swatch" style="background:' + CIAF_COLORS[k] + ';"></span>' + escHtml(etiqueta) + '</button>';
+  });
+  html += '<button type="button" class="bp-legend-action" data-accion="todas">Todas</button>' +
+          '<button type="button" class="bp-legend-action" data-accion="ninguna">Ninguna</button>';
+  el.innerHTML = html;
+  el.style.display = 'flex';
+
+  el.querySelectorAll('.bp-legend-item').forEach(function (b) {
+    b.addEventListener('click', function () {
+      const k = b.dataset.k;
+      if (CIAF_HIDDEN.has(k)) CIAF_HIDDEN.delete(k); else CIAF_HIDDEN.add(k);
+      document.getElementById('geoPopup').style.display = 'none';
+      refreshLayers();
+    });
+  });
+  el.querySelectorAll('.bp-legend-action').forEach(function (b) {
+    b.addEventListener('click', function () {
+      if (b.dataset.accion === 'todas') CIAF_HIDDEN.clear();
+      else orden.forEach(function (k) { CIAF_HIDDEN.add(k); });
+      document.getElementById('geoPopup').style.display = 'none';
+      refreshLayers();
+    });
+  });
+}
+
 function renderProjectFeatures(proj) {
   ensureProjectFeaturesLayers();
   map.getSource('project-features').setData(buildFeatureCollection(proj));
+  renderCiafLegend(proj);
 }
 
 /* ── Refrescar capas según visibilidad ─────── */
 function refreshLayers() {
   if (!activeProject || !PROJECT_FEATURES_SOURCE_READY) return;
   map.getSource('project-features').setData(buildFeatureCollection(activeProject));
+  renderCiafLegend(activeProject);
 }
 
 /* ══════════════════════════════════════════════
@@ -2396,7 +2513,7 @@ function renderPanel(proj) {
 
   const slider = document.getElementById('bpOpacitySlider');
   const currentOpacity = PROJECT_FEATURES_SOURCE_READY && map.getLayer('project-features-fill')
-    ? Math.round((map.getPaintProperty('project-features-fill', 'fill-opacity') || 0.33) * 100 / 0.33)
+    ? Math.round((map.getPaintProperty('project-features-fill', 'fill-opacity') || PROJECT_FILL_OPACITY) * 100 / PROJECT_FILL_OPACITY)
     : 100;
   slider.value = 100;
   document.getElementById('bpOpacityVal').textContent = slider.value + '%';
@@ -2622,7 +2739,7 @@ function initUI() {
     document.getElementById('bpOpacityVal').textContent = this.value + '%';
     if (PROJECT_FEATURES_SOURCE_READY) {
       const f = this.value / 100;
-      map.setPaintProperty('project-features-fill', 'fill-opacity', 0.33 * f);
+      map.setPaintProperty('project-features-fill', 'fill-opacity', PROJECT_FILL_OPACITY * f);
       map.setPaintProperty('project-features-line', 'line-opacity', f);
       map.setPaintProperty('project-features', 'circle-opacity', f);
       map.setPaintProperty('project-features', 'circle-stroke-opacity', f);
