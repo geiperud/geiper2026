@@ -4905,7 +4905,7 @@ window.GeoRediseno = (function () {
     const track = document.getElementById('gtlTrack');
     const años = PROJECTS.map(function (p) { return p.año; }).filter(Boolean);
     if (!años.length) return;
-    const desde = Math.min.apply(null, años);
+    const desde = 2020; /* la línea de tiempo cubre la producción del semillero desde 2020 */
     const hasta = Math.max(new Date().getFullYear(), Math.max.apply(null, años));
 
     const todos = document.createElement('button');
