@@ -34,6 +34,13 @@
   <!-- topojson-client: descomprime data/municipios.json (TopoJSON) a GeoJSON en el navegador -->
   <script src="https://cdn.jsdelivr.net/npm/topojson-client@3/dist/topojson-client.min.js"></script>
   <link rel="stylesheet" href="../css/styles.css">
+  <!-- Rediseño 2026: tipografías de la identidad (títulos y metadatos) -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=DM+Serif+Text&family=IBM+Plex+Mono:wght@400;500&display=swap">
+  <!-- Render seguro de respuestas de la IA en el panel del proyecto -->
+  <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/dompurify/3.1.6/purify.min.js"></script>
 
 <style>
 /* ══════════════════════════════════════════════
@@ -1442,6 +1449,311 @@ html, body {
   width: 4px;
 }
 </style>
+
+<!-- ══════════════════════════════════════════════
+     REDISEÑO 2026 — identidad GEIPER (paleta del logo), riel de
+     herramientas con un solo panel lateral, panel del proyecto a la
+     derecha (altura completa, translúcido), línea de tiempo y márgenes
+     cartográficos. Se declara DESPUÉS de los estilos originales para
+     sobrescribirlos sin tocarlos.
+     ══════════════════════════════════════════════ -->
+<style id="geo-rediseno-2026">
+:root {
+  --gp-azul: #154E85;        /* azul profundo del globo (logo) */
+  --gp-azul-osc: #0D3560;
+  --gp-azul-claro: #2A9AD4;
+  --gp-verde: #6DB33F;
+  --gp-amarillo: #F7C21B;
+  --gp-naranja: #F08A1C;
+  --gp-tinta: #15202B;
+  --gp-gris: #4F5D6B;        /* 6.4:1 sobre blanco */
+  --gp-borde: #D9E0E6;
+  --gp-fondo-suave: #F3F6F9;
+  --gp-mono: 'IBM Plex Mono', ui-monospace, 'SFMono-Regular', Menlo, Consolas, monospace;
+  --gp-serif: 'DM Serif Text', Georgia, serif;
+  --rail-w: 64px;
+  --side-w: 320px;
+  --proj-w: 400px;
+  --tl-h: 68px;
+}
+.sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0,0,0,0); border: 0; }
+
+/* Franja con los colores del logo bajo la barra de navegación */
+.geo-wrapper::before {
+  content: ""; position: absolute; left: 0; right: 0; top: 76px; height: 3px; z-index: 30;
+  background: linear-gradient(90deg, var(--gp-azul) 0 20%, var(--gp-azul-claro) 20% 40%, var(--gp-verde) 40% 60%, var(--gp-amarillo) 60% 80%, var(--gp-naranja) 80% 100%);
+}
+.geo-wrapper { padding-top: 79px; }
+
+/* ── Riel ─────────────────────────────────── */
+.geo-rail {
+  width: var(--rail-w); min-width: var(--rail-w); background: #fff; border-right: 1px solid var(--gp-borde);
+  display: flex; flex-direction: column; align-items: center; gap: 4px; padding: 10px 0; z-index: 6;
+}
+.geo-rail-spacer { flex: 1; }
+.geo-rail-btn {
+  width: 54px; min-height: 54px; border: 0; border-radius: 12px; background: transparent; color: var(--gp-gris);
+  font: 500 10px/1.15 'Inter', sans-serif; display: flex; flex-direction: column; align-items: center; justify-content: center;
+  gap: 5px; cursor: pointer; padding: 6px 2px; text-align: center; transition: background .15s, color .15s;
+}
+.geo-rail-btn i { font-size: 17px; }
+.geo-rail-btn:hover { background: var(--gp-fondo-suave); color: var(--gp-azul); }
+.geo-rail-btn.active { background: #E3EEF8; color: var(--gp-azul); font-weight: 600; }
+.geo-rail-btn:focus-visible, .gsp-close:focus-visible, .bp-tab:focus-visible, .gtl-year:focus-visible { outline: 2px solid var(--gp-azul-claro); outline-offset: 2px; }
+
+/* ── Paneles laterales (uno a la vez) ───────── */
+.geo-sidebar, .geo-sidepanel { width: var(--side-w); min-width: var(--side-w); }
+.geo-sidepanel {
+  background: #fff; border-right: 1px solid var(--gp-borde); display: flex; flex-direction: column; overflow: hidden; z-index: 5;
+}
+.geo-sidebar[hidden], .geo-sidepanel[hidden] { display: none !important; }
+.gsp-header { display: flex; align-items: flex-start; justify-content: space-between; padding: 16px 16px 8px; flex-shrink: 0; }
+.gsp-title { margin: 0; font-family: var(--gp-serif); font-weight: 400; font-size: 22px; color: var(--gp-tinta); }
+.gsp-sub { margin: 2px 0 0; font-size: 12px; color: var(--gp-gris); }
+.gsp-close { width: 34px; height: 34px; border: 0; border-radius: 8px; background: transparent; color: var(--gp-gris); cursor: pointer; }
+.gsp-close:hover { background: var(--gp-fondo-suave); color: var(--gp-azul); }
+.gsp-body { flex: 1; overflow-y: auto; padding: 0 12px 16px; }
+.gsp-footer { padding: 10px 16px; border-top: 1px solid var(--gp-borde); flex-shrink: 0; }
+.gsp-section {
+  margin: 16px 4px 6px; font: 500 10px/1 var(--gp-mono); letter-spacing: .1em; text-transform: uppercase; color: var(--gp-gris);
+}
+.gsp-basemaps { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 6px; }
+.gsp-basemaps .bm-option {
+  display: flex; align-items: center; gap: 8px; padding: 8px; border: 1px solid var(--gp-borde); border-radius: 10px;
+  font-size: 12px; color: var(--gp-tinta); cursor: pointer; background: #fff;
+}
+.gsp-basemaps .bm-option.active { border: 2px solid var(--gp-azul); background: #F5F9FD; color: var(--gp-azul); padding: 7px; }
+.gsp-basemaps .bm-check { color: var(--gp-azul); }
+.gsp-layer { display: flex !important; align-items: center; gap: 10px; padding: 10px 6px; border-radius: 10px; cursor: pointer; }
+.gsp-layer:hover { background: var(--gp-fondo-suave); }
+.gsp-layer .bm-toggle-row-label { display: flex; flex-direction: column; gap: 2px; font-size: 13px; font-weight: 600; color: var(--gp-tinta); }
+.gsp-layer .bm-toggle-row-sub { font-size: 11px; color: var(--gp-gris); font-weight: 400; }
+.gsp-layer-sym { width: 28px; height: 28px; flex-shrink: 0; border-radius: 6px; background: var(--gp-fondo-suave); display: flex; align-items: center; justify-content: center; color: var(--gp-azul); font-size: 13px; }
+.gsp-sym-dot { width: 12px; height: 12px; border-radius: 50%; background: var(--gp-azul-claro); box-shadow: 0 0 0 2px #fff, 0 0 0 3px var(--gp-azul-claro); }
+.gsp-sym-line { width: 18px; height: 0; border-top: 3px solid #FFCC00; box-shadow: 0 0 0 1px rgba(0,0,0,.25); }
+.bp-toggle input:checked + .bp-toggle-slider { background: var(--gp-azul) !important; }
+
+/* Botones de análisis como lista con descripción */
+.geo-sidepanel .turf-rail { background: none; border: 0; box-shadow: none; padding: 0; gap: 2px; }
+.geo-sidepanel .turf-btn, .geo-sidepanel #sarRailBtn {
+  width: 100%; height: auto; min-height: 48px; justify-content: flex-start; gap: 12px; padding: 8px 10px; text-align: left;
+  border: 1px solid transparent; box-shadow: none; background: transparent; color: var(--gp-tinta); border-radius: 10px; font-size: 13px;
+}
+.geo-sidepanel .turf-btn i { width: 28px; height: 28px; border-radius: 6px; background: var(--gp-fondo-suave); color: var(--gp-azul); display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+.geo-sidepanel .turf-btn span { display: flex; flex-direction: column; gap: 2px; font-weight: 600; }
+.geo-sidepanel .turf-btn small { font-weight: 400; font-size: 11px; color: var(--gp-gris); }
+.geo-sidepanel .turf-btn:hover, .geo-sidepanel #sarRailBtn:hover { background: var(--gp-fondo-suave); border-color: transparent; color: var(--gp-azul); }
+.geo-sidepanel .turf-btn.active, .geo-sidepanel #sarRailBtn.active { background: #E3EEF8; border-color: var(--gp-azul); color: var(--gp-azul); box-shadow: none; }
+.geo-sidepanel .turf-btn.active i, .geo-sidepanel #sarRailBtn.active i { background: var(--gp-azul); color: #fff; }
+
+/* Lista de proyectos: misma tipografía de la identidad */
+.geo-sidebar-label { font-family: var(--gp-mono); letter-spacing: .12em; color: var(--gp-gris); }
+#searchInput:focus { border-color: var(--gp-azul-claro); box-shadow: 0 0 0 3px rgba(42,154,212,.15); }
+.geo-proj-year { font-family: var(--gp-mono); color: var(--gp-gris); }
+.geo-proj-card.dim { opacity: .45; }
+
+/* ── Elementos que el rediseño reubica u oculta ── */
+.geo-badge { display: none !important; }            /* la info del proyecto vive en su panel */
+#btnBasemap, .basemap-pop, .map-right-rail .sep:last-of-type { display: none !important; }
+
+/* Controles del mapa: abajo a la derecha, estilo cartográfico */
+.map-right-rail { top: auto; bottom: calc(var(--tl-h) + 16px); right: 16px; gap: 8px; transition: right .25s ease; }
+.geo-btn { border-radius: 0; border-color: var(--gp-tinta); box-shadow: none; color: var(--gp-tinta); width: 36px; height: 36px; }
+.geo-controls { gap: 0; box-shadow: 0 2px 8px rgba(0,0,0,.25); }
+.geo-controls .geo-btn + .geo-btn { border-top: 0; }
+.geo-controls .sep { height: 6px; background: transparent; }
+.geo-btn:hover { background: #E3EEF8; color: var(--gp-azul); border-color: var(--gp-tinta); transform: none; }
+body.geo-proj-open .map-right-rail { right: calc(var(--proj-w) + 16px); }
+
+/* Buscador de municipios y paneles flotantes: bajo el margen cartográfico */
+.muni-search-wrap { top: 34px; }
+.muni-badge { top: 92px; }
+.turf-panel { right: auto !important; left: 34px; top: 34px !important; max-height: calc(100% - var(--tl-h) - 60px); overflow-y: auto; }
+.turf-panel-eyebrow { font-family: var(--gp-mono); letter-spacing: .08em; color: var(--gp-azul); }
+.turf-panel-result b { color: var(--gp-azul); }
+
+/* ── Línea de tiempo ─────────────────────────── */
+.geo-timeline {
+  position: absolute; left: 0; right: 0; bottom: 0; z-index: 12; height: var(--tl-h); box-sizing: border-box;
+  padding: 6px 16px 6px; background: rgba(13,24,34,.9); color: #E7EDF2; display: flex; flex-direction: column; gap: 4px;
+  transition: right .25s ease;
+}
+body.geo-proj-open .geo-timeline { right: var(--proj-w); }
+.gtl-top { display: flex; align-items: center; gap: 12px; min-height: 22px; }
+.gtl-label { font-size: 13px; font-weight: 600; color: #fff; white-space: nowrap; }
+.gtl-sub { font-size: 12px; color: #B7C4CF; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.gtl-track { position: relative; display: flex; flex: 1; min-height: 0; overflow-x: auto; scrollbar-width: thin; }
+.gtl-track::before { content: ""; position: absolute; left: 0; right: 0; top: 6px; height: 12px; background: rgba(255,255,255,.05); border-top: 1px solid #4E6070; border-bottom: 1px solid #4E6070; pointer-events: none; }
+.gtl-all, .gtl-year {
+  position: relative; flex: 1 0 44px; border: 0; border-left: 1px solid #4E6070; background: transparent; color: #C3CDD6;
+  display: flex; flex-direction: column; align-items: flex-start; justify-content: space-between; padding: 6px 0 0 5px; cursor: pointer; font: inherit;
+}
+.gtl-all { flex: 0 0 64px; border-left: 0; }
+.gtl-ticks { display: flex; gap: 3px; height: 12px; }
+.gtl-ticks i { width: 2px; background: #8FA1B0; display: block; }
+.gtl-yr { font: 500 11px/1.3 var(--gp-mono); padding: 0 5px; border-radius: 3px; }
+.gtl-year:hover .gtl-yr, .gtl-all:hover .gtl-yr { color: #fff; }
+.gtl-year.empty { cursor: default; }
+.gtl-year.empty .gtl-yr { color: #6E808F; }
+.gtl-year.active .gtl-yr, .gtl-all.active .gtl-yr { background: var(--gp-amarillo); color: var(--gp-tinta); }
+.gtl-year.active .gtl-ticks i { background: var(--gp-amarillo); }
+
+/* Barra de información integrada a la línea de tiempo */
+.geo-timeline .bottom-info-bar {
+  position: static; transform: none; margin-left: auto; background: transparent; border: 0; box-shadow: none; padding: 0;
+  color: #C3CDD6; font-size: 11px; max-width: none; gap: 14px;
+}
+.geo-timeline .bib-section { padding: 0; }
+.geo-timeline .bib-provider { color: #B7C4CF; font-size: 11px; }
+.geo-timeline #geoCoords { color: #E7EDF2; font-family: var(--gp-mono); font-size: 11px; }
+.geo-timeline .bib-toggle { background: transparent; border: 1px solid #4E6070; color: #E7EDF2; font-family: var(--gp-mono); font-weight: 500; }
+.geo-timeline .bib-toggle:hover { background: rgba(255,255,255,.08); }
+.geo-scale-line:empty { height: 6px; padding: 0; }
+.geo-scale-label { font-size: 10px; white-space: nowrap; }
+.geo-timeline .geo-scale-line { border: 1px solid #E7EDF2; height: 5px; background: linear-gradient(90deg, #E7EDF2 0 50%, transparent 50% 100%); }
+.geo-timeline .geo-scale-label { color: #E7EDF2; font-family: var(--gp-mono); }
+
+/* ── Márgenes cartográficos ─────────────────── */
+.geo-grat { position: absolute; z-index: 9; background: rgba(255,255,255,.9); color: var(--gp-tinta); font: 500 10px/1 var(--gp-mono); pointer-events: none; display: none; }
+.geo-grat.on { display: block; }
+.geo-grat-top { left: 0; right: 0; top: 0; height: 22px; border-bottom: 1px solid var(--gp-tinta); }
+.geo-grat-left { left: 0; top: 22px; bottom: var(--tl-h); width: 22px; border-right: 1px solid var(--gp-tinta); }
+body.geo-proj-open .geo-grat-top { right: var(--proj-w); }
+.geo-grat span { position: absolute; white-space: nowrap; }
+.geo-grat-top span { bottom: 0; padding: 0 0 4px 4px; border-left: 1px solid var(--gp-tinta); height: 8px; line-height: 1; transform: translateY(0); }
+.geo-grat-top span b { position: absolute; bottom: 9px; left: 4px; font-weight: 500; }
+.geo-grat-left span { left: 0; width: 22px; border-top: 1px solid var(--gp-tinta); }
+.geo-grat-left span b { position: absolute; left: 5px; top: 4px; writing-mode: vertical-rl; transform: rotate(180deg); font-weight: 500; }
+
+/* Selección del proyecto: esquinas tipo visor */
+.geo-viewfinder { width: 44px; height: 44px; position: relative; pointer-events: none; }
+.geo-viewfinder i { position: absolute; width: 12px; height: 12px; border: 0 solid var(--gp-amarillo); filter: drop-shadow(0 0 1px rgba(0,0,0,.6)); }
+.geo-viewfinder i:nth-child(1) { left: 0; top: 0; border-left-width: 3px; border-top-width: 3px; }
+.geo-viewfinder i:nth-child(2) { right: 0; top: 0; border-right-width: 3px; border-top-width: 3px; }
+.geo-viewfinder i:nth-child(3) { left: 0; bottom: 0; border-left-width: 3px; border-bottom-width: 3px; }
+.geo-viewfinder i:nth-child(4) { right: 0; bottom: 0; border-right-width: 3px; border-bottom-width: 3px; }
+
+/* ── Panel del proyecto (derecha, altura completa, translúcido) ── */
+#bottomPanel {
+  position: absolute; top: 0; right: 0; bottom: 0; width: var(--proj-w); height: auto; z-index: 25;
+  background: rgba(255,255,255,.9); backdrop-filter: blur(16px) saturate(1.15); -webkit-backdrop-filter: blur(16px) saturate(1.15);
+  border-top: 0; border-left: 1px solid rgba(255,255,255,.6); box-shadow: -8px 0 24px rgba(0,0,0,.2);
+  flex-direction: column; transition: transform .25s ease;
+}
+#bottomPanel.collapsed { height: auto; transform: translateX(105%); }
+#bottomPanel .bp-topbar { height: auto; display: block; padding: 14px 16px 0; border-bottom: 1px solid var(--gp-borde); cursor: default; background: transparent; }
+.bp-head-row { display: flex; align-items: center; gap: 8px; }
+.bp-code { font: 500 11px/1 var(--gp-mono); letter-spacing: .06em; color: var(--gp-azul); background: #E3EEF8; padding: 5px 8px; border-radius: 4px; }
+.bp-linea { display: inline-flex; align-items: center; gap: 6px; font-size: 11px; color: var(--gp-gris); min-width: 0; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
+.bp-linea::before { content: ""; width: 8px; height: 8px; border-radius: 50%; background: var(--linea-color, var(--gp-azul-claro)); flex-shrink: 0; }
+.bp-head-spacer { flex: 1; }
+.bp-icon-btn { width: 36px; height: 36px; border: 0 !important; border-radius: 8px; background: transparent !important; color: var(--gp-gris) !important; display: flex; align-items: center; justify-content: center; cursor: pointer; text-decoration: none; font-size: 15px; }
+.bp-icon-btn:hover { background: var(--gp-fondo-suave) !important; color: var(--gp-azul) !important; }
+#bottomPanel .bp-proj-name {
+  display: -webkit-box; -webkit-line-clamp: 4; -webkit-box-orient: vertical; overflow: hidden; white-space: normal; max-width: none;
+  margin: 10px 0 0; font-family: var(--gp-serif); font-weight: 400; font-size: 20px; line-height: 1.25; color: var(--gp-tinta);
+}
+.bp-autor { margin: 6px 0 0; font-size: 13px; color: var(--gp-gris); }
+#bottomPanel .bp-tabs { display: flex; gap: 2px; margin: 10px -4px 0; overflow-x: auto; }
+#bottomPanel .bp-tab {
+  height: 40px; padding: 0 9px; border: 0; border-bottom: 3px solid transparent; border-radius: 0; background: transparent;
+  font: 500 13px 'Inter', sans-serif; color: var(--gp-gris); white-space: nowrap; display: inline-flex; align-items: center; gap: 6px;
+}
+#bottomPanel .bp-tab:hover { color: var(--gp-azul); background: transparent; }
+#bottomPanel .bp-tab.active { color: var(--gp-azul); border-bottom-color: var(--gp-azul); font-weight: 600; background: transparent; }
+.bp-ia-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--gp-naranja); }
+#bottomPanel .bp-body { flex: 1; overflow-y: auto; padding: 0 16px 16px; min-height: 0; }
+#bottomPanel .bp-tab-content { flex-direction: column; gap: 10px; padding-top: 6px; }
+
+/* Ficha de metadatos */
+#bottomPanel .bp-meta-cols { column-count: 1 !important; display: flex; flex-direction: column; }
+#bottomPanel .bp-meta-field { display: grid; grid-template-columns: 104px minmax(0, 1fr); gap: 12px; padding: 10px 0; border-bottom: 1px dashed #CBD4DC; margin: 0; break-inside: avoid; }
+#bottomPanel .bp-meta-field .bp-meta-label { font: 500 10px/1.3 var(--gp-mono); letter-spacing: .08em; text-transform: uppercase; color: var(--gp-gris); padding-top: 2px; margin: 0; }
+#bottomPanel .bp-meta-field .bp-meta-value { font-size: 13px; line-height: 1.45; color: var(--gp-tinta); font-weight: 400; }
+#bottomPanel .bp-meta-field.mono .bp-meta-value { font-family: var(--gp-mono); font-size: 12px; }
+#bottomPanel .bp-tab-content { align-items: stretch; }
+.bp-meta-actions { display: flex; gap: 8px; width: 100%; }
+#geoToast { bottom: calc(var(--tl-h) + 20px) !important; z-index: 60; }
+body.geo-proj-open .gtl-sub { display: none; }
+.bp-btn-sec {
+  flex: 1; height: 38px; border: 1px solid #D2D9E0; border-radius: 8px; background: #fff; color: var(--gp-tinta);
+  font: 500 13px 'Inter', sans-serif; display: inline-flex; align-items: center; justify-content: center; gap: 8px; cursor: pointer; text-decoration: none;
+}
+.bp-btn-sec:hover { border-color: var(--gp-azul); color: var(--gp-azul); }
+.bp-btn-pri {
+  height: 38px; padding: 0 14px; border: 0; border-radius: 8px; background: var(--gp-azul); color: #fff !important;
+  font: 600 13px 'Inter', sans-serif; display: inline-flex; align-items: center; justify-content: center; cursor: pointer; text-decoration: none; white-space: nowrap;
+}
+.bp-btn-pri:hover { background: var(--gp-azul-osc); }
+.bp-ia-cta { margin-top: 6px; display: flex; align-items: center; gap: 12px; padding: 12px; border-radius: 10px; background: rgba(247,194,27,.16); font-size: 12px; line-height: 1.4; color: var(--gp-tinta); }
+
+/* Capas del proyecto y descargas: colores de la identidad */
+.bp-slider { accent-color: var(--gp-azul) !important; }
+.bp-opacity-val { color: var(--gp-azul) !important; font-family: var(--gp-mono); }
+.bp-dl-all { background: var(--gp-azul) !important; }
+.bp-dl-all:hover { background: var(--gp-azul-osc) !important; }
+
+/* Chat del proyecto */
+.pia-messages { display: flex; flex-direction: column; gap: 12px; }
+.pia-chips { display: flex; flex-wrap: wrap; gap: 6px; }
+.pia-chips-label { font-size: 12px; color: var(--gp-gris); }
+.pia-chip { min-height: 32px; padding: 6px 12px; border: 1px solid #D2D9E0; border-radius: 999px; background: rgba(255,255,255,.7); color: var(--gp-tinta); font: 12px 'Inter', sans-serif; cursor: pointer; text-align: left; }
+.pia-chip:hover { border-color: var(--gp-azul); color: var(--gp-azul); }
+.pia-msg { max-width: 92%; padding: 10px 12px; font-size: 13px; line-height: 1.5; overflow-wrap: anywhere; }
+.pia-msg p { margin: 0 0 6px; } .pia-msg p:last-child { margin-bottom: 0; }
+.pia-msg ul, .pia-msg ol { margin: 4px 0; padding-left: 18px; }
+.pia-msg a { color: var(--gp-azul); }
+.pia-user { align-self: flex-end; background: var(--gp-azul); color: #fff; border-radius: 12px 12px 4px 12px; }
+.pia-bot { align-self: flex-start; background: rgba(255,255,255,.78); border: 1px solid rgba(21,32,43,.06); color: var(--gp-tinta); border-radius: 12px 12px 12px 4px; }
+.pia-bot.pia-error { background: #FFF5EB; border-color: #F5C89A; }
+.pia-typing { display: inline-flex; gap: 4px; }
+.pia-typing i { width: 6px; height: 6px; border-radius: 50%; background: var(--gp-gris); animation: piaBlink 1s infinite ease-in-out; }
+.pia-typing i:nth-child(2) { animation-delay: .15s; } .pia-typing i:nth-child(3) { animation-delay: .3s; }
+@keyframes piaBlink { 0%, 80%, 100% { opacity: .25; } 40% { opacity: 1; } }
+@media (prefers-reduced-motion: reduce) { .pia-typing i { animation: none; } #bottomPanel, .geo-timeline, .map-right-rail { transition: none; } }
+.pia-handoff { margin-top: 12px; padding: 12px; border-radius: 12px; border: 1px dashed rgba(21,78,133,.45); background: rgba(227,238,248,.8); display: flex; flex-direction: column; gap: 8px; font-size: 12px; line-height: 1.45; color: var(--gp-tinta); }
+.pia-handoff[hidden] { display: none; }
+.pia-handoff strong { font-size: 13px; color: var(--gp-azul-osc); }
+.pia-handoff .bp-btn-pri { align-self: flex-start; }
+.pia-form { padding: 10px 16px 14px; border-top: 1px solid var(--gp-borde); display: flex; flex-direction: column; gap: 6px; flex-shrink: 0; }
+.pia-form[hidden] { display: none; }
+.pia-input-wrap { display: flex; align-items: flex-end; gap: 8px; padding: 8px 8px 8px 12px; border: 1px solid #D2D9E0; border-radius: 12px; background: rgba(255,255,255,.95); }
+.pia-input-wrap:focus-within { border-color: var(--gp-azul-claro); box-shadow: 0 0 0 3px rgba(42,154,212,.15); }
+.pia-input-wrap textarea { flex: 1; border: 0; resize: none; font: 13px/1.4 'Inter', sans-serif; color: var(--gp-tinta); outline: none; background: transparent; max-height: 120px; }
+.pia-input-wrap button { width: 36px; height: 36px; flex-shrink: 0; border: 0; border-radius: 10px; background: var(--gp-azul); color: #fff; cursor: pointer; }
+.pia-input-wrap button:disabled { background: #9AAABA; cursor: default; }
+.pia-note { font-size: 11px; color: var(--gp-gris); }
+
+/* Asistente del mapa (function calling): se abre desde el riel */
+#geoChatToggle { display: none !important; }
+#geoChatPanel { position: fixed !important; left: calc(var(--rail-w) + 12px) !important; right: auto !important; bottom: calc(var(--tl-h) + 16px) !important; z-index: 40 !important; width: 340px !important; }
+body.geo-side-open #geoChatPanel { left: calc(var(--rail-w) + var(--side-w) + 12px) !important; }
+#geoChatHeader, #geoChatSend { background: var(--gp-azul) !important; }
+
+/* Popups y toast con la paleta */
+.geo-popup-title { color: var(--gp-azul); }
+
+/* ── Pantallas medianas y móviles ─────────────── */
+@media (max-width: 1100px) {
+  :root { --proj-w: 360px; --side-w: 290px; }
+}
+@media (max-width: 900px) {
+  :root { --rail-w: 56px; --tl-h: 64px; }
+  .geo-sidebar, .geo-sidepanel { position: absolute; left: var(--rail-w); top: 79px; bottom: 0; width: min(var(--side-w), calc(100vw - var(--rail-w))); min-width: 0; z-index: 30; box-shadow: 8px 0 24px rgba(0,0,0,.2); }
+  #bottomPanel { top: auto; left: 0; width: auto; height: 62vh; border-left: 0; border-radius: 16px 16px 0 0; box-shadow: 0 -8px 24px rgba(0,0,0,.3); }
+  #bottomPanel.collapsed { transform: translateY(105%); }
+  body.geo-proj-open .geo-timeline, body.geo-proj-open .geo-grat-top { right: 0; }
+  body.geo-proj-open .map-right-rail { right: 12px; }
+  .gtl-sub, .geo-timeline .bib-provider { display: none; }
+  .geo-grat { display: none !important; }
+  .muni-search-wrap { top: 12px; }
+  .turf-panel { left: 8px; top: 12px !important; }
+  #geoChatPanel, body.geo-side-open #geoChatPanel { left: calc(var(--rail-w) + 12px) !important; width: calc(100vw - var(--rail-w) - 24px) !important; }
+  body.geo-proj-open #geoToast { bottom: calc(62vh + 12px) !important; }
+  .gtl-year { flex-basis: 40px; }
+}
+</style>
+
 <!-- GEO:jsonld START -->
 <script type="application/ld+json">
 {
@@ -1537,8 +1849,25 @@ html, body {
      ══════════════════════════════════════════ -->
 <div class="geo-wrapper">
 
+  <!-- ── Riel de herramientas (rediseño 2026): un solo panel lateral a la vez ── -->
+  <nav class="geo-rail" aria-label="Herramientas del geovisor">
+    <button type="button" class="geo-rail-btn active" data-rail="proyectos" aria-pressed="true" title="Proyectos">
+      <i class="fa-solid fa-book-atlas" aria-hidden="true"></i><span>Proyectos</span>
+    </button>
+    <button type="button" class="geo-rail-btn" data-rail="capas" aria-pressed="false" title="Capas y mapa base">
+      <i class="fa-solid fa-layer-group" aria-hidden="true"></i><span>Capas</span>
+    </button>
+    <button type="button" class="geo-rail-btn" data-rail="analisis" aria-pressed="false" title="Análisis espacial y radar">
+      <i class="fa-solid fa-draw-polygon" aria-hidden="true"></i><span>Análisis</span>
+    </button>
+    <span class="geo-rail-spacer"></span>
+    <button type="button" class="geo-rail-btn" id="railMapChat" aria-pressed="false" title="Asistente del mapa (acciones sobre el mapa)">
+      <i class="fa-solid fa-comment-dots" aria-hidden="true"></i><span>Asistente<br>del mapa</span>
+    </button>
+  </nav>
+
   <!-- ── COLUMNA 1: Sidebar de proyectos ───── -->
-  <aside class="geo-sidebar">
+  <aside class="geo-sidebar" data-panel="proyectos">
     <div class="geo-sidebar-header">
       <div class="geo-sidebar-label">
         <i class="fa-solid fa-map"></i>
@@ -1558,6 +1887,120 @@ html, body {
     <div class="geo-sidebar-footer">
       <i class="fa-solid fa-circle-info"></i>
       <span id="footerCount">4 proyectos · 6 líneas de investigación</span>
+    </div>
+  </aside>
+
+  <!-- ── Panel lateral: Capas y mapa base ── -->
+  <aside class="geo-sidepanel" id="panelCapas" data-panel="capas" hidden>
+    <div class="gsp-header">
+      <div>
+        <h2 class="gsp-title">Capas</h2>
+        <p class="gsp-sub">Mapa base y capas de referencia</p>
+      </div>
+      <button type="button" class="gsp-close" data-close-panel aria-label="Cerrar panel"><i class="fa-solid fa-chevron-left"></i></button>
+    </div>
+    <div class="gsp-body">
+      <h3 class="gsp-section">Mapa base</h3>
+      <div class="gsp-basemaps">
+        <label class="bm-option" data-value="sat">
+          <div class="bm-thumb sat"></div> Satélite
+          <i class="fa-solid fa-check bm-check"></i>
+        </label>
+        <label class="bm-option" data-value="osm">
+          <div class="bm-thumb osm"></div> OpenStreetMap
+          <i class="fa-solid fa-check bm-check"></i>
+        </label>
+        <label class="bm-option" data-value="relieve">
+          <div class="bm-thumb relieve"></div> Relieve 3D
+          <i class="fa-solid fa-check bm-check"></i>
+        </label>
+        <label class="bm-option" data-value="blank">
+          <div class="bm-thumb blank"></div> Sin fondo
+          <i class="fa-solid fa-check bm-check"></i>
+        </label>
+      </div>
+
+      <label class="bm-toggle-row gsp-layer" for="bm3dBuildingsToggle">
+        <span class="gsp-layer-sym" aria-hidden="true"><i class="fa-solid fa-building"></i></span>
+        <span class="bm-toggle-row-label">
+          Edificios 3D
+          <span class="bm-toggle-row-sub">OpenFreeMap · datos OpenStreetMap</span>
+        </span>
+        <label class="bp-toggle" style="margin-left:auto;">
+          <input type="checkbox" id="bm3dBuildingsToggle">
+          <span class="bp-toggle-slider"></span>
+        </label>
+      </label>
+
+      <h3 class="gsp-section">Producción GEIPER</h3>
+      <label class="bm-toggle-row gsp-layer" for="lyrMarcadores">
+        <span class="gsp-layer-sym" aria-hidden="true"><span class="gsp-sym-dot"></span></span>
+        <span class="bm-toggle-row-label">
+          Ubicación de los trabajos
+          <span class="bm-toggle-row-sub">Color según línea de investigación</span>
+        </span>
+        <label class="bp-toggle" style="margin-left:auto;">
+          <input type="checkbox" id="lyrMarcadores" checked>
+          <span class="bp-toggle-slider"></span>
+        </label>
+      </label>
+
+      <h3 class="gsp-section">Límites administrativos</h3>
+      <label class="bm-toggle-row gsp-layer" for="lyrBordeColombia">
+        <span class="gsp-layer-sym" aria-hidden="true"><span class="gsp-sym-line"></span></span>
+        <span class="bm-toggle-row-label">
+          Límite nacional
+          <span class="bm-toggle-row-sub">Colombia</span>
+        </span>
+        <label class="bp-toggle" style="margin-left:auto;">
+          <input type="checkbox" id="lyrBordeColombia" checked>
+          <span class="bp-toggle-slider"></span>
+        </label>
+      </label>
+      <label class="bm-toggle-row gsp-layer" for="lyrGraticula">
+        <span class="gsp-layer-sym" aria-hidden="true"><i class="fa-solid fa-border-all"></i></span>
+        <span class="bm-toggle-row-label">
+          Márgenes con coordenadas
+          <span class="bm-toggle-row-sub">Visibles desde escala departamental</span>
+        </span>
+        <label class="bp-toggle" style="margin-left:auto;">
+          <input type="checkbox" id="lyrGraticula" checked>
+          <span class="bp-toggle-slider"></span>
+        </label>
+      </label>
+    </div>
+    <div class="gsp-footer">
+      <a href="mapas-base.html" target="_blank" rel="noopener" class="bm-info-link">
+        <i class="fa-solid fa-circle-info"></i> Documentación de fuentes
+      </a>
+    </div>
+  </aside>
+
+  <!-- ── Panel lateral: Análisis espacial (Turf.js) y radar (SAR) ── -->
+  <aside class="geo-sidepanel" id="panelAnalisis" data-panel="analisis" hidden>
+    <div class="gsp-header">
+      <div>
+        <h2 class="gsp-title">Análisis</h2>
+        <p class="gsp-sub">Herramientas espaciales sobre el mapa</p>
+      </div>
+      <button type="button" class="gsp-close" data-close-panel aria-label="Cerrar panel"><i class="fa-solid fa-chevron-left"></i></button>
+    </div>
+    <div class="gsp-body">
+      <div class="turf-rail" id="turfRail">
+        <h3 class="gsp-section">Medición</h3>
+        <button class="turf-btn" data-tool="dist"><i class="fa-solid fa-ruler"></i><span>Distancia<small>Entre dos puntos del mapa</small></span></button>
+        <button class="turf-btn" data-tool="area"><i class="fa-solid fa-draw-polygon"></i><span>Área de cobertura<small>Envolvente de las tesis activas</small></span></button>
+        <h3 class="gsp-section">Proximidad</h3>
+        <button class="turf-btn" data-tool="buff"><i class="fa-solid fa-circle-notch"></i><span>Buffer<small>Zona de influencia en km</small></span></button>
+        <button class="turf-btn" data-tool="ctrd"><i class="fa-solid fa-crosshairs"></i><span>Centroide<small>Centro de las tesis activas</small></span></button>
+        <button class="turf-btn" data-tool="near"><i class="fa-solid fa-location-arrow"></i><span>Punto más cercano<small>Tesis más próxima a un clic</small></span></button>
+        <h3 class="gsp-section">Relaciones</h3>
+        <button class="turf-btn" data-tool="pip"><i class="fa-solid fa-map-pin"></i><span>Punto en polígono<small>¿Cae dentro del área?</small></span></button>
+        <button class="turf-btn" data-tool="intx"><i class="fa-solid fa-code-compare"></i><span>Intersección<small>Superposición de áreas</small></span></button>
+        <button class="turf-btn" data-tool="voro"><i class="fa-solid fa-chess-board"></i><span>Voronoi<small>Áreas de influencia por tesis</small></span></button>
+        <h3 class="gsp-section">Percepción remota</h3>
+        <button class="turf-btn" id="sarRailBtn"><i class="fa-solid fa-satellite-dish"></i><span>Detección de cambios (SAR)<small>Radar Sentinel-1 · Copernicus</small></span></button>
+      </div>
     </div>
   </aside>
 
@@ -1587,58 +2030,10 @@ html, body {
           <button class="geo-btn" id="btnBasemap" title="Mapa base"> <i class="fa-solid fa-layer-group"></i> </button>
         </div>
 
-        <!-- ── Riel de análisis espacial (Turf.js) ─────────────── -->
-        <div class="turf-rail" id="turfRail">
-          <button class="turf-btn" data-tool="dist"  title="Distancia"><i class="fa-solid fa-ruler"></i></button>
-          <button class="turf-btn" data-tool="area"  title="Área de cobertura"><i class="fa-solid fa-draw-polygon"></i></button>
-          <button class="turf-btn" data-tool="buff"  title="Buffer"><i class="fa-solid fa-circle-notch"></i></button>
-          <button class="turf-btn" data-tool="ctrd"  title="Centroide"><i class="fa-solid fa-crosshairs"></i></button>
-          <button class="turf-btn" data-tool="near"  title="Punto más cercano"><i class="fa-solid fa-location-arrow"></i></button>
-          <button class="turf-btn" data-tool="pip"   title="Punto en polígono"><i class="fa-solid fa-map-pin"></i></button>
-          <button class="turf-btn" data-tool="intx"  title="Intersección"><i class="fa-solid fa-code-compare"></i></button>
-          <button class="turf-btn" data-tool="voro"  title="Voronoi"><i class="fa-solid fa-chess-board"></i></button>
-          <div class="turf-rail-divider"></div>
-          <button class="turf-btn" id="sarRailBtn" title="Detección de cambios (radar Sentinel-1)"><i class="fa-solid fa-satellite-dish"></i></button>
-        </div>
       </div>
 
-      <!-- Popover del selector de mapa base -->
-      <div class="basemap-pop" id="basemapPop" style="display:none;">
-        <div class="basemap-pop-title">Mapa base</div>
-        <label class="bm-option" data-value="osm">
-          <div class="bm-thumb osm"></div> OpenStreetMap
-          <i class="fa-solid fa-check bm-check"></i>
-        </label>
-        <label class="bm-option" data-value="sat">
-          <div class="bm-thumb sat"></div> Satélite (Sentinel-2)
-          <i class="fa-solid fa-check bm-check"></i>
-        </label>
-        <label class="bm-option" data-value="relieve">
-          <div class="bm-thumb relieve"></div> Relieve
-          <i class="fa-solid fa-check bm-check"></i>
-        </label>
-        <label class="bm-option" data-value="blank">
-          <div class="bm-thumb blank"></div> Sin fondo
-          <i class="fa-solid fa-check bm-check"></i>
-        </label>
-
-        <div class="bm-divider"></div>
-        <div class="basemap-pop-title">Capas adicionales</div>
-        <label class="bm-toggle-row" for="bm3dBuildingsToggle">
-          <span class="bm-toggle-row-label">
-            <i class="fa-solid fa-building"></i> Edificios 3D
-            <span class="bm-toggle-row-sub">OpenFreeMap · datos OpenStreetMap</span>
-          </span>
-          <label class="bp-toggle" style="margin-left:auto;">
-            <input type="checkbox" id="bm3dBuildingsToggle">
-            <span class="bp-toggle-slider"></span>
-          </label>
-        </label>
-
-        <a href="mapas-base.html" target="_blank" rel="noopener" class="bm-info-link">
-          <i class="fa-solid fa-circle-info"></i> Ver documentación de fuentes
-        </a>
-      </div>
+      <!-- Popover del selector de mapa base: sus opciones se movieron al panel "Capas" (rediseño 2026) -->
+      <div class="basemap-pop" id="basemapPop" style="display:none;"></div>
 
       <!-- Popup de atributos -->
       <div class="geo-popup-container" id="geoPopup">
@@ -1715,37 +2110,70 @@ html, body {
         <div class="turf-panel-result" id="sarResult" style="display:none;"></div>
       </div>
 
-      <!-- ── Barra inferior unificada: escala · proveedor de mapa base · coordenadas ── -->
-      <div class="bottom-info-bar" id="bottomInfoBar">
-        <div class="bib-section" id="scaleTarget"></div>
-        <div class="bib-sep"></div>
-        <div class="bib-section bib-provider" id="bibProvider">—</div>
-        <div class="bib-sep"></div>
-        <div class="bib-section bib-coords">
-          <span id="geoCoords">— &nbsp; —</span>
-          <button class="bib-toggle" id="bibCoordToggle" title="Cambiar formato de coordenadas">DMS ⇄</button>
+      <!-- ── Línea de tiempo + barra de información (rediseño 2026) ── -->
+      <div class="geo-timeline" id="geoTimeline">
+        <div class="gtl-top">
+          <span class="gtl-label" id="gtlLabel">Todos los años</span>
+          <span class="gtl-sub">Producción del semillero por año</span>
+          <div class="bottom-info-bar" id="bottomInfoBar">
+            <div class="bib-section" id="scaleTarget"></div>
+            <div class="bib-section bib-provider" id="bibProvider">—</div>
+            <div class="bib-section bib-coords">
+              <span id="geoCoords">— &nbsp; —</span>
+              <button class="bib-toggle" id="bibCoordToggle" title="Cambiar formato de coordenadas">DMS ⇄</button>
+            </div>
+          </div>
         </div>
+        <div class="gtl-track" id="gtlTrack" role="group" aria-label="Filtrar proyectos por año"></div>
       </div>
+
+      <!-- Márgenes cartográficos (coordenadas en los bordes del mapa) -->
+      <div class="geo-grat geo-grat-top" id="gratTop" aria-hidden="true"></div>
+      <div class="geo-grat geo-grat-left" id="gratLeft" aria-hidden="true"></div>
 
     </div><!-- /mapCanvas -->
 
-    <!-- Panel inferior -->
-    <div id="bottomPanel" style="display:none;">
+    <!-- Panel del proyecto (rediseño 2026): lateral derecho, altura completa,
+         translúcido. Conserva los IDs del antiguo panel inferior. -->
+    <div id="bottomPanel" style="display:none;" aria-label="Proyecto seleccionado">
       <div class="bp-topbar">
-        <div class="bp-handle"></div>
-        <span class="bp-proj-name" id="bpProjName">—</span>
-        <div class="bp-tabs">
-          <button class="bp-tab active" data-tab="capas">Capas</button>
-          <button class="bp-tab" data-tab="metadatos">Metadatos</button>
-          <button class="bp-tab" data-tab="descargas">Descargas</button>
+        <div class="bp-head-row">
+          <span class="bp-code" id="bpCode">GEIPER</span>
+          <span class="bp-linea" id="bpLinea"></span>
+          <span class="bp-head-spacer"></span>
+          <a class="bp-icon-btn" id="bpHandoffIcon" href="chatbots.html?desde=geovisor" target="_blank" rel="noopener" title="Continuar la conversación en Asistentes IA" aria-label="Continuar la conversación en Asistentes IA (pestaña nueva)">
+            <i class="fa-solid fa-arrow-up-right-from-square"></i>
+          </a>
+          <button class="bp-close bp-icon-btn" id="bpClose" title="Cerrar proyecto" aria-label="Cerrar proyecto">
+            <i class="fa-solid fa-xmark"></i>
+          </button>
         </div>
-        <button class="bp-close" id="bpClose" title="Colapsar panel">
-          <i class="fa-solid fa-chevron-down"></i>
-        </button>
+        <h2 class="bp-proj-name" id="bpProjName">—</h2>
+        <p class="bp-autor" id="bpAutor"></p>
+        <div class="bp-tabs" role="tablist">
+          <button class="bp-tab active" data-tab="metadatos" role="tab">Metadatos</button>
+          <button class="bp-tab" data-tab="capas" role="tab">Capas</button>
+          <button class="bp-tab" data-tab="descargas" role="tab">Descargas</button>
+          <button class="bp-tab bp-tab-ia" data-tab="ia" role="tab"><span class="bp-ia-dot" aria-hidden="true"></span>Preguntar a la IA</button>
+        </div>
       </div>
       <div class="bp-body">
+        <!-- Tab: Metadatos -->
+        <div class="bp-tab-content" id="tab-metadatos">
+          <div class="bp-meta-cols" id="bpMetaTable"></div>
+          <div class="bp-meta-actions">
+            <button type="button" class="bp-btn-sec" id="bpCopiarCita"><i class="fa-regular fa-copy"></i> Copiar cita APA</button>
+            <a class="bp-btn-sec" id="bpVerDocumento" href="#" target="_blank" rel="noopener noreferrer">
+              <i class="fa-solid fa-arrow-up-right-from-square"></i> Abrir documento
+            </a>
+          </div>
+          <div class="bp-ia-cta">
+            <span>¿Dudas sobre este trabajo? La IA responde con base en el documento.</span>
+            <button type="button" class="bp-btn-pri" data-goto-tab="ia">Preguntar a la IA</button>
+          </div>
+        </div>
         <!-- Tab: Capas -->
-        <div class="bp-tab-content" id="tab-capas">
+        <div class="bp-tab-content" id="tab-capas" style="display:none;">
           <div id="bpLayerList"></div>
           <div id="bpLegend"></div>
           <div class="bp-opacity-row">
@@ -1753,14 +2181,6 @@ html, body {
             <input type="range" id="bpOpacitySlider" min="0" max="100" value="100" class="bp-slider">
             <span id="bpOpacityVal" class="bp-opacity-val">100%</span>
           </div>
-        </div>
-        <!-- Tab: Metadatos -->
-        <div class="bp-tab-content" id="tab-metadatos" style="display:none;">
-          <div class="bp-meta-cols" id="bpMetaTable"></div>
-          <a class="bp-dl-all" id="bpVerDocumento" href="#" target="_blank" rel="noopener noreferrer" style="display:flex;text-decoration:none;margin-top:12px;">
-            <i class="fa-solid fa-arrow-up-right-from-square"></i>
-            Ver documento completo
-          </a>
         </div>
         <!-- Tab: Descargas -->
         <div class="bp-tab-content" id="tab-descargas" style="display:none;">
@@ -1770,7 +2190,24 @@ html, body {
             Descargar proyecto completo
           </button>
         </div>
+        <!-- Tab: Preguntar a la IA (RAG sobre el corpus, contextualizado al proyecto) -->
+        <div class="bp-tab-content" id="tab-ia" style="display:none;">
+          <div class="pia-messages" id="piaMessages" aria-live="polite"></div>
+          <div class="pia-handoff" id="piaHandoff" hidden>
+            <strong>La conversación va larga</strong>
+            <span>Continúala en la página de Asistentes, con más espacio. Se abre en una pestaña nueva con todo lo que llevas.</span>
+            <a class="bp-btn-pri" id="piaHandoffBtn" href="chatbots.html?desde=geovisor" target="_blank" rel="noopener">Continuar en Asistentes ↗</a>
+          </div>
+        </div>
       </div>
+      <form class="pia-form" id="piaForm" hidden>
+        <label class="pia-input-wrap">
+          <span class="sr-only">Pregunta sobre este proyecto</span>
+          <textarea id="piaInput" rows="2" maxlength="1500" placeholder="Pregunta algo sobre este proyecto…"></textarea>
+          <button type="submit" id="piaSend" aria-label="Enviar pregunta"><i class="fa-solid fa-arrow-right"></i></button>
+        </label>
+        <span class="pia-note">La IA puede equivocarse. Verifica en el documento original.</span>
+      </form>
     </div><!-- /bottomPanel -->
 
   </div><!-- /geo-map-container -->
@@ -2072,6 +2509,8 @@ function initMap() {
           geometry: { type: 'Point', coordinates: m.coords },
           properties: {
             isProjectMarker: true,
+            proyectoId: proj.id,
+            año: proj.año,
             nombre: proj.nombre,
             autor: proj.autor,
             lugar: m.lugar,
@@ -2163,7 +2602,7 @@ function initMap() {
     }
     const widthPx = Math.round((chosen / metersPer100px) * 100);
     const label = chosen >= 1000 ? (chosen / 1000) + ' km' : chosen + ' m';
-    el.innerHTML = '<div class="geo-scale-line" style="width:' + widthPx + 'px;">' + label + '</div>';
+    el.innerHTML = '<div class="geo-scale-line" style="width:' + widthPx + 'px;"></div><span class="geo-scale-label">' + label + '</span>';
   }
   map.on('move', updateScaleBar);
   map.on('load', updateScaleBar);
@@ -2349,10 +2788,18 @@ function loadProject(proj) {
   loadExternalLayers(proj);
 
   /* Encuadrar */
-  map.fitBounds(extentToBounds(proj.extent), { padding: 50, duration: 700 });
+  /* Rediseño 2026: el panel del proyecto ocupa la derecha (o la parte
+     inferior en móvil), así que el encuadre deja ese espacio libre. */
+  const angosto = window.matchMedia('(max-width: 900px)').matches;
+  map.fitBounds(extentToBounds(proj.extent), {
+    padding: angosto ? { top: 40, right: 30, bottom: Math.round(window.innerHeight * 0.62) + 20, left: 30 }
+                     : { top: 50, right: 450, bottom: 110, left: 60 },
+    duration: 700
+  });
 
   /* Panel derecho */
   renderPanel(proj);
+  if (window.GeoRediseno) window.GeoRediseno.onProjectLoaded(proj);
 
   /* Marcar tarjeta activa */
   document.querySelectorAll('.geo-proj-card').forEach(function (el) {
@@ -2539,7 +2986,7 @@ function renderPanel(proj) {
 
   document.querySelectorAll('.bp-tab').forEach(function (t) { t.classList.remove('active'); });
   document.querySelectorAll('.bp-tab-content').forEach(function (c) { c.style.display = 'none'; });
-  const defaultTab = hasCapas ? 'capas' : 'metadatos';
+  const defaultTab = 'metadatos'; /* rediseño 2026: la ficha del proyecto abre primero */
   document.querySelector('.bp-tab[data-tab="' + defaultTab + '"]').classList.add('active');
   document.getElementById('tab-' + defaultTab).style.display = 'flex';
 
@@ -2583,21 +3030,22 @@ function renderPanel(proj) {
   /* ── TAB METADATOS ── */
   const metaRows = [
     { label: 'Autor', value: proj.autor },
-    { label: 'Año', value: proj.año },
+    { label: 'Año', value: proj.año, mono: true },
     { label: 'Línea de investigación', value: linea ? linea.nombre : '', color: linea ? linea.color : null },
     { label: 'Ubicación', value: proj.ubicacion },
     { label: 'Metodología', value: proj.sensor },
     { label: 'Escala', value: proj.escala },
-    { label: 'CRS', value: proj.crs }
+    { label: 'CRS', value: proj.crs, mono: true }
   ].filter(function (r) { return r.value && r.value !== 'N/A'; });
 
   document.getElementById('bpMetaTable').innerHTML = metaRows.map(function (r) {
     const valueHtml = r.color
       ? '<span style="display:inline-flex;align-items:center;gap:6px;"><span style="width:8px;height:8px;border-radius:50%;background:' + r.color + ';flex-shrink:0;"></span>' + escHtml(String(r.value)) + '</span>'
       : escHtml(String(r.value));
-    return '<div class="bp-meta-field"><div class="bp-meta-label">' + r.label + '</div><div class="bp-meta-value">' + valueHtml + '</div></div>';
+    return '<div class="bp-meta-field' + (r.mono ? ' mono' : '') + '"><div class="bp-meta-label">' + r.label + '</div><div class="bp-meta-value">' + valueHtml + '</div></div>';
   }).join('');
   document.getElementById('bpVerDocumento').href = proj.url;
+  if (window.GeoRediseno) window.GeoRediseno.onProjectPanel(proj);
 
   /* ── TAB DESCARGAS ── */
   const dl = document.getElementById('bpDownloadList');
@@ -2639,15 +3087,16 @@ function renderProjectList() {
   LINEAS.forEach(function (linea) {
     const proyectosLinea = PROJECTS.filter(function (p) {
       if (p.lineaId !== linea.id) return false;
+      if (window.GEO_YEAR_FILTER != null && p.año !== window.GEO_YEAR_FILTER) return false;
       if (!query) return true;
       return p.nombre.toLowerCase().includes(query) ||
              p.autor.toLowerCase().includes(query) ||
              String(p.año).includes(query);
     });
 
-    if (query && proyectosLinea.length === 0) return; /* oculta líneas sin coincidencias al buscar */
+    if ((query || window.GEO_YEAR_FILTER != null) && proyectosLinea.length === 0) return; /* oculta líneas sin coincidencias al buscar o filtrar por año */
 
-    const isOpen = query ? true : (openLineaId === linea.id);
+    const isOpen = (query || window.GEO_YEAR_FILTER != null) ? true : (openLineaId === linea.id);
 
     const header = document.createElement('button');
     header.className = 'geo-linea-header';
@@ -2700,6 +3149,7 @@ function renderProjectList() {
   const totalMatch = LINEAS.reduce(function (acc, linea) {
     return acc + PROJECTS.filter(function (p) {
       if (p.lineaId !== linea.id) return false;
+      if (window.GEO_YEAR_FILTER != null && p.año !== window.GEO_YEAR_FILTER) return false;
       if (!query) return true;
       return p.nombre.toLowerCase().includes(query) || p.autor.toLowerCase().includes(query) || String(p.año).includes(query);
     }).length;
@@ -2749,6 +3199,7 @@ function initUI() {
     document.getElementById('geoPopup').style.display = 'none';
     document.getElementById('bottomPanel').style.display = 'none';
     document.querySelectorAll('.geo-proj-card').forEach(function (c) { c.classList.remove('active'); });
+    if (window.GeoRediseno) window.GeoRediseno.clearSelection();
     map.resize();
   });
 
@@ -2782,18 +3233,12 @@ function initUI() {
     });
   });
 
-  /* ── Colapsar/expandir topbar ── */
-  document.querySelector('#bottomPanel .bp-topbar').addEventListener('click', function (e) {
-    if (e.target.closest('.bp-tab') || e.target.closest('.bp-close')) return;
-    document.getElementById('bottomPanel').classList.toggle('collapsed');
-    map.resize();
-  });
-
-  /* ── Botón colapsar panel ── */
+  /* ── Cerrar el panel del proyecto (rediseño 2026: panel lateral; ya no
+     se colapsa al hacer clic en la cabecera) ── */
   document.getElementById('bpClose').addEventListener('click', function (e) {
     e.stopPropagation();
-    document.getElementById('bottomPanel').classList.toggle('collapsed');
-    map.resize();
+    document.getElementById('bottomPanel').classList.add('collapsed');
+    if (window.GeoRediseno) window.GeoRediseno.clearSelection();
   });
 
   /* ── Slider de opacidad del panel inferior ── */
@@ -4391,5 +4836,442 @@ window.SarCambios = (function () {
   };
 })();
 </script>
+
+<!-- ══════════════════════════════════════════════
+     REDISEÑO 2026 — lógica de la interfaz
+     · Riel con un solo panel lateral a la vez (Proyectos, Capas, Análisis)
+     · Línea de tiempo por año (filtra marcadores y lista de proyectos)
+     · Márgenes cartográficos con coordenadas en los bordes del mapa
+     · Selección del proyecto con esquinas tipo visor
+     · Panel del proyecto: cabecera, cita APA y pestaña "Preguntar a la IA"
+       (endpoint /chat del backend, modo temático, contextualizado al
+       trabajo de grado) con traspaso a pages/chatbots.html
+     ══════════════════════════════════════════════ -->
+<script>
+window.GeoRediseno = (function () {
+  const API_BASE = window.CHAT_API_BASE || 'https://geiper2026.onrender.com';
+  const HANDOFF_KEY = 'geiper_handoff_geovisor';
+  const HANDOFF_AVISO = 6;          /* mensajes a partir de los cuales se sugiere continuar en Asistentes */
+  const MAX_TURNOS = 6;             /* mismo límite que acepta el backend (ChatRequest.historial) */
+
+  let yearFilter = null;
+  let viewfinders = [];
+  const chats = {};                  /* { [proyectoId]: { mensajes: [{role, text, html}], historial: [] } */
+
+  /* ── Utilidades ─────────────────────────── */
+  function esc(s) { return (typeof escHtml === 'function') ? escHtml(String(s)) : String(s).replace(/[&<>"']/g, function (c) { return ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]; }); }
+  function codigo(p) { return 'GEIPER·' + p.año + '·' + String(p.id).padStart(2, '0'); }
+  function narrow() { return window.matchMedia('(max-width: 900px)').matches; }
+  function whenMapReady(fn) {
+    if (typeof map === 'undefined' || !map) return;
+    if (map.isStyleLoaded()) fn(); else map.once('idle', fn);
+  }
+
+  /* ── Riel: un solo panel lateral abierto ─── */
+  const PANELES = { proyectos: '.geo-sidebar', capas: '#panelCapas', analisis: '#panelAnalisis' };
+  let panelActivo = 'proyectos';
+  function abrirPanel(nombre) {
+    panelActivo = (panelActivo === nombre) ? null : nombre;
+    Object.keys(PANELES).forEach(function (k) {
+      const el = document.querySelector(PANELES[k]);
+      if (el) el.hidden = (k !== panelActivo);
+    });
+    document.querySelectorAll('.geo-rail-btn[data-rail]').forEach(function (b) {
+      const on = b.dataset.rail === panelActivo;
+      b.classList.toggle('active', on);
+      b.setAttribute('aria-pressed', on ? 'true' : 'false');
+    });
+    document.body.classList.toggle('geo-side-open', !!panelActivo);
+    if (typeof map !== 'undefined' && map) setTimeout(function () { map.resize(); actualizarGraticula(); }, 0);
+  }
+
+  /* ── Capas de referencia ─────────────────── */
+  function initCapas() {
+    function toggleLayer(inputId, layerId) {
+      const input = document.getElementById(inputId);
+      input.addEventListener('change', function () {
+        whenMapReady(function () {
+          if (map.getLayer(layerId)) map.setLayoutProperty(layerId, 'visibility', input.checked ? 'visible' : 'none');
+        });
+      });
+    }
+    toggleLayer('lyrMarcadores', 'project-markers-circle');
+    toggleLayer('lyrBordeColombia', 'colombia-border-line');
+    document.getElementById('lyrGraticula').addEventListener('change', actualizarGraticula);
+  }
+
+  /* ── Línea de tiempo ─────────────────────── */
+  function initTimeline() {
+    const track = document.getElementById('gtlTrack');
+    const años = PROJECTS.map(function (p) { return p.año; }).filter(Boolean);
+    if (!años.length) return;
+    const desde = Math.min.apply(null, años);
+    const hasta = Math.max(new Date().getFullYear(), Math.max.apply(null, años));
+
+    const todos = document.createElement('button');
+    todos.type = 'button';
+    todos.className = 'gtl-all active';
+    todos.dataset.year = '';
+    todos.innerHTML = '<span class="gtl-ticks"></span><span class="gtl-yr">Todos</span>';
+    todos.setAttribute('aria-pressed', 'true');
+    track.appendChild(todos);
+
+    for (let y = desde; y <= hasta; y++) {
+      const n = PROJECTS.filter(function (p) { return p.año === y; }).length;
+      const b = document.createElement('button');
+      b.type = 'button';
+      b.className = 'gtl-year' + (n ? '' : ' empty');
+      b.dataset.year = String(y);
+      b.setAttribute('aria-pressed', 'false');
+      b.setAttribute('aria-label', y + ': ' + n + ' proyecto' + (n === 1 ? '' : 's'));
+      b.title = n + ' proyecto' + (n === 1 ? '' : 's');
+      b.innerHTML = '<span class="gtl-ticks">' + new Array(n + 1).join('<i></i>') + '</span><span class="gtl-yr">' + y + '</span>';
+      if (!n) b.disabled = true;
+      track.appendChild(b);
+    }
+
+    track.addEventListener('click', function (e) {
+      const b = e.target.closest('button');
+      if (!b || b.disabled) return;
+      setYear(b.dataset.year ? parseInt(b.dataset.year, 10) : null);
+    });
+    actualizarEtiquetaAño();
+  }
+
+  function setYear(y) {
+    yearFilter = (y === yearFilter) ? null : y;
+    window.GEO_YEAR_FILTER = yearFilter;
+    document.querySelectorAll('#gtlTrack button').forEach(function (b) {
+      const val = b.dataset.year ? parseInt(b.dataset.year, 10) : null;
+      const on = val === yearFilter;
+      b.classList.toggle('active', on);
+      b.setAttribute('aria-pressed', on ? 'true' : 'false');
+    });
+    whenMapReady(function () {
+      if (map.getLayer('project-markers-circle')) {
+        map.setFilter('project-markers-circle', yearFilter === null ? null : ['==', ['get', 'año'], yearFilter]);
+      }
+    });
+    if (typeof renderProjectList === 'function') renderProjectList();
+    actualizarEtiquetaAño();
+  }
+
+  function actualizarEtiquetaAño() {
+    const el = document.getElementById('gtlLabel');
+    if (!el) return;
+    if (yearFilter === null) {
+      el.textContent = 'Todos los años · ' + PROJECTS.length + ' proyecto' + (PROJECTS.length === 1 ? '' : 's');
+    } else {
+      const n = PROJECTS.filter(function (p) { return p.año === yearFilter; }).length;
+      el.textContent = yearFilter + ' · ' + n + ' proyecto' + (n === 1 ? '' : 's');
+    }
+  }
+
+  /* ── Márgenes cartográficos ──────────────── */
+  const PASOS = [10, 5, 2, 1, 0.5, 0.25, 1 / 6, 1 / 12, 1 / 30, 1 / 60];
+  function fmtGrado(v, eje) {
+    const hemi = eje === 'lon' ? (v < 0 ? 'W' : 'E') : (v < 0 ? 'S' : 'N');
+    const a = Math.abs(v);
+    let g = Math.floor(a + 1e-9);
+    let m = Math.round((a - g) * 60);
+    if (m === 60) { g += 1; m = 0; }
+    return g + '°' + (m ? String(m).padStart(2, '0') + '′' : '') + ' ' + hemi;
+  }
+  function elegirPaso(span) {
+    for (let i = 0; i < PASOS.length; i++) {
+      const n = span / PASOS[i];
+      if (n >= 3) return PASOS[i];
+    }
+    return PASOS[PASOS.length - 1];
+  }
+  function actualizarGraticula() {
+    const top = document.getElementById('gratTop');
+    const left = document.getElementById('gratLeft');
+    if (!top || !left || typeof map === 'undefined' || !map) return;
+    const activa = document.getElementById('lyrGraticula').checked && map.getZoom() >= 4.5 && map.getPitch() < 5 && !narrow();
+    top.classList.toggle('on', activa);
+    left.classList.toggle('on', activa);
+    if (!activa) return;
+
+    const b = map.getBounds();
+    const c = map.getCenter();
+    const anchoTop = top.clientWidth;
+    const altoLeft = left.clientHeight;
+    const pasoLon = elegirPaso(b.getEast() - b.getWest());
+    const pasoLat = elegirPaso(b.getNorth() - b.getSouth());
+
+    let htmlTop = '';
+    for (let lon = Math.ceil(b.getWest() / pasoLon) * pasoLon; lon <= b.getEast(); lon += pasoLon) {
+      const x = map.project([lon, c.lat]).x;
+      if (x < 60 || x > anchoTop - 70) continue;
+      htmlTop += '<span style="left:' + x.toFixed(1) + 'px"><b>' + fmtGrado(lon, 'lon') + '</b></span>';
+    }
+    top.innerHTML = htmlTop;
+
+    let htmlLeft = '';
+    const offset = left.getBoundingClientRect().top - map.getContainer().getBoundingClientRect().top;
+    for (let lat = Math.ceil(b.getSouth() / pasoLat) * pasoLat; lat <= b.getNorth(); lat += pasoLat) {
+      const y = map.project([c.lng, lat]).y - offset;
+      if (y < 30 || y > altoLeft - 60) continue;
+      htmlLeft += '<span style="top:' + y.toFixed(1) + 'px"><b>' + fmtGrado(lat, 'lat') + '</b></span>';
+    }
+    left.innerHTML = htmlLeft;
+  }
+
+  /* ── Selección tipo visor ────────────────── */
+  function limpiarVisor() {
+    viewfinders.forEach(function (m) { m.remove(); });
+    viewfinders = [];
+  }
+  function marcarProyecto(proj) {
+    limpiarVisor();
+    if (typeof maplibregl === 'undefined') return;
+    PROJECT_MARKERS.filter(function (m) { return m.proyectoId === proj.id; }).forEach(function (m) {
+      const el = document.createElement('div');
+      el.className = 'geo-viewfinder';
+      el.innerHTML = '<i></i><i></i><i></i><i></i>';
+      viewfinders.push(new maplibregl.Marker({ element: el }).setLngLat(m.coords).addTo(map));
+    });
+  }
+
+  /* ── Panel del proyecto ──────────────────── */
+  function citaAPA(p) {
+    return p.autor + ' (' + p.año + '). ' + p.nombre +
+      ' [Trabajo de grado, Universidad Distrital Francisco José de Caldas]. ' + p.url;
+  }
+  function onProjectPanel(proj) {
+    const linea = LINEAS.find(function (l) { return l.id === proj.lineaId; });
+    document.getElementById('bpCode').textContent = codigo(proj);
+    const lineaEl = document.getElementById('bpLinea');
+    lineaEl.textContent = linea ? linea.nombre : '';
+    lineaEl.title = linea ? linea.nombre : '';
+    lineaEl.style.setProperty('--linea-color', linea ? linea.color : '#2A9AD4');
+    document.getElementById('bpAutor').textContent = proj.autor;
+    document.body.classList.add('geo-proj-open');
+    renderChat(proj);
+    mostrarTab('metadatos');
+  }
+  function onProjectLoaded(proj) { marcarProyecto(proj); }
+  function clearSelection() {
+    document.body.classList.remove('geo-proj-open');
+    limpiarVisor();
+  }
+
+  function mostrarTab(nombre) {
+    const btn = document.querySelector('.bp-tab[data-tab="' + nombre + '"]');
+    if (btn && btn.style.display !== 'none') btn.click();
+    document.getElementById('piaForm').hidden = (nombre !== 'ia');
+  }
+
+  /* ── Chat del proyecto ───────────────────── */
+  const SUGERIDAS = [
+    '¿Cuál es el objetivo general?',
+    '¿Qué metodología usó?',
+    '¿Qué datos o imágenes empleó?',
+    'Resúmelo en 5 puntos'
+  ];
+  function estado(proj) {
+    if (!chats[proj.id]) chats[proj.id] = { mensajes: [], historial: [] };
+    return chats[proj.id];
+  }
+  function htmlRespuesta(texto) {
+    if (typeof marked !== 'undefined' && typeof DOMPurify !== 'undefined') {
+      return DOMPurify.sanitize(marked.parse(texto));
+    }
+    return '<p>' + esc(texto).replace(/\n/g, '<br>') + '</p>';
+  }
+  function renderChat(proj) {
+    const box = document.getElementById('piaMessages');
+    const st = estado(proj);
+    box.innerHTML = '';
+
+    const intro = document.createElement('div');
+    intro.className = 'pia-msg pia-bot';
+    intro.innerHTML = '<p>Puedo responder preguntas sobre <strong>' + esc(proj.nombre) + '</strong> con base en el corpus documental del semillero.</p>';
+    box.appendChild(intro);
+
+    if (!st.mensajes.length) {
+      const lbl = document.createElement('span');
+      lbl.className = 'pia-chips-label';
+      lbl.textContent = 'Preguntas sugeridas';
+      const chips = document.createElement('div');
+      chips.className = 'pia-chips';
+      SUGERIDAS.forEach(function (q) {
+        const c = document.createElement('button');
+        c.type = 'button';
+        c.className = 'pia-chip';
+        c.textContent = q;
+        c.addEventListener('click', function () { enviar(q); });
+        chips.appendChild(c);
+      });
+      box.appendChild(lbl);
+      box.appendChild(chips);
+    }
+    st.mensajes.forEach(function (m) { pintarMensaje(m); });
+    document.getElementById('piaHandoff').hidden = st.mensajes.length < HANDOFF_AVISO;
+  }
+  function pintarMensaje(m) {
+    const box = document.getElementById('piaMessages');
+    const div = document.createElement('div');
+    div.className = 'pia-msg ' + (m.role === 'user' ? 'pia-user' : 'pia-bot') + (m.error ? ' pia-error' : '');
+    if (m.role === 'user') div.textContent = m.text; else div.innerHTML = m.html;
+    box.appendChild(div);
+    return div;
+  }
+  function scrollAbajo() {
+    const body = document.querySelector('#bottomPanel .bp-body');
+    body.scrollTop = body.scrollHeight;
+  }
+
+  let enviando = false;
+  async function enviar(pregunta) {
+    const proj = activeProject;
+    pregunta = (pregunta || '').trim();
+    if (!proj || !pregunta || enviando) return;
+    const st = estado(proj);
+    enviando = true;
+    document.getElementById('piaSend').disabled = true;
+    document.querySelectorAll('.pia-chips, .pia-chips-label').forEach(function (el) { el.remove(); });
+
+    const mUser = { role: 'user', text: pregunta };
+    st.mensajes.push(mUser);
+    pintarMensaje(mUser);
+    const typing = pintarMensaje({ role: 'bot', html: '<span class="pia-typing" aria-label="Escribiendo"><i></i><i></i><i></i></span>' });
+    scrollAbajo();
+
+    /* La pregunta se ancla al trabajo de grado para que la recuperación
+       (RAG) priorice ese documento dentro del corpus. */
+    const consulta = 'Sobre el trabajo de grado "' + proj.nombre + '" (' + proj.autor + ', ' + proj.año + '): ' + pregunta;
+    try {
+      const res = await fetch(API_BASE + '/chat', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ query: consulta.slice(0, 2000), mode: 'tematico', historial: st.historial.slice(-MAX_TURNOS) })
+      });
+      if (!res.ok) throw new Error('HTTP ' + res.status);
+      const data = await res.json();
+      const texto = String(data.response || '');
+      typing.remove();
+      const mBot = { role: 'bot', text: texto.replace(/<[^>]+>/g, '').trim(), html: htmlRespuesta(texto) };
+      st.mensajes.push(mBot);
+      pintarMensaje(mBot);
+      st.historial.push({ role: 'user', content: consulta.slice(0, 2000) });
+      st.historial.push({ role: 'assistant', content: mBot.text.slice(0, 2000) || '—' });
+      st.historial = st.historial.slice(-MAX_TURNOS);
+    } catch (err) {
+      console.error('Chat del proyecto:', err);
+      typing.remove();
+      const mErr = { role: 'bot', error: true, html: '<p>No pude conectarme con el asistente en este momento. Intenta de nuevo en unos segundos.</p>' };
+      pintarMensaje(mErr);
+      st.mensajes.pop();      /* la pregunta sin respuesta no se guarda en el historial */
+    } finally {
+      enviando = false;
+      document.getElementById('piaSend').disabled = false;
+      document.getElementById('piaHandoff').hidden = st.mensajes.length < HANDOFF_AVISO;
+      scrollAbajo();
+    }
+  }
+
+  /* Traspaso a pages/chatbots.html: la conversación viaja por localStorage
+     (mismo dominio) y la página de Asistentes la retoma al abrirse. */
+  function prepararTraspaso() {
+    const proj = activeProject;
+    if (!proj) return;
+    const st = estado(proj);
+    try {
+      localStorage.setItem(HANDOFF_KEY, JSON.stringify({
+        ts: Date.now(),
+        modo: 'tematico',
+        proyecto: { id: proj.id, nombre: proj.nombre, autor: proj.autor, año: proj.año },
+        mensajes: st.mensajes.filter(function (m) { return !m.error; }).map(function (m) { return { role: m.role, text: m.text }; }),
+        historial: st.historial
+      }));
+    } catch (e) { console.warn('No se pudo guardar el traspaso de conversación', e); }
+  }
+
+  /* ── Inicialización ──────────────────────── */
+  function init() {
+    document.querySelectorAll('.geo-rail-btn[data-rail]').forEach(function (b) {
+      b.addEventListener('click', function () { abrirPanel(b.dataset.rail); });
+    });
+    document.querySelectorAll('[data-close-panel]').forEach(function (b) {
+      b.addEventListener('click', function () { abrirPanel(panelActivo); });
+    });
+    const railChat = document.getElementById('railMapChat');
+    railChat.addEventListener('click', function () {
+      const panel = document.getElementById('geoChatPanel');
+      if (!panel) return;
+      const abierto = panel.classList.contains('open');
+      if (abierto) document.getElementById('geoChatClose').click();
+      else document.getElementById('geoChatToggle').click();
+      railChat.classList.toggle('active', !abierto);
+      railChat.setAttribute('aria-pressed', !abierto ? 'true' : 'false');
+    });
+    const chatClose = document.getElementById('geoChatClose');
+    if (chatClose) chatClose.addEventListener('click', function () {
+      railChat.classList.remove('active');
+      railChat.setAttribute('aria-pressed', 'false');
+    });
+
+    /* El botón de SAR del panel de Análisis conserva su propio manejador (SarCambios) */
+
+    initCapas();
+    initTimeline();
+
+    document.querySelectorAll('.bp-tab').forEach(function (t) {
+      t.addEventListener('click', function () {
+        document.getElementById('piaForm').hidden = (t.dataset.tab !== 'ia');
+        if (t.dataset.tab === 'ia') setTimeout(function () { document.getElementById('piaInput').focus(); scrollAbajo(); }, 0);
+      });
+    });
+    document.querySelectorAll('[data-goto-tab]').forEach(function (b) {
+      b.addEventListener('click', function () { mostrarTab(b.dataset.gotoTab); });
+    });
+
+    document.getElementById('bpCopiarCita').addEventListener('click', function () {
+      if (!activeProject) return;
+      const texto = citaAPA(activeProject);
+      const ok = function () { if (typeof showToast === 'function') showToast('Cita APA copiada'); };
+      if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(texto).then(ok, function () { window.prompt('Copia la cita:', texto); });
+      else window.prompt('Copia la cita:', texto);
+    });
+
+    const form = document.getElementById('piaForm');
+    const input = document.getElementById('piaInput');
+    form.addEventListener('submit', function (e) {
+      e.preventDefault();
+      const q = input.value;
+      input.value = '';
+      enviar(q);
+    });
+    input.addEventListener('keydown', function (e) {
+      if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); form.requestSubmit(); }
+    });
+    ['bpHandoffIcon', 'piaHandoffBtn'].forEach(function (id) {
+      document.getElementById(id).addEventListener('click', prepararTraspaso);
+    });
+
+    if (typeof map !== 'undefined' && map) {
+      map.on('move', actualizarGraticula);
+      map.on('resize', actualizarGraticula);
+      whenMapReady(actualizarGraticula);
+    }
+
+    /* En pantallas angostas el mapa arranca sin panel lateral abierto */
+    if (narrow()) abrirPanel('proyectos');
+    else document.body.classList.add('geo-side-open');
+  }
+
+  window.addEventListener('load', init);
+
+  return {
+    onProjectPanel: onProjectPanel,
+    onProjectLoaded: onProjectLoaded,
+    clearSelection: clearSelection,
+    setYear: setYear
+  };
+})();
+</script>
+
 </body>
 </html>

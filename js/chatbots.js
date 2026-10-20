@@ -52,6 +52,7 @@ document.addEventListener('DOMContentLoaded', () => {
   // ── Inicialización ──
   resetChat();
   checkServerConnection();
+  retomarDesdeGeovisor();
 
   // ── Eventos ──
   botOptions.forEach(opt => {
@@ -118,6 +119,73 @@ document.addEventListener('DOMContentLoaded', () => {
       setLoadingState(false);
     }
   });
+
+  // ── Traspaso desde el geovisor ──
+  // El panel "Preguntar a la IA" del geovisor guarda su conversación en
+  // localStorage (mismo dominio) y abre esta página con ?desde=geovisor.
+  // Aquí se retoma: se repinta la conversación y se restaura el historial
+  // reciente para que el modelo conserve el contexto del proyecto.
+  function retomarDesdeGeovisor() {
+    const CLAVE = 'geiper_handoff_geovisor';
+    const params = new URLSearchParams(window.location.search);
+    if (params.get('desde') !== 'geovisor') return;
+
+    let datos = null;
+    try {
+      datos = JSON.parse(localStorage.getItem(CLAVE) || 'null');
+      localStorage.removeItem(CLAVE);
+    } catch (e) {
+      datos = null;
+    }
+    // Limpia el parámetro para que recargar la página no intente retomar de nuevo
+    if (window.history && window.history.replaceState) {
+      window.history.replaceState(null, '', window.location.pathname);
+    }
+    // Solo se acepta un traspaso reciente (30 min) y con la forma esperada
+    if (!datos || typeof datos !== 'object' || !Array.isArray(datos.mensajes) ||
+        !datos.ts || Date.now() - datos.ts > 30 * 60 * 1000) return;
+
+    // El geovisor siempre conversa con el Asistente Temático
+    if (currentMode !== 'tematico') {
+      currentMode = 'tematico';
+      botOptions.forEach(b => b.classList.toggle('active', b.dataset.bot === 'tematico'));
+      resetChat();
+    }
+
+    const proyecto = datos.proyecto || {};
+    const aviso = document.createElement('div');
+    aviso.className = 'message bot-message handoff-notice';
+    const contenido = document.createElement('div');
+    contenido.className = 'message-content';
+    const p = document.createElement('p');
+    const fuerte = document.createElement('strong');
+    fuerte.textContent = 'Conversación continuada desde el geovisor';
+    p.appendChild(fuerte);
+    if (proyecto.nombre) {
+      p.appendChild(document.createElement('br'));
+      p.appendChild(document.createTextNode(
+        'Proyecto: ' + proyecto.nombre + (proyecto.autor ? ' — ' + proyecto.autor : '') + (proyecto.año ? ' (' + proyecto.año + ')' : '')
+      ));
+    }
+    contenido.appendChild(p);
+    aviso.appendChild(contenido);
+    chatMessages.appendChild(aviso);
+
+    const ahora = new Date();
+    datos.mensajes.forEach(m => {
+      if (!m || typeof m.text !== 'string' || !m.text.trim()) return;
+      const rol = m.role === 'user' ? 'user' : 'bot';
+      addMessage(m.text, rol); // las respuestas pasan por marked + DOMPurify en addMessage
+      conversacionCompleta.push({ role: rol, text: m.text, timestamp: ahora });
+    });
+
+    historial = (Array.isArray(datos.historial) ? datos.historial : [])
+      .filter(t => t && (t.role === 'user' || t.role === 'assistant') && typeof t.content === 'string' && t.content.trim())
+      .map(t => ({ role: t.role, content: t.content.slice(0, 2000) }))
+      .slice(-MAX_TURNOS_HISTORIAL);
+    listadoDocumentosOfrecido = true; // ya hubo intercambio; no se ofrece el listado de nuevo
+    scrollBottom();
+  }
 
   // ── Funciones de UI ──
 
