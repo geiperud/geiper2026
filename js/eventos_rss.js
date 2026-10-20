@@ -88,6 +88,9 @@ document.addEventListener('DOMContentLoaded', () => {
       }
       const data = await response.json();
 
+      // Reemplaza la versión estática (generada por scripts/geo_build.py) por la dinámica
+      rssContainer.replaceChildren();
+
       if (data.length === 0) {
         const msg = document.createElement('p');
         msg.textContent = 'No hay eventos próximos en este momento.';
@@ -103,6 +106,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
     } catch (error) {
       console.error(error);
+      // Si ya hay tarjetas estáticas, se conservan y no se muestra error
+      if (rssContainer.querySelector('.feed-row')) return;
       const msg = document.createElement('p');
       msg.style.color = '#64748b';
       msg.textContent = 'No se pudieron cargar los eventos en este momento.';

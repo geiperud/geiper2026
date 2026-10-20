@@ -38,6 +38,7 @@
   {
     "@context": "https://schema.org",
     "@type": "ResearchOrganization",
+    "@id": "https://geiperud.github.io/geiper2026/#org",
     "name": "Semillero GEIPER",
     "alternateName": "Grupo Especializado en Investigación en Percepción Remota y Sistemas de Información Geográfica",
     "url": "https://geiperud.github.io/geiper2026/",
@@ -59,7 +60,43 @@
     ]
   }
   </script>
-  </head>
+  <!-- GEO:jsonld START -->
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@graph": [
+    {
+      "@type": "WebPage",
+      "@id": "https://geiperud.github.io/geiper2026/#webpage",
+      "url": "https://geiperud.github.io/geiper2026/",
+      "name": "Semillero GEIPER",
+      "description": "GEIPER es el Semillero de Investigación en Geomática, Percepción Remota y SIG de la Universidad Distrital Francisco José de Caldas. Avalado por MinCiencias, grupo NIDE.",
+      "inLanguage": "es-CO",
+      "isPartOf": {
+        "@id": "https://geiperud.github.io/geiper2026/#website"
+      },
+      "publisher": {
+        "@id": "https://geiperud.github.io/geiper2026/#org"
+      },
+      "about": {
+        "@id": "https://geiperud.github.io/geiper2026/#org"
+      }
+    },
+    {
+      "@type": "WebSite",
+      "@id": "https://geiperud.github.io/geiper2026/#website",
+      "url": "https://geiperud.github.io/geiper2026/",
+      "name": "Semillero GEIPER",
+      "inLanguage": "es-CO",
+      "publisher": {
+        "@id": "https://geiperud.github.io/geiper2026/#org"
+      }
+    }
+  ]
+}
+</script>
+<!-- GEO:jsonld END -->
+</head>
   <body>
 
 <!-- ── HEADER ────────────────────────────────── -->
@@ -293,11 +330,9 @@
     </p>
 
     <div id="rssFeedContainer" class="feed-list" data-feed-url="data/eventos_feed.json" data-limit="1">
-      <!-- Las tarjetas se inyectarán aquí vía JS -->
-    </div>
-
-    <div style="text-align:center; margin-top:32px;">
-      <a href="pages/eventos.html" class="btn" target="_blank" rel="noopener noreferrer">Ver más →</a>
+<!-- GEO:eventos START -->
+<div class="feed-row"><div class="feed-date-block"><div class="feed-day">10</div><div class="feed-month">NOV 2026</div></div><div><div class="feed-type">Simposio</div><h3 class="feed-title">XXII Simposio Internacional SELPER 2026</h3><p class="feed-desc">La Sociedad Latinoamericana en Percepción Remota y Sistemas de Información Espacial (SELPER) invita bajo el lema &#x27;Del sensor a la gestión: innovación geoespacial para un futuro sostenible&#x27;, en Buenos Aires, Argentina.</p><div class="feed-tags"><span>Internacional</span><span>SELPER</span><span>Percepción Remota</span></div><a href="https://selperargentina.org/" class="feed-link" target="_blank" rel="noopener noreferrer">Saber más →</a></div></div>
+<!-- GEO:eventos END -->
     </div>
   </div>
 </section>
