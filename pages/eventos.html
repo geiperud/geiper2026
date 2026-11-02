@@ -108,6 +108,17 @@
 
 <!-- ── HEADER ────────────────────────────────── -->
 <header>
+  <!-- Franja superior fija: razón del sitio y enlace a "Acerca de este proyecto" -->
+  <div class="topbar">
+    <div class="topbar-inner">
+      <p class="topbar-texto">
+        <span class="tb-razon"><strong>Geoportal GEIPER</strong><span class="tb-sep" aria-hidden="true"></span>investigación en percepción remota, SIG y GeoIA</span>
+      </p>
+      <button type="button" class="topbar-acerca" data-acerca aria-haspopup="dialog">
+        <i class="fa-solid fa-circle-info" aria-hidden="true"></i><span>Acerca<span class="tb-de"> de este proyecto</span></span>
+      </button>
+    </div>
+  </div>
   <nav>
     <a href="../index.html" class="nav-brand"><img src="../assets/images/Logo_GEIPER.png" alt="GEIPER" class="nav-logo-img"></a>
     <button class="nav-hamburger" id="navHamburger" aria-label="Abrir menú" aria-expanded="false">
@@ -124,6 +135,12 @@
         <a href="geovisor.html">Geovisor</a>
         <a href="integrantes.html">Integrantes</a>
         <a href="repositorios.html">Repositorios</a>
+        <div class="nav-actions">
+          <a href="../index.html#contacto-form" class="nav-act nav-act--contacto" aria-label="Contacto" title="Contacto"><i class="fa-solid fa-envelope" aria-hidden="true"></i></a>
+          <!-- Botón del repositorio deshabilitado por ahora; para activarlo, quitar este comentario:
+          <a href="https://github.com/geiperud/geiper2026" target="_blank" rel="noopener" class="nav-act nav-act--repo" aria-label="Código fuente en GitHub" title="Código fuente en GitHub"><i class="fa-brands fa-github" aria-hidden="true"></i></a>
+          -->
+        </div>
       </div>
     </div>
   </nav>
@@ -250,5 +267,6 @@
 })();
 </script>
 <script src="../js/eventos_rss.js"></script>
+<script src="../js/acerca-proyecto.js"></script>
 </body>
 </html>

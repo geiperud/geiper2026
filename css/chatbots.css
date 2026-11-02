@@ -14,8 +14,8 @@
 /* ── LAYOUT PRINCIPAL ── */
 .chat-container {
   display: flex;
-  height: calc(100vh - 80px); /* Ocupa el alto restando el header */
-  margin-top: 80px; /* Empuja el contenedor debajo del header */
+  height: calc(100vh - var(--header-h)); /* Ocupa el alto restando el header */
+  margin-top: var(--header-h); /* Empuja el contenedor debajo del header */
   background-color: var(--chat-bg);
   font-family: 'Inter', system-ui, sans-serif;
   overflow: hidden;
@@ -399,7 +399,7 @@
 @media (max-width: 768px) {
   .chat-container {
     flex-direction: column;
-    height: calc(100vh - 60px);
+    height: calc(100vh - var(--header-h));
   }
   .chat-sidebar {
     width: 100%;

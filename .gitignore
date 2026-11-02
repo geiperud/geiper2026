@@ -21,3 +21,4 @@ backend/chroma_db/
 .DS_Store
 Thumbs.db
 .vscode/
+.claude/
