@@ -26,7 +26,10 @@
   <meta property="og:url" content="https://geiperud.github.io/geiper2026/pages/lineas.html">
   <meta property="og:type" content="website">
   <meta property="og:image" content="https://geiperud.github.io/geiper2026/assets/images/Logo_GEIPER.png">
-  <link rel="icon" type="image/png" href="../assets/images/Logo_GEIPER.png">
+  <link rel="icon" href="../favicon.ico" sizes="48x48">
+  <link rel="icon" type="image/png" sizes="96x96" href="../assets/images/favicon-96.png">
+  <link rel="icon" type="image/png" sizes="192x192" href="../assets/images/favicon-192.png">
+  <link rel="apple-touch-icon" href="../assets/images/apple-touch-icon.png">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
   <link rel="stylesheet" href="../css/styles.css">
   <link rel="stylesheet" href="../css/tipografia-dm-inter.css">
@@ -167,41 +170,18 @@
 <!-- ── PAGE HERO ─────────────────────────────── -->
 <div class="page-hero">
   <h1>Investigación</h1>
-  <p>Las líneas en las que trabaja el semillero y dónde consultar lo que producimos.</p>
+  <p>Dónde consultar lo que producimos y las líneas en las que trabaja el semillero.</p>
 </div>
 
-<!-- ── LÍNEAS DE INVESTIGACIÓN ────────────────── -->
-<section id="lineas" class="alt">
-  <h2 class="section-title">Líneas de investigación</h2>
-  <div class="lineas-lista">
-    <div class="linea-fila">
-      <span class="linea-num">01</span>
-      <h3>Procesamiento digital y análisis espacial de imágenes</h3>
-      <p>Procesamiento de imágenes pasivas y activas de percepción remota, y análisis avanzado de firmas espectrales para el monitoreo territorial.</p>
-    </div>
-    <div class="linea-fila">
-      <span class="linea-num">02</span>
-      <h3>GeoIA y detección de cambios en objetos y fenómenos geográficos</h3>
-      <p>Modelos de inteligencia artificial para modelado territorial, evaluación de riesgos y detección de cambios en la superficie terrestre.</p>
-    </div>
-    <div class="linea-fila">
-      <span class="linea-num">03</span>
-      <h3>Infraestructuras de datos espaciales y estandarización</h3>
-      <p>Estandarización e interoperabilidad de información geoespacial (ráster, LiDAR, LADM_COL) para su integración en plataformas territoriales.</p>
-    </div>
-    <div class="linea-fila">
-      <span class="linea-num">04</span>
-      <h3>Cartografía aplicada a la gestión de recursos y ordenamiento territorial</h3>
-      <p>Estructuración de cartografía para la gestión de recursos naturales, catastro multipropósito y planificación del territorio.</p>
-    </div>
-  </div>
-</section>
 
 <!-- ── PRODUCCIÓN: PORTAL DE CONSULTA ────────────
      Reemplaza la antigua página de Repositorios (repositorios.html
      redirige aquí). La imagen se lee de
      assets/images/portal-investigacion.webp; si no existe se muestra
      el fondo de retícula de css/investigacion.css.
+     Imagen actual (provisional): Sentinel-1, delta del Ganges, 2019,
+     de github.com/sentinel-hub/custom-scripts (CC BY-SA 4.0), recortada.
+     Al reemplazarla por una escena propia, actualiza el pie de foto.
      ─────────────────────────────────────────────── -->
 <section id="produccion" class="pi-sec">
   <div class="pi-portal">
@@ -212,8 +192,8 @@
     </div>
 
     <div class="pi-imagen">
-      <img src="../assets/images/portal-investigacion.webp" alt="Escena satelital de un proyecto del semillero GEIPER" onerror="this.remove()">
-      <span class="pi-pie">Escena satelital de un proyecto del semillero</span>
+      <img src="../assets/images/portal-investigacion.webp" alt="Imagen de radar Sentinel-1 en falso color del delta del Ganges: canales de agua en azul y manglares en verde" onerror="this.remove()">
+      <span class="pi-pie">Radar Sentinel-1, delta del Ganges (2019) · Copernicus Sentinel / Sentinel Hub, <a href="https://creativecommons.org/licenses/by-sa/4.0/deed.es" target="_blank" rel="noopener">CC BY-SA 4.0</a></span>
     </div>
 
     <div class="pi-accesos" role="list">
@@ -240,6 +220,33 @@
         <span class="pi-nombre">Trayectoria</span>
         <span class="pi-desc">Ponencias y talleres del semillero</span>
       </a>
+    </div>
+  </div>
+</section>
+
+<!-- ── LÍNEAS DE INVESTIGACIÓN ────────────────── -->
+<section id="lineas" class="alt">
+  <h2 class="section-title">Líneas de investigación</h2>
+  <div class="lineas-lista">
+    <div class="linea-fila">
+      <span class="linea-num">01</span>
+      <h3>Procesamiento digital y análisis espacial de imágenes</h3>
+      <p>Procesamiento de imágenes pasivas y activas de percepción remota, y análisis avanzado de firmas espectrales para el monitoreo territorial.</p>
+    </div>
+    <div class="linea-fila">
+      <span class="linea-num">02</span>
+      <h3>GeoIA y detección de cambios en objetos y fenómenos geográficos</h3>
+      <p>Modelos de inteligencia artificial para modelado territorial, evaluación de riesgos y detección de cambios en la superficie terrestre.</p>
+    </div>
+    <div class="linea-fila">
+      <span class="linea-num">03</span>
+      <h3>Infraestructuras de datos espaciales y estandarización</h3>
+      <p>Estandarización e interoperabilidad de información geoespacial (ráster, LiDAR, LADM_COL) para su integración en plataformas territoriales.</p>
+    </div>
+    <div class="linea-fila">
+      <span class="linea-num">04</span>
+      <h3>Cartografía aplicada a la gestión de recursos y ordenamiento territorial</h3>
+      <p>Estructuración de cartografía para la gestión de recursos naturales, catastro multipropósito y planificación del territorio.</p>
     </div>
   </div>
 </section>
