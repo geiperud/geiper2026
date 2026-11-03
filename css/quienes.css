@@ -1,39 +1,29 @@
 /* ============================================
    GEIPER - Quiénes somos (index.html)
-   Diseño editorial: franja con el título, párrafo
-   de entrada y tres columnas separadas por líneas
-   finas. Clases con prefijo qs-.
+   Opción A: título centrado (estilo .section-title
+   del sitio), párrafo de entrada justificado y tres
+   columnas con línea superior en una misma fila.
+   Clases con prefijo qs-.
+   Al cambiar este archivo, sube el número de
+   versión en index.html (quienes.css?v=N) para
+   que los navegadores no usen la copia en caché.
    ============================================ */
 
-section.qs { padding: 0 0 80px; background: white; }
+section.qs { padding: 90px 80px 90px; background: white; }
 
-/* ── Franja del título ─────────────────────────── */
-.qs-cab {
-    background: var(--fondo-alt);
-    /* alinea el título con el contenido de 1150 px de abajo */
-    padding: 64px max(80px, calc((100% - 1150px) / 2 + 80px)) 56px;
-}
-.qs-titulo {
-    font-family: 'DM Serif Text', 'Noto Serif', Georgia, serif;
-    font-weight: 400;
-    font-size: clamp(40px, 4.4vw, 58px);
-    line-height: 1.05;
-    color: var(--azul-oscuro);
-    margin: 0;
-    text-align: left;
-}
+.qs-cuerpo { max-width: 1150px; margin: 0 auto; }
 
-/* ── Cuerpo ────────────────────────────────────── */
-.qs-cuerpo { max-width: 1150px; margin: 0 auto; padding: 0 80px; }
 .qs-lead {
     font-family: 'Inter', sans-serif;
-    font-size: clamp(18px, 1.6vw, 21px);
-    line-height: 1.65;
+    font-size: clamp(17px, 1.5vw, 20px);
+    line-height: 1.7;
     color: #1B2433;
-    max-width: 960px;
-    margin: 52px 0 48px;
-    text-align: left;
+    text-align: justify;
+    hyphens: auto;
+    max-width: 900px;
+    margin: 0 auto 56px;
 }
+
 .qs-cols {
     display: grid;
     grid-template-columns: repeat(3, minmax(0, 1fr));
@@ -52,18 +42,18 @@ section.qs { padding: 0 0 80px; background: white; }
     font-size: 15.5px;
     line-height: 1.75;
     color: var(--gris);
-    text-align: left;
+    text-align: justify;
+    hyphens: auto;
     margin: 0;
 }
 
-@media (max-width: 1000px) {
-    .qs-cab { padding: 48px 32px 40px; }
-    .qs-cuerpo { padding: 0 32px; }
-    .qs-cols { grid-template-columns: 1fr; gap: 36px; }
-    section.qs { padding-bottom: 64px; }
+@media (max-width: 1100px) {
+    section.qs { padding: 80px 40px; }
+    .qs-cols { gap: 32px; }
+    .qs-col p { font-size: 15px; }
 }
-@media (max-width: 520px) {
-    .qs-cab { padding: 36px 20px 28px; }
-    .qs-cuerpo { padding: 0 20px; }
-    .qs-lead { margin: 36px 0 32px; }
+@media (max-width: 860px) {
+    section.qs { padding: 64px 24px 56px; }
+    .qs-lead { margin-bottom: 40px; }
+    .qs-cols { grid-template-columns: 1fr; gap: 32px; }
 }
