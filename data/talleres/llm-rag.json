@@ -1,0 +1,91 @@
+{
+  "slug": "llm-rag",
+  "titulo": "LLM y RAG en el geoportal GEIPER: implementación, administración y sostenibilidad",
+  "facilitador": "Laura Dayana Díaz Beltrán",
+  "herramientas": [
+    "Python",
+    "FastAPI",
+    "LangChain",
+    "FAISS",
+    "GitHub Pages",
+    "Render"
+  ],
+  "estado": "proximamente",
+  "resumen_corto": "Cómo funciona el geoportal GEIPER por dentro: sus asistentes basados en modelos de lenguaje, el flujo RAG y su mantenimiento.",
+  "resumen": "Cómo funciona el geoportal GEIPER por dentro: la arquitectura de sus asistentes basados en modelos de lenguaje, el flujo de generación aumentada por recuperación (RAG) y las tareas necesarias para administrarlo y mantenerlo en el tiempo con herramientas de código abierto.",
+  "foto_destacada": null,
+  "ediciones": [],
+  "temas": [
+    {
+      "tipo": "tema",
+      "orden": 1,
+      "titulo": "Qué es un LLM",
+      "resumen": "Qué hace un modelo de lenguaje de gran escala, qué puede hacer bien y dónde se equivoca.",
+      "pdf": null,
+      "fotos": [],
+      "tip_pixel": "Un LLM predice texto plausible, no verifica hechos. Por eso necesita buenas fuentes."
+    },
+    {
+      "tipo": "tema",
+      "orden": 2,
+      "titulo": "Qué es RAG y por qué usarlo",
+      "resumen": "Cómo la generación aumentada por recuperación conecta el modelo con documentos propios del semillero.",
+      "pdf": null,
+      "fotos": [],
+      "tip_pixel": "La calidad de las respuestas depende más de los documentos que indexas que del modelo que eliges."
+    },
+    {
+      "tipo": "tema",
+      "orden": 3,
+      "titulo": "Arquitectura del geoportal",
+      "resumen": "Recorrido por el frontend en GitHub Pages, el backend en FastAPI y la comunicación entre ambos.",
+      "pdf": null,
+      "fotos": [],
+      "tip_pixel": "Dibuja el flujo de una pregunta de principio a fin antes de tocar el código."
+    },
+    {
+      "tipo": "tema",
+      "orden": 4,
+      "titulo": "Indexación de documentos",
+      "resumen": "Fragmentación, embeddings e índices vectoriales con FAISS.",
+      "pdf": null,
+      "fotos": [],
+      "tip_pixel": "Cuando agregues documentos nuevos, vuelve a indexar y prueba con preguntas que ya conoces."
+    },
+    {
+      "tipo": "tema",
+      "orden": 5,
+      "titulo": "Despliegue y administración",
+      "resumen": "Variables de entorno, despliegue en Render y tareas de mantenimiento del sitio.",
+      "pdf": null,
+      "fotos": [],
+      "tip_pixel": "Nunca subas claves al repositorio. Van en las variables de entorno de Render."
+    },
+    {
+      "tipo": "tema",
+      "orden": 6,
+      "titulo": "Sostenibilidad y buenas prácticas",
+      "resumen": "Cómo mantener el geoportal vivo con costo cero y transferirlo a nuevas generaciones del semillero.",
+      "pdf": null,
+      "fotos": [],
+      "tip_pixel": "Documenta cada cambio como si otra persona fuera a continuarlo mañana."
+    }
+  ],
+  "recursos": [
+    {
+      "titulo": "Documentación de FastAPI",
+      "url": "https://fastapi.tiangolo.com",
+      "tipo": "enlace"
+    },
+    {
+      "titulo": "Documentación de LangChain",
+      "url": "https://python.langchain.com",
+      "tipo": "enlace"
+    },
+    {
+      "titulo": "FAISS",
+      "url": "https://github.com/facebookresearch/faiss",
+      "tipo": "enlace"
+    }
+  ]
+}

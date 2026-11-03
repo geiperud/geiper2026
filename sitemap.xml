@@ -21,12 +21,22 @@
     <priority>0.6</priority>
   </url>
   <url>
-    <loc>https://geiperud.github.io/geiper2026/pages/actividades.html</loc>
+    <loc>https://geiperud.github.io/geiper2026/pages/trayectoria.html</loc>
     <changefreq>weekly</changefreq>
     <priority>0.7</priority>
   </url>
   <url>
-    <loc>https://geiperud.github.io/geiper2026/pages/ponencias.html</loc>
+    <loc>https://geiperud.github.io/geiper2026/pages/taller.html?t=bibliometria</loc>
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  <url>
+    <loc>https://geiperud.github.io/geiper2026/pages/taller.html?t=ortomosaico-radar</loc>
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  <url>
+    <loc>https://geiperud.github.io/geiper2026/pages/taller.html?t=llm-rag</loc>
     <changefreq>monthly</changefreq>
     <priority>0.6</priority>
   </url>

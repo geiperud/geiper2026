@@ -1,0 +1,30 @@
+{
+  "slug": "bibliometria",
+  "titulo": "Taller de bibliometría",
+  "facilitador": "Ing. Daniel Alejandro Afanador Bolívar",
+  "herramientas": ["R", "Bibliometrix", "Zotero", "Mendeley"],
+  "estado": "activo",
+  "resumen_corto": "Ecuaciones de búsqueda, gestores de referencias y análisis de la producción científica con R, para que el estado del arte se sostenga en datos.",
+  "resumen": "Un espacio para aprender a construir ecuaciones de búsqueda, gestionar referencias y analizar la producción científica con R, de modo que el estado del arte de cada investigación se sostenga en datos y no solo en lecturas.",
+  "foto_destacada": null,
+  "ediciones": [
+    { "tipo": "edicion", "orden": 1, "titulo": "1.ª edición", "semestre": "", "resumen": "", "pdf": null, "fotos": [] },
+    { "tipo": "edicion", "orden": 2, "titulo": "2.ª edición", "semestre": "", "resumen": "", "pdf": null, "fotos": [] },
+    { "tipo": "edicion", "orden": 3, "titulo": "3.ª edición", "semestre": "", "resumen": "", "pdf": null, "fotos": [] }
+  ],
+  "temas": [
+    { "tipo": "tema", "orden": 1, "titulo": "Ecuaciones de búsqueda", "resumen": "Cómo traducir una pregunta de investigación a operadores booleanos en Scopus y Web of Science.", "pdf": null, "fotos": [], "tip_pixel": "Prueba tu ecuación por partes. Si un término trae miles de resultados irrelevantes, ahí está el problema." },
+    { "tipo": "tema", "orden": 2, "titulo": "Gestores de referencias", "resumen": "Zotero y Mendeley para organizar la literatura del trabajo de grado.", "pdf": null, "fotos": [], "tip_pixel": "Crea una colección por capítulo de tu tesis desde el inicio." },
+    { "tipo": "tema", "orden": 3, "titulo": "Limpieza de datos", "resumen": "Detección de duplicados y normalización de autores y palabras clave antes del análisis.", "pdf": null, "fotos": [], "tip_pixel": "Un mismo autor puede aparecer escrito de tres formas. Limpia antes de analizar." },
+    { "tipo": "tema", "orden": 4, "titulo": "Análisis con Bibliometrix", "resumen": "Indicadores de producción por año, revista, autor y país con Bibliometrix y Biblioshiny.", "pdf": null, "fotos": [], "tip_pixel": "Guarda siempre el script: es lo que hace tu análisis reproducible." },
+    { "tipo": "tema", "orden": 5, "titulo": "Redes de colaboración", "resumen": "Construcción e interpretación de redes de coautoría, co-citación y co-ocurrencia de palabras clave.", "pdf": null, "fotos": [], "tip_pixel": "Mira también quién conecta a los grupos, no solo el nodo más grande." },
+    { "tipo": "tema", "orden": 6, "titulo": "Visualización e informe", "resumen": "Cómo llevar los resultados bibliométricos al marco teórico de un anteproyecto o artículo.", "pdf": null, "fotos": [], "tip_pixel": "Cada gráfica debe responder una pregunta. Si no sabes cuál, quizá no la necesitas." }
+  ],
+  "recursos": [
+    { "titulo": "Bibliometrix y Biblioshiny para R", "url": "https://www.bibliometrix.org", "tipo": "enlace" },
+    { "titulo": "Zotero: descarga y conector del navegador", "url": "https://www.zotero.org/download/", "tipo": "enlace" },
+    { "titulo": "Mendeley Reference Manager", "url": "https://www.mendeley.com/reference-management/reference-manager", "tipo": "enlace" },
+    { "titulo": "Descarga de R (CRAN)", "url": "https://cran.r-project.org", "tipo": "enlace" },
+    { "titulo": "Descarga de RStudio Desktop", "url": "https://posit.co/download/rstudio-desktop/", "tipo": "enlace" }
+  ]
+}

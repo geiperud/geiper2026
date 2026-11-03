@@ -16,8 +16,7 @@ GEIPER forma estudiantes y profesionales en procesamiento de imágenes satelital
 - [Semillero GEIPER](https://geiperud.github.io/geiper2026/): GEIPER es el Semillero de Investigación en Geomática, Percepción Remota y SIG de la Universidad Distrital Francisco José de Caldas. Avalado por MinCiencias, grupo NIDE.
 - [Líneas de Investigación](https://geiperud.github.io/geiper2026/pages/lineas.html): Líneas de investigación del semillero GEIPER: percepción remota, sistemas de información geográfica, geomática y gestión territorial.
 - [Integrantes](https://geiperud.github.io/geiper2026/pages/integrantes.html): Conoce a los integrantes del semillero de investigación GEIPER de la Universidad Distrital Francisco José de Caldas: estudiantes, docentes y egresados investigadores.
-- [Ponencias & Congresos](https://geiperud.github.io/geiper2026/pages/ponencias.html): Ponencias y participaciones del semillero GEIPER en congresos nacionales e internacionales de percepción remota, SIG y geomática.
-- [Actividades & Workshops](https://geiperud.github.io/geiper2026/pages/actividades.html): Conoce las actividades, talleres y workshops del semillero GEIPER: capacitaciones en percepción remota, SIG, teledetección y geomática para estudiantes de la Universidad Distrital.
+- [Trayectoria](https://geiperud.github.io/geiper2026/pages/trayectoria.html): Trayectoria del semillero GEIPER: ponencias en congresos nacionales e internacionales y talleres de bibliometría, radar SAR y LLM con RAG, con presentaciones y recursos.
 - [Repositorios](https://geiperud.github.io/geiper2026/pages/repositorios.html): Repositorios de datos, código y proyectos del semillero GEIPER: recursos abiertos de percepción remota, SIG y geomática para la comunidad académica.
 - [Eventos](https://geiperud.github.io/geiper2026/pages/eventos.html): Agenda de eventos, convocatorias y congresos del semillero GEIPER: percepción remota, SIG y geomática en la Universidad Distrital Francisco José de Caldas.
 - [Geovisor](https://geiperud.github.io/geiper2026/pages/geovisor.html): Geovisor interactivo del semillero GEIPER: explora capas geoespaciales, cartografía y datos territoriales generados por nuestros proyectos de investigación.
@@ -25,12 +24,12 @@ GEIPER forma estudiantes y profesionales en procesamiento de imágenes satelital
 
 ## Ponencias recientes
 
-- GeoAI y la evolución del análisis geoespacial — Semana ICG 2026 – Edición XXIX (Bogotá D.C., Colombia)
-- Territorios inteligentes: Digital Twins y GeoAI para la gestión de riesgos — Semana ICG 2026 – Edición XXIX (Bogotá D.C., Colombia)
-- GeoAI LAB-UD: Portal de Recursos Educativos Abiertos en Inteligencia Artificial Geoespacial — Conferencia de Geoinformación SELPER 2025 (Mérida, México)
+- Territorios inteligentes: Digital Twins y GeoAI para la gestión de riesgos — Semana ICG 2026, edición XXIX (Bogotá, Colombia)
+- GeoAI y la evolución del análisis geoespacial — Semana ICG 2026, edición XXIX (Bogotá, Colombia)
+- GeoAI LAB-UD: portal de recursos educativos abiertos en inteligencia artificial geoespacial — Conferencia de Geoinformación SELPER 2025 (Mérida, México)
 - Modelado agro político sostenible con percepción remota y SIG — Conferencia UGI Colombia 2025 (Santa Marta, Colombia)
-- Diálogo y gobernanza para la apropiación territorial del catastro multipropósito colombiano — XII Congreso de la Ciencia Cartográfica & III Congreso Virtual Internacional 2024 (Buenos Aires, Argentina)
-- El papel del catastro multipropósito en la gobernanza territorial — IX Congreso Nacional de Geografía de Universidades Públicas 2023 (Buenos Aires, Argentina)
+- Diálogo y gobernanza para la apropiación territorial del catastro multipropósito colombiano — XII Congreso de la Ciencia Cartográfica y III Congreso Virtual Internacional (Buenos Aires, Argentina)
+- El papel del catastro multipropósito en la gobernanza territorial — IX Congreso Nacional de Geografía de Universidades Públicas (Buenos Aires, Argentina)
 
 ## Agenda de eventos
 

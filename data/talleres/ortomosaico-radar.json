@@ -1,0 +1,28 @@
+{
+  "slug": "ortomosaico-radar",
+  "titulo": "Taller de ortomosaico de radar",
+  "facilitador": "Ing. José Luis Herrera Escorcia",
+  "herramientas": ["SNAP (ESA)", "Python", "Google Colab"],
+  "estado": "activo",
+  "resumen_corto": "Procesamiento de imágenes de radar de apertura sintética, desde la descarga de escenas hasta la generación del ortomosaico.",
+  "resumen": "Un recorrido práctico por el procesamiento de imágenes de radar de apertura sintética (SAR): desde la descarga de escenas hasta la generación de un ortomosaico, primero en SNAP y luego automatizado con Python en Google Colab.",
+  "foto_destacada": null,
+  "ediciones": [
+    { "tipo": "edicion", "orden": 1, "titulo": "1.ª edición", "semestre": "", "resumen": "", "pdf": null, "fotos": [] },
+    { "tipo": "edicion", "orden": 2, "titulo": "2.ª edición", "semestre": "", "resumen": "", "pdf": null, "fotos": [] },
+    { "tipo": "edicion", "orden": 3, "titulo": "3.ª edición", "semestre": "", "resumen": "", "pdf": null, "fotos": [] }
+  ],
+  "temas": [
+    { "tipo": "tema", "orden": 1, "titulo": "Fundamentos del radar SAR", "resumen": "Cómo funciona un radar de apertura sintética y qué información contiene una imagen SAR.", "pdf": null, "fotos": [], "tip_pixel": "El radar no ve colores: mide cómo rebota la señal. Piensa en rugosidad y humedad, no en tonos." },
+    { "tipo": "tema", "orden": 2, "titulo": "Descarga de escenas", "resumen": "Búsqueda y descarga de escenas Sentinel-1 en el ecosistema Copernicus.", "pdf": null, "fotos": [], "tip_pixel": "Revisa la órbita y la dirección de paso antes de descargar: mezclar ascendentes y descendentes complica el mosaico." },
+    { "tipo": "tema", "orden": 3, "titulo": "Preprocesamiento en SNAP", "resumen": "Aplicación de órbitas, calibración radiométrica y filtrado del speckle.", "pdf": null, "fotos": [], "tip_pixel": "Guarda tu cadena de procesos como grafo en SNAP. Así repites el flujo sin hacerlo a mano." },
+    { "tipo": "tema", "orden": 4, "titulo": "Corrección de terreno", "resumen": "Ortorrectificación con un modelo digital de elevación para ubicar cada píxel en su posición real.", "pdf": null, "fotos": [], "tip_pixel": "En zonas de montaña, la corrección de terreno no es opcional." },
+    { "tipo": "tema", "orden": 5, "titulo": "Mosaico y exportación", "resumen": "Unión de escenas corregidas en un solo ortomosaico y exportación a formatos SIG.", "pdf": null, "fotos": [], "tip_pixel": "Exporta en GeoTIFF y verifica el sistema de referencia antes de llevarlo a QGIS." },
+    { "tipo": "tema", "orden": 6, "titulo": "Automatización con Python", "resumen": "Reproducción del flujo en Google Colab para procesar varias escenas sin intervención manual.", "pdf": null, "fotos": [], "tip_pixel": "Empieza automatizando un solo paso que funcione bien. Luego encadenas el resto." }
+  ],
+  "recursos": [
+    { "titulo": "Descarga de SNAP (ESA)", "url": "https://step.esa.int/main/download/snap-download/", "tipo": "enlace" },
+    { "titulo": "Copernicus Browser", "url": "https://browser.dataspace.copernicus.eu", "tipo": "enlace" },
+    { "titulo": "Google Colab", "url": "https://colab.research.google.com", "tipo": "enlace" }
+  ]
+}

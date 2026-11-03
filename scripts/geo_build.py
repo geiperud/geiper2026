@@ -228,46 +228,66 @@ def page_integrantes(s):
     return graph, people
 
 
-def page_ponencias(s):
-    page, graph = webpage("pages/ponencias.html", s, "CollectionPage", "Ponencias")
-    items = []
-    for card in s.select("#ponencias .card"):
-        h3, p = card.find("h3"), card.find("p")
-        if not (h3 and p):
-            continue
-        evento, lugar = h3_parts(h3)
+def load_ponencias():
+    """Ponencias de data/ponencias.json en orden cronológico."""
+    data = json.loads(read("data/ponencias.json")).get("ponencias", [])
+    return [p for _, p in sorted(enumerate(data), key=lambda x: (x[1].get("anio", 0), x[0]))]
+
+
+def load_talleres():
+    idx = json.loads(read("data/talleres/index.json")).get("talleres", [])
+    return [json.loads(read(f"data/talleres/{slug}.json")) for slug in idx]
+
+
+def page_trayectoria(s):
+    """Ponencias y talleres: JSON-LD + bloques estáticos para rastreadores sin JS."""
+    page, graph = webpage("pages/trayectoria.html", s, "CollectionPage", "Trayectoria")
+    ponencias, works = load_ponencias(), []
+    for p in ponencias:
+        lugar = ", ".join(x for x in (p.get("ciudad"), p.get("pais")) if x)
+        anio = str(p.get("anio", ""))
         work = {
             "@type": "CreativeWork",
             "genre": "Ponencia",
-            "name": clean(p.get_text()).rstrip("."),
-            "author": ORG_REF,
+            "name": p["titulo"],
+            "author": [{"@type": "Person", "name": n} for n in p.get("ponentes") or []] or ORG_REF,
             "inLanguage": "es",
-            "recordedAt": {"@type": "Event", "name": evento},
+            "dateCreated": anio,
+            "recordedAt": {"@type": "Event", "name": p["evento"], "startDate": anio},
         }
-        year = re.search(r"(19|20)\d{2}", evento)
-        if year:
-            work["dateCreated"] = year.group(0)
-            work["recordedAt"]["startDate"] = year.group(0)
         if lugar:
             work["recordedAt"]["location"] = {"@type": "Place", "name": lugar, "address": lugar}
-        items.append(work)
-    page["hasPart"] = items
-    return graph, items
+        if p.get("resumen"):
+            work["abstract"] = p["resumen"]
+        works.append(work)
+    cursos = []
+    for t in load_talleres():
+        cursos.append({
+            "@type": "Course",
+            "name": t["titulo"],
+            "description": t.get("resumen_corto") or t.get("resumen", ""),
+            "url": f"{SITE}/pages/taller.html?t={t['slug']}",
+            "provider": ORG_REF,
+            "inLanguage": "es",
+        })
+    page["hasPart"] = works + cursos
+    return graph, works, ponencias
 
 
-def page_actividades(s):
-    page, graph = webpage("pages/actividades.html", s, "CollectionPage", "Actividades")
-    seen, parts = set(), []
-    for h3 in s.find_all("h3"):
-        name = clean(h3.get_text())
-        p = h3.find_next_sibling("p")
-        if name in seen:
-            continue
-        seen.add(name)
-        parts.append({"@type": "Thing", "name": name,
-                      "description": clean(p.get_text()) if p else ""})
-    page["about"] = parts
-    return graph
+def render_static_trayectoria(text, ponencias):
+    """Contenido estático dentro de #tlPonencias y #tlCards; js/talleres.js lo reemplaza."""
+    esc = html.escape
+    items = "\n".join(
+        f'    <li><strong>{esc(str(p.get("anio", "")))}</strong> · {esc(p["titulo"])} '
+        f'({esc(p["evento"])}, {esc(", ".join(x for x in (p.get("ciudad"), p.get("pais")) if x))})</li>'
+        for p in reversed(ponencias))
+    text = replace_block(text, "ponencias", f'  <ol class="tl-estatico">\n{items}\n  </ol>',
+                         "<!-- GEO:ponencias END -->")
+    cards = "\n".join(
+        f'    <a href="taller.html?t={esc(t["slug"])}">{esc(t["titulo"])}</a>'
+        for t in load_talleres())
+    return replace_block(text, "talleres", f'  <p class="tl-estatico">\n{cards}\n  </p>',
+                         "<!-- GEO:talleres END -->")
 
 
 def page_repositorios(s):
@@ -337,7 +357,7 @@ def build_llms(pages_meta, lineas_soup, people, ponencias):
         url = f"{SITE}/" if rel == "index.html" else f"{SITE}/{rel}"
         lines.append(f"- [{name}]({url}): {desc}")
     lines += ["", "## Ponencias recientes", ""]
-    for w in ponencias:
+    for w in reversed(ponencias):
         ev = w["recordedAt"]
         loc = ev.get("location", {}).get("name", "")
         lines.append(f"- {w['name']} — {ev['name']}" + (f" ({loc})" if loc else ""))
@@ -366,17 +386,16 @@ def build_llms(pages_meta, lineas_soup, people, ponencias):
 def main():
     S = {rel: soup(rel) for rel in [
         "index.html", "pages/lineas.html", "pages/integrantes.html",
-        "pages/ponencias.html", "pages/actividades.html", "pages/repositorios.html",
+        "pages/trayectoria.html", "pages/repositorios.html",
         "pages/eventos.html", "pages/geovisor.html", "pages/chatbots.html",
     ]}
     ints_graph, people = page_integrantes(S["pages/integrantes.html"])
-    pon_graph, ponencias = page_ponencias(S["pages/ponencias.html"])
+    tray_graph, ponencias, ponencias_raw = page_trayectoria(S["pages/trayectoria.html"])
     graphs = {
         "index.html": page_index(S["index.html"]),
         "pages/lineas.html": page_lineas(S["pages/lineas.html"]),
         "pages/integrantes.html": ints_graph,
-        "pages/ponencias.html": pon_graph,
-        "pages/actividades.html": page_actividades(S["pages/actividades.html"]),
+        "pages/trayectoria.html": tray_graph,
         "pages/repositorios.html": page_repositorios(S["pages/repositorios.html"]),
         "pages/eventos.html": page_eventos(S["pages/eventos.html"]),
         "pages/geovisor.html": page_app(
@@ -393,6 +412,8 @@ def main():
             text = render_static_events(text, limit=1)
         elif rel == "pages/eventos.html":
             text = render_static_events(text)
+        elif rel == "pages/trayectoria.html":
+            text = render_static_trayectoria(text, ponencias_raw)
         write(rel, text)
         print(f"OK {rel}")
 

@@ -1,0 +1,76 @@
+{
+  "ponencias": [
+    {
+      "id": "2023-geografia-buenos-aires",
+      "anio": 2023,
+      "evento": "IX Congreso Nacional de Geografía de Universidades Públicas",
+      "ciudad": "Buenos Aires",
+      "pais": "Argentina",
+      "titulo": "El papel del catastro multipropósito en la gobernanza territorial",
+      "ponentes": [],
+      "resumen": "",
+      "pdf": null,
+      "fotos": []
+    },
+    {
+      "id": "2024-cartografia-buenos-aires",
+      "anio": 2024,
+      "evento": "XII Congreso de la Ciencia Cartográfica y III Congreso Virtual Internacional",
+      "ciudad": "Buenos Aires",
+      "pais": "Argentina",
+      "titulo": "Diálogo y gobernanza para la apropiación territorial del catastro multipropósito colombiano",
+      "ponentes": [],
+      "resumen": "",
+      "pdf": null,
+      "fotos": []
+    },
+    {
+      "id": "2025-ugi-santa-marta",
+      "anio": 2025,
+      "evento": "Conferencia UGI Colombia 2025",
+      "ciudad": "Santa Marta",
+      "pais": "Colombia",
+      "titulo": "Modelado agro político sostenible con percepción remota y SIG",
+      "ponentes": [],
+      "resumen": "",
+      "pdf": null,
+      "fotos": []
+    },
+    {
+      "id": "2025-selper-merida",
+      "anio": 2025,
+      "evento": "Conferencia de Geoinformación SELPER 2025",
+      "ciudad": "Mérida",
+      "pais": "México",
+      "titulo": "GeoAI LAB-UD: portal de recursos educativos abiertos en inteligencia artificial geoespacial",
+      "ponentes": [],
+      "resumen": "",
+      "pdf": null,
+      "fotos": []
+    },
+    {
+      "id": "2026-icg-geoai",
+      "anio": 2026,
+      "evento": "Semana ICG 2026, edición XXIX",
+      "ciudad": "Bogotá",
+      "pais": "Colombia",
+      "titulo": "GeoAI y la evolución del análisis geoespacial",
+      "ponentes": [],
+      "resumen": "",
+      "pdf": null,
+      "fotos": []
+    },
+    {
+      "id": "2026-icg-territorios",
+      "anio": 2026,
+      "evento": "Semana ICG 2026, edición XXIX",
+      "ciudad": "Bogotá",
+      "pais": "Colombia",
+      "titulo": "Territorios inteligentes: Digital Twins y GeoAI para la gestión de riesgos",
+      "ponentes": [],
+      "resumen": "",
+      "pdf": null,
+      "fotos": []
+    }
+  ]
+}
