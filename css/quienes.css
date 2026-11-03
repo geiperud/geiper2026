@@ -1,8 +1,9 @@
 /* ============================================
    GEIPER - Quiénes somos (index.html)
    Opción A: título centrado (estilo .section-title
-   del sitio), párrafo de entrada justificado y tres
-   columnas con línea superior en una misma fila.
+   del sitio), párrafo de entrada centrado y tres
+   columnas con línea superior en una misma fila
+   (subtítulos en DM Serif Text, textos justificados).
    Clases con prefijo qs-.
    Al cambiar este archivo, sube el número de
    versión en index.html (quienes.css?v=N) para
@@ -18,8 +19,7 @@ section.qs { padding: 90px 80px 90px; background: white; }
     font-size: clamp(17px, 1.5vw, 20px);
     line-height: 1.7;
     color: #1B2433;
-    text-align: justify;
-    hyphens: auto;
+    text-align: center;
     max-width: 900px;
     margin: 0 auto 56px;
 }
@@ -31,11 +31,12 @@ section.qs { padding: 90px 80px 90px; background: white; }
 }
 .qs-col { border-top: 1px solid rgba(11, 46, 107, 0.18); padding-top: 22px; }
 .qs-col h3 {
-    font-family: 'Inter', sans-serif;
-    font-weight: 600;
-    font-size: 20px;
+    font-family: 'DM Serif Text', 'Noto Serif', Georgia, serif;
+    font-weight: 400;
+    font-size: 26px;
+    line-height: 1.2;
     color: var(--azul-oscuro);
-    margin: 0 0 12px;
+    margin: 0 0 14px;
 }
 .qs-col p {
     font-family: 'Inter', sans-serif;
