@@ -186,7 +186,7 @@ def page_index(s):
 
 
 def page_lineas(s):
-    page, graph = webpage("pages/lineas.html", s, "CollectionPage", "Líneas de investigación")
+    page, graph = webpage("pages/lineas.html", s, "CollectionPage", "Investigación")
     lineas = []
     for fila in s.select(".linea-fila"):
         h3, p = fila.find("h3"), fila.find("p")
@@ -195,6 +195,14 @@ def page_lineas(s):
                            "description": clean(p.get_text()) if p else "",
                            "inDefinedTermSet": f"{SITE}/pages/lineas.html"})
     page["about"] = lineas
+    # Repositorios del portal de producción (antes en repositorios.html)
+    repos = []
+    for a in s.select(".pi-acceso[data-repo]"):
+        desc = a.select_one(".pi-desc")
+        repos.append({"@type": "WebSite", "name": a["data-repo"], "url": a["href"],
+                      "description": clean(desc.get_text()) if desc else ""})
+    if repos:
+        page["mentions"] = repos
     return graph
 
 
@@ -290,19 +298,6 @@ def render_static_trayectoria(text, ponencias):
                          "<!-- GEO:talleres END -->")
 
 
-def page_repositorios(s):
-    page, graph = webpage("pages/repositorios.html", s, "CollectionPage", "Repositorios")
-    repos = []
-    for card in s.select(".repo-card"):
-        h3, a, p = card.find("h3"), card.find("a", href=True), card.find("p")
-        if h3 and a:
-            repos.append({"@type": "WebSite", "name": clean(h3.get_text(" ")),
-                          "url": a["href"],
-                          "description": clean(p.get_text()) if p else ""})
-    page["mentions"] = repos
-    return graph
-
-
 def page_eventos(s):
     page, graph = webpage("pages/eventos.html", s, "CollectionPage", "Eventos")
     page["hasPart"] = [event_node(e) for e in load_events()]
@@ -386,7 +381,7 @@ def build_llms(pages_meta, lineas_soup, people, ponencias):
 def main():
     S = {rel: soup(rel) for rel in [
         "index.html", "pages/lineas.html", "pages/integrantes.html",
-        "pages/trayectoria.html", "pages/repositorios.html",
+        "pages/trayectoria.html",
         "pages/eventos.html", "pages/geovisor.html", "pages/chatbots.html",
     ]}
     ints_graph, people = page_integrantes(S["pages/integrantes.html"])
@@ -396,7 +391,6 @@ def main():
         "pages/lineas.html": page_lineas(S["pages/lineas.html"]),
         "pages/integrantes.html": ints_graph,
         "pages/trayectoria.html": tray_graph,
-        "pages/repositorios.html": page_repositorios(S["pages/repositorios.html"]),
         "pages/eventos.html": page_eventos(S["pages/eventos.html"]),
         "pages/geovisor.html": page_app(
             "pages/geovisor.html", S["pages/geovisor.html"], "Geovisor",

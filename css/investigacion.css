@@ -1,0 +1,120 @@
+/* ============================================
+   GEIPER - Investigación (lineas.html)
+   Portal de producción: panel, imagen y 4 accesos.
+   Usa las variables de css/styles.css y la tipografía
+   de css/tipografia-dm-inter.css. Clases con prefijo pi-.
+   ============================================ */
+
+.pi-sr {
+    position: absolute; width: 1px; height: 1px; overflow: hidden;
+    clip: rect(0 0 0 0); white-space: nowrap;
+}
+
+section.pi-sec { padding: 90px 80px 100px; background: white; }
+
+.pi-portal {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 2fr);
+    grid-template-rows: auto auto;
+    gap: 6px;
+    max-width: 1150px;
+    margin: 0 auto;
+}
+
+/* ── Panel ─────────────────────────────────────── */
+.pi-panel {
+    grid-row: span 2;
+    background: #E6F1FB;
+    padding: 40px 34px;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    gap: 14px;
+}
+.pi-kicker {
+    font-family: 'Inter', sans-serif;
+    font-size: 13px;
+    color: var(--azul-medio);
+}
+.pi-panel h2 {
+    font-family: 'DM Serif Text', 'Noto Serif', Georgia, serif;
+    font-weight: 400;
+    font-size: clamp(26px, 2.6vw, 32px);
+    line-height: 1.22;
+    color: var(--azul-oscuro);
+}
+.pi-panel p {
+    font-family: 'Inter', sans-serif;
+    font-size: 15px;
+    line-height: 1.65;
+    color: var(--gris);
+}
+
+/* ── Imagen (con retícula de respaldo) ─────────── */
+.pi-imagen {
+    position: relative;
+    min-height: 300px;
+    overflow: hidden;
+    background:
+        repeating-linear-gradient(90deg, rgba(255,255,255,0.10) 0 1px, transparent 1px 72px),
+        repeating-linear-gradient(0deg, rgba(255,255,255,0.10) 0 1px, transparent 1px 72px),
+        linear-gradient(135deg, var(--azul-oscuro), var(--azul-claro));
+}
+.pi-imagen img {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+.pi-pie {
+    display: none;
+    position: absolute;
+    left: 12px;
+    bottom: 10px;
+    font-family: 'Inter', sans-serif;
+    font-size: 12px;
+    color: white;
+    background: rgba(11, 46, 107, 0.75);
+    padding: 3px 10px;
+}
+.pi-imagen img + .pi-pie { display: block; }
+
+/* ── Accesos ───────────────────────────────────── */
+.pi-accesos {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 6px;
+}
+.pi-acceso {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    padding: 18px 18px 20px;
+    background: #F5F7FB;
+    border-top: 3px solid transparent;
+    color: var(--azul-oscuro) !important;
+    text-decoration: none;
+    font-family: 'Inter', sans-serif;
+    transition: border-color 0.2s, background 0.2s;
+}
+.pi-acceso > i { font-size: 22px; color: var(--azul-claro); margin-bottom: 6px; }
+.pi-nombre { font-size: 16px; font-weight: 600; }
+.pi-ext { font-size: 11px; color: var(--gris); margin-left: 4px; }
+.pi-desc { font-size: 13px; line-height: 1.45; color: var(--gris); }
+.pi-acceso:hover { background: #E6F1FB; border-top-color: var(--azul-oscuro); }
+.pi-acceso:focus-visible { outline: 2px solid var(--azul-claro); outline-offset: 2px; }
+
+@media (max-width: 1000px) {
+    section.pi-sec { padding: 70px 32px 80px; }
+    .pi-portal { grid-template-columns: 1fr; }
+    .pi-panel { grid-row: auto; padding: 32px 26px; }
+    .pi-imagen { min-height: 220px; }
+}
+@media (max-width: 720px) {
+    section.pi-sec { padding: 56px 20px 64px; }
+    .pi-accesos { grid-template-columns: 1fr 1fr; }
+}
+@media (prefers-reduced-motion: reduce) {
+    .pi-acceso { transition: none; }
+}

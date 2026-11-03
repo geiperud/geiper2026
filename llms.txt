@@ -14,10 +14,9 @@ GEIPER forma estudiantes y profesionales en procesamiento de imágenes satelital
 ## Páginas principales
 
 - [Semillero GEIPER](https://geiperud.github.io/geiper2026/): GEIPER es el Semillero de Investigación en Geomática, Percepción Remota y SIG de la Universidad Distrital Francisco José de Caldas. Avalado por MinCiencias, grupo NIDE.
-- [Líneas de Investigación](https://geiperud.github.io/geiper2026/pages/lineas.html): Líneas de investigación del semillero GEIPER: percepción remota, sistemas de información geográfica, geomática y gestión territorial.
+- [Investigación](https://geiperud.github.io/geiper2026/pages/lineas.html): Líneas de investigación del semillero GEIPER en percepción remota, SIG y GeoIA, y dónde consultar su producción: repositorios de la Universidad Distrital, ponencias y talleres.
 - [Integrantes](https://geiperud.github.io/geiper2026/pages/integrantes.html): Conoce a los integrantes del semillero de investigación GEIPER de la Universidad Distrital Francisco José de Caldas: estudiantes, docentes y egresados investigadores.
 - [Trayectoria](https://geiperud.github.io/geiper2026/pages/trayectoria.html): Trayectoria del semillero GEIPER: ponencias en congresos nacionales e internacionales y talleres de bibliometría, radar SAR y LLM con RAG, con presentaciones y recursos.
-- [Repositorios](https://geiperud.github.io/geiper2026/pages/repositorios.html): Repositorios de datos, código y proyectos del semillero GEIPER: recursos abiertos de percepción remota, SIG y geomática para la comunidad académica.
 - [Eventos](https://geiperud.github.io/geiper2026/pages/eventos.html): Agenda de eventos, convocatorias y congresos del semillero GEIPER: percepción remota, SIG y geomática en la Universidad Distrital Francisco José de Caldas.
 - [Geovisor](https://geiperud.github.io/geiper2026/pages/geovisor.html): Geovisor interactivo del semillero GEIPER: explora capas geoespaciales, cartografía y datos territoriales generados por nuestros proyectos de investigación.
 - [Asistentes IA](https://geiperud.github.io/geiper2026/pages/chatbots.html): Asistentes de inteligencia artificial del semillero GEIPER: resuelve dudas académicas sobre percepción remota, SIG y geotecnia con IA conversacional.
