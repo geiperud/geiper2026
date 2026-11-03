@@ -16,8 +16,8 @@ section.qs { padding: 90px 80px 90px; background: white; }
 
 .qs-lead {
     font-family: 'Inter', sans-serif;
-    font-size: clamp(17px, 1.5vw, 20px);
-    line-height: 1.7;
+    font-size: var(--fs-intro);
+    line-height: var(--lh-intro);
     color: #1B2433;
     text-align: center;
     max-width: 900px;
@@ -33,15 +33,15 @@ section.qs { padding: 90px 80px 90px; background: white; }
 .qs-col h3 {
     font-family: 'DM Serif Text', 'Noto Serif', Georgia, serif;
     font-weight: 400;
-    font-size: 26px;
-    line-height: 1.2;
+    font-size: var(--fs-subtitulo);
+    line-height: var(--lh-subtitulo);
     color: var(--azul-oscuro);
     margin: 0 0 14px;
 }
 .qs-col p {
     font-family: 'Inter', sans-serif;
-    font-size: 15.5px;
-    line-height: 1.75;
+    font-size: var(--fs-texto);
+    line-height: var(--lh-texto);
     color: var(--gris);
     text-align: justify;
     hyphens: auto;
@@ -51,7 +51,6 @@ section.qs { padding: 90px 80px 90px; background: white; }
 @media (max-width: 1100px) {
     section.qs { padding: 80px 40px; }
     .qs-cols { gap: 32px; }
-    .qs-col p { font-size: 15px; }
 }
 @media (max-width: 860px) {
     section.qs { padding: 64px 24px 56px; }

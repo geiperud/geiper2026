@@ -33,20 +33,20 @@ section.pi-sec { padding: 80px 80px 90px; background: white; }
 }
 .pi-kicker {
     font-family: 'Inter', sans-serif;
-    font-size: 13px;
+    font-size: var(--fs-detalle);
     color: var(--azul-medio);
 }
 .pi-panel h2 {
     font-family: 'DM Serif Text', 'Noto Serif', Georgia, serif;
     font-weight: 400;
-    font-size: clamp(26px, 2.6vw, 32px);
-    line-height: 1.22;
+    font-size: var(--fs-subtitulo);
+    line-height: var(--lh-subtitulo);
     color: var(--azul-oscuro);
 }
 .pi-panel p {
     font-family: 'Inter', sans-serif;
-    font-size: 15px;
-    line-height: 1.65;
+    font-size: var(--fs-texto);
+    line-height: var(--lh-texto);
     color: var(--gris);
 }
 
@@ -73,7 +73,7 @@ section.pi-sec { padding: 80px 80px 90px; background: white; }
     left: 12px;
     bottom: 10px;
     font-family: 'Inter', sans-serif;
-    font-size: 12px;
+    font-size: var(--fs-minimo);
     color: white;
     background: rgba(11, 46, 107, 0.75);
     padding: 4px 10px;
@@ -82,7 +82,7 @@ section.pi-sec { padding: 80px 80px 90px; background: white; }
 }
 .pi-imagen img + .pi-pie { display: block; }
 .pi-pie a { color: white !important; text-decoration: underline; }
-@media (max-width: 720px) { .pi-pie { right: 12px; font-size: 11px; } }
+@media (max-width: 720px) { .pi-pie { right: 12px; } }
 
 /* ── Accesos ───────────────────────────────────── */
 .pi-accesos {
@@ -103,9 +103,9 @@ section.pi-sec { padding: 80px 80px 90px; background: white; }
     transition: border-color 0.2s, background 0.2s;
 }
 .pi-acceso > i { font-size: 22px; color: var(--azul-claro); margin-bottom: 6px; }
-.pi-nombre { font-size: 16px; font-weight: 600; }
-.pi-ext { font-size: 11px; color: var(--gris); margin-left: 4px; }
-.pi-desc { font-size: 13px; line-height: 1.45; color: var(--gris); }
+.pi-nombre { font-size: var(--fs-texto); font-weight: 600; }
+.pi-ext { font-size: var(--fs-minimo); color: var(--gris); margin-left: 4px; }
+.pi-desc { font-size: var(--fs-detalle); line-height: var(--lh-detalle); color: var(--gris); }
 .pi-acceso:hover { background: #E6F1FB; border-top-color: var(--azul-oscuro); }
 .pi-acceso:focus-visible { outline: 2px solid var(--azul-claro); outline-offset: 2px; }
 

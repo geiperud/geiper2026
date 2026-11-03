@@ -21,6 +21,7 @@
   <link rel="apple-touch-icon" href="../assets/images/apple-touch-icon.png">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
   <link rel="stylesheet" href="../css/styles.css">
+  <link rel="stylesheet" href="../css/tipografia-dm-inter.css?v=2">
 
 <style>
 .meta-wrap {
@@ -33,7 +34,7 @@
   display: inline-flex;
   align-items: center;
   gap: 6px;
-  font-size: 13px;
+  font-size: var(--fs-detalle);
   color: var(--azul-medio);
   text-decoration: none;
   margin-bottom: 22px;
@@ -41,14 +42,17 @@
 .meta-back:hover { text-decoration: underline; }
 
 .meta-title-block h1 {
-  font-family: 'Noto Serif', serif;
-  font-size: 28px;
+  font-family: 'DM Serif Text', 'Noto Serif', serif;
+  font-size: var(--fs-titulo);
+  font-weight: 400;
+  line-height: var(--lh-titulo);
   color: var(--azul-oscuro);
   margin-bottom: 6px;
 }
 .meta-title-block p {
   color: var(--gris);
-  font-size: 14px;
+  font-size: var(--fs-intro);
+  line-height: var(--lh-intro);
   max-width: 640px;
 }
 
@@ -68,6 +72,7 @@
   background: var(--blanco);
   color: var(--azul-medio);
   font-size: 13px;
+  font-family: inherit;
   font-weight: 600;
   cursor: pointer;
   transition: all 0.15s;
@@ -82,23 +87,24 @@
 .meta-section:last-child { border-bottom: none; }
 
 .meta-section h2 {
-  font-size: 15px;
-  letter-spacing: 0.04em;
-  text-transform: uppercase;
+  font-size: var(--fs-subtitulo);
+  font-family: 'DM Serif Text', 'Noto Serif', serif;
+  font-weight: 400;
   color: var(--azul-oscuro);
   margin-bottom: 14px;
   display: flex;
   align-items: center;
   gap: 8px;
 }
-.meta-section h2 i { color: var(--azul-claro); font-size: 13px; }
+.meta-section h2 i { color: var(--azul-claro); font-size: 16px; }
+.meta-field dt { font-size: var(--fs-detalle); }
 
 .meta-field {
   display: grid;
   grid-template-columns: 200px 1fr;
   gap: 12px;
   padding: 7px 0;
-  font-size: 13.5px;
+  font-size: var(--fs-texto);
   line-height: 1.55;
   border-bottom: 1px dashed #eef1f6;
 }
@@ -113,7 +119,7 @@
 .meta-lineage-list li {
   position: relative;
   padding: 4px 0 4px 30px;
-  font-size: 13.5px;
+  font-size: var(--fs-texto);
   line-height: 1.55;
   color: #1e293b;
 }
@@ -128,7 +134,7 @@
   border-radius: 50%;
   background: var(--azul-medio);
   color: #fff;
-  font-size: 10.5px;
+  font-size: var(--fs-minimo);
   font-weight: 700;
   display: flex;
   align-items: center;
@@ -137,7 +143,7 @@
 
 .meta-code-row {
   font-family: 'Courier New', monospace;
-  font-size: 12.5px;
+  font-size: var(--fs-detalle);
   background: #f5f7fb;
   border: 1px solid #e5e9f0;
   border-radius: 6px;
@@ -149,7 +155,7 @@
 .meta-attr-table {
   width: 100%;
   border-collapse: collapse;
-  font-size: 12.5px;
+  font-size: var(--fs-detalle);
 }
 .meta-attr-table th {
   text-align: left;
@@ -171,7 +177,7 @@
   border: 1px solid #fed7aa;
   border-radius: 8px;
   padding: 12px 14px;
-  font-size: 13px;
+  font-size: var(--fs-detalle);
   color: #9a3412;
   line-height: 1.5;
 }

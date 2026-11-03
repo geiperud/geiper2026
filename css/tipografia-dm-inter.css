@@ -1,36 +1,55 @@
 /* ============================================
-   GEIPER - Tipografía y estructura alternativa
-   DM Serif Text + Inter
-   Se carga SOLO en: index.html, pages/lineas.html,
-   pages/integrantes.html, pages/repositorios.html,
-   pages/eventos.html.
-   NO se incluye en pages/geovisor.html ni en
-   pages/chatbots.html, que conservan Noto Serif + Inter.
-   Debe cargarse después de css/styles.css para que
-   estas reglas ganen la cascada por orden de fuente.
+   GEIPER - Tipografía y escala unificada
+   DM Serif Text (títulos) + Inter (textos).
+   Se carga en todas las páginas de contenido, incluidas
+   chatbots.html y metadatos-municipios.html. El geovisor
+   no la carga: su interfaz de mapa usa tamaños compactos
+   propios (etiquetas de coordenadas y línea de tiempo).
+   Debe cargarse después de css/styles.css y antes de las
+   hojas propias de cada página (talleres.css,
+   investigacion.css, quienes.css, chatbots.css), que
+   usan estas mismas variables.
    ============================================ */
 
 @import url('https://fonts.googleapis.com/css2?family=DM+Serif+Text:ital@0;1&family=Inter:wght@400;500;600;700&display=swap');
 
-/* ── ESCALA TIPOGRÁFICA UNIFICADA ─────────────
-   Antes había ~20 tamaños distintos regados por el
-   sitio (8.5px, 10px, 10.5px, 11px, 11.5px, 13px,
-   13.5px, 14.5px...). Se consolidan en 6 pasos: */
+/* ── ESCALA TIPOGRÁFICA (6 niveles) ────────────
+   Aprobada en nov. 2026. Para cambiar un tamaño en
+   todo el sitio, cámbialo solo aquí.
+   Las cifras del Inicio, los botones y el menú quedan
+   fuera de la escala a propósito. */
 :root {
-    --text-2xs:  12px;  /* etiquetas/meta en mayúsculas: badges, fechas, tags */
-    --text-sm:   14px;  /* texto de apoyo: tarjetas secundarias, botones, formularios */
-    --text-base: 16px;  /* texto de lectura estándar (también body) */
-    --text-md:   18px;  /* párrafos destacados dentro de tarjetas/listas */
-    --text-lg:   22px;  /* subtítulos de tarjeta/sección secundaria */
-    --text-xl:   25px;  /* titular de ítem numerado (líneas de investigación) */
+    --fs-portada:    56px;  /* título principal de cada página */
+    --fs-titulo:     42px;  /* títulos de sección */
+    --fs-subtitulo:  24px;  /* subtítulos: tarjetas, columnas, ítems */
+    --fs-intro:      18px;  /* párrafo que acompaña a un título */
+    --fs-texto:      16px;  /* texto de lectura */
+    --fs-detalle:    13px;  /* etiquetas, fechas, pies de foto, formularios */
+    --fs-minimo:     12px;  /* piso absoluto: nada se escribe más pequeño */
+
+    --lh-portada:    1.15;
+    --lh-titulo:     1.25;
+    --lh-subtitulo:  1.3;
+    --lh-intro:      1.65;
+    --lh-texto:      1.7;
+    --lh-detalle:    1.5;
+
+    /* Nombres anteriores, conservados para botones y
+       filtros que siguen usándolos. */
+    --text-2xs:  var(--fs-minimo);
+    --text-sm:   14px;
+    --text-base: var(--fs-texto);
+    --text-md:   var(--fs-intro);
+    --text-lg:   var(--fs-subtitulo);
+    --text-xl:   var(--fs-subtitulo);
 }
 
 /* ── TIPOGRAFÍA BASE ─────────────────────────── */
 body {
-    font-size: var(--text-base);
+    font-size: var(--fs-texto);
 }
 
-/* ── TÍTULOS SERIF → DM Serif Text ──────────── */
+/* ── FAMILIAS ─────────────────────────────────── */
 .hero-text h1,
 .page-hero h1,
 .section-title,
@@ -39,69 +58,92 @@ body {
 .sub-card h3,
 .feed-date-block .feed-day,
 .feed-title,
-.contact-wide-top h2 {
+.contact-wide-top h2,
+.card h3 {
     font-family: 'DM Serif Text', serif;
     font-weight: 400;
 }
 
-.section-title {
-    font-size: 42px;
-    line-height: 1.25;
+/* ── 1. PORTADA ───────────────────────────────── */
+.hero-text h1,
+.page-hero h1 {
+    font-size: var(--fs-portada);
+    line-height: var(--lh-portada);
 }
 
-/* ── TAMAÑO 2XS: etiquetas y metadatos ────────── */
+/* ── 2. TÍTULO DE SECCIÓN ─────────────────────── */
+.section-title {
+    font-size: var(--fs-titulo);
+    line-height: var(--lh-titulo);
+}
+
+/* ── 3. SUBTÍTULO ─────────────────────────────── */
+.linea-fila h3,
+.sub-card h3,
+.repo-card h3,
+.card h3,
+.contact-wide-top h2,
+.feed-title {
+    font-size: var(--fs-subtitulo);
+    line-height: var(--lh-subtitulo);
+    letter-spacing: 0;
+}
+
+/* ── 4. INTRODUCCIÓN ──────────────────────────── */
+.hero-text p,
+.page-hero p,
+.section-title + p {
+    font-size: var(--fs-intro);
+    line-height: var(--lh-intro);
+}
+
+/* ── 5. TEXTO ─────────────────────────────────── */
+.linea-fila p,
+.card p,
+.sub-card p,
+.repo-card p,
+.faq-answer p,
+.feed-desc,
+.contact-wide-top p {
+    font-size: var(--fs-texto);
+    line-height: var(--lh-texto);
+}
+
+/* ── 6. DETALLE ───────────────────────────────── */
+.footer-col p,
+.footer-col a,
+.form-group label,
+.mosaico-caption {
+    font-size: var(--fs-detalle);
+    line-height: var(--lh-detalle);
+}
+
+/* ── MÍNIMO: etiquetas en mayúsculas y metadatos ─ */
 .badge,
+.mosaico-tag,
 .footer-info span,
 .footer-bottom span,
 .feed-date-block .feed-month,
 .feed-type,
 .footer-col h3 {
-    font-size: var(--text-2xs);
+    font-size: var(--fs-minimo);
 }
 
-/* ── TAMAÑO SM: texto de apoyo ─────────────────── */
-.repo-card p,
-.sub-card p,
-.footer-col p,
-.contact-wide-top p,
-.form-group label,
+/* ── BOTONES Y FILTROS (fuera de la escala) ───── */
 .filtro-btn,
 .repo-btn,
 .feed-link {
     font-size: var(--text-sm);
 }
 
-/* ── TAMAÑO BASE: texto de lectura estándar ───── */
-.stat-desc,
-.faq-answer p {
-    font-size: var(--text-base);
+/* ── CIFRAS DEL INICIO (fuera de la escala) ───── */
+.stat-desc {
+    font-size: 16px;
 }
 
-/* ── TAMAÑO MD: párrafos destacados ───────────── */
-#quienes > p,
-.card.justify p,
-.linea-fila p {
-    font-size: var(--text-md);
-    line-height: 1.75;
-}
-
-/* ── TAMAÑO LG: subtítulos de tarjeta/sección ─── */
-.repo-card h3,
-.sub-card h3,
-.card.justify h3,
-.contact-wide-top h2,
-.feed-title {
-    font-size: var(--text-lg);
-}
-
-/* ── TAMAÑO XL: titular de ítem numerado ──────── */
+/* ── NÚMEROS DECORATIVOS ──────────────────────── */
 .linea-num {
     font-size: 38px;
-}
-.linea-fila h3 {
-    font-size: var(--text-xl);
-    line-height: 1.45;
-    letter-spacing: 0.2px;
 }
 
 /* ── TARJETAS MISIÓN / VISIÓN: ícono + alineación izquierda ── */
