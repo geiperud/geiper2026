@@ -11,7 +11,7 @@
   'use strict';
 
   var DATA = '../data/talleres/';
-  var PIXEL = '../assets/talleres/pixel.webp';
+  var PIXEL = '../assets/talleres/geiper-pixel-mascota-colibri.webp';
   var PDFJS = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/';
   var SLUG_OK = /^[a-z0-9-]+$/;
 
