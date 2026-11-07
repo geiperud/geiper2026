@@ -38,7 +38,7 @@ GEIPER forma estudiantes y profesionales en procesamiento de imágenes satelital
 
 ## Integrantes
 
-El semillero tiene 26 integrantes entre estudiantes, profesionales y profesores vinculados. Lista completa: https://geiperud.github.io/geiper2026/pages/integrantes.html
+El semillero tiene 33 integrantes entre estudiantes, profesionales y profesores vinculados. Lista completa: https://geiperud.github.io/geiper2026/pages/integrantes.html
 
 ## Opcional
 
