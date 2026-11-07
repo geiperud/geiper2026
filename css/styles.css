@@ -384,7 +384,7 @@ section { padding: 100px 80px; }
 .grid { display: grid; gap: 25px; }
 .two  { grid-template-columns: 1fr 1fr; }
 .lineas      { grid-template-columns: repeat(4, 1fr); }
-.profesores  { grid-template-columns: repeat(5, 1fr); }
+.profesores  { grid-template-columns: repeat(4, 1fr); }
 .integrantes { grid-template-columns: repeat(4, 1fr); }
 
 /* ── CARDS ───────────────────────────────────── */
@@ -537,6 +537,22 @@ section { padding: 100px 80px; }
 .badge-profesional { background: #E6F1FB; color: #185FA5; }
 .badge-lider       { background: #FFF3CD; color: #856404; }
 .card-int.hidden   { display: none; }
+.grid.integrantes.collapsed .card-int.extra { display: none; }
+.grid.profesores .card,
+.grid.integrantes .card { justify-content: flex-start; }
+.grid.profesores .card > a,
+.grid.integrantes .card > a { margin-top: auto !important; padding-top: 8px; }
+.ver-mas-wrap { display: flex; justify-content: center; margin-top: 1.5rem; }
+.ver-mas-btn {
+    display: inline-flex; align-items: center; gap: 6px;
+    padding: 6px 16px; border-radius: 30px;
+    border: 1px solid var(--azul-medio); background: transparent;
+    color: var(--azul-medio); font-size: 12px; cursor: pointer;
+    font-family: 'Inter', sans-serif; transition: background 0.2s;
+}
+.ver-mas-btn:hover { background: #f0f4fb; }
+.ver-mas-btn i { font-size: 10px; transition: transform 0.2s; }
+.ver-mas-btn.open i { transform: rotate(180deg); }
 
 /* ── REPOSITORIOS ─────────────────────────────── */
 .repos-grid {

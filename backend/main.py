@@ -1034,15 +1034,9 @@ HECHOS_SEMILLERO = (
     "naturales, catastro multipropósito y planificación del territorio.\n"
     "Contacto: geiper@udistrital.edu.co, Instagram/redes @semillerogeiper.\n"
     "La líder del semillero (mujer) es Laura Dayana Díaz Beltrán (estudiante, investigación en percepción remota).\n"
-    "Profesores vinculados: José Luis Herrera Escorcia, Carlos Germán Ramírez Ramos, "
-    "Maykol Camilo Delgado Correal, Paulo César Coronado Sánchez.\n"
-    "Estudiantes integrantes (además de la líder): Argenis Alexandra Daza Roa, Mayra Ibeth Pérez "
-    "Rodríguez, Roxxane Brigith Rozo Romero, Fabian Enrique Rodríguez Agatón, Laura Natalia Ramírez "
-    "Aguilera, Haessier Joan Ortiz Moncada, Isabel Semanate Rivera, Camilo Arévalo Sánchez, Martín "
-    "Porras Sierra, Marie Anne López Poveda, Juana Valentina León Upegui, Silvana Castillo Meneses, "
-    "Yan Sebastián Muñoz Gamba, Anamaria Zamudio Arias, Johan Smit Pérez Muñoz, Luis Esteban Pinto "
-    "Casique, Daniel Alejandro Afanador Bolívar, Martha Patricia Valbuena Gaona, Sebastian Forero "
-    "Zapata, Brian Stiffenn Luna Bolívar."
+    "Profesores vinculados: José Luis Herrera Escorcia, Andrés Cárdenas Contreras, Carlos Germán Ramírez Ramos, Edilberto Suárez Torres, Héctor Javier Fuentes López, José Antonio Valero Medina, Maykol Camilo Delgado Correal, Paulo César Coronado Sánchez.\n"
+    "Estudiantes integrantes (además de la líder): Argenis Alexandra Daza Roa (líder del taller de ortomosaico de radar), Anna Sophia Serrano Mora, Camilo Arévalo Sánchez, Edinson Fabián Peralta, Haessier Joan Ortiz Moncada, Isabel Semanate Rivera, Jonathan Santiago Buitron Vega, Jorge Quintero Andrade, Juan Sebastian Monroy, Juana Valentina León Upegui, Marie Anne López Poveda, Martín Porras Sierra, Vivian Valeria Bulla Morales.\n"
+    "Profesionales (egresados): Daniel Alejandro Afanador Bolívar (líder del taller de bibliometría), Anamaria Zamudio Arias, Brian Stiffenn Luna Bolívar, Johan Smit Perez Muñoz, Luis Esteban Pinto Casique, Martha Patricia Valbuena Gaona, Mayra Ibeth Pérez Rodriguez, Roxxane Brigith Rozo Romero, Sebastian Forero Zapata, Silvana Castillo Meneses, Yan Sebastián Muñoz Gamba."
 )
 
 
