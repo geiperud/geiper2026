@@ -1,6 +1,7 @@
 import os
 import re
 import math
+import difflib
 import time
 import logging
 import traceback
@@ -249,6 +250,33 @@ REFERENCIAS_APA = {
         "estudio: vereda Termales, Vista Hermosa, Meta [Trabajo de grado, "
         "Universidad Distrital Francisco José de Caldas]."
     ),
+    # ── Documentos agregados en la actualización del índice (nov 2026) ──────
+    # Datos tomados de las portadas de cada PDF. Si un documento tiene varios
+    # autores, TODOS van en la cita: detectar_documento_nombrado() reconoce
+    # cualquiera de sus apellidos.
+    "AguirrePradaAngelJacob2022.pdf": (
+        "Aguirre Prada, A. J. (2022). Estudio multitemporal del crecimiento "
+        "urbano de uso y cobertura en la ciudad de Neiva-Huila, mediante "
+        "imágenes satelitales de Landsat 5, 7 y Sentinel 1 [Monografía, "
+        "Universidad Distrital Francisco José de Caldas]."
+    ),
+    "CastilloMenesesSilvana2026.pdf": (
+        "Castillo Meneses, S., & Muñoz Gamba, Y. S. (2026). Análisis "
+        "espaciotemporal y multisensor de la dinámica territorial en la Sabana "
+        "Occidental de Bogotá [Trabajo de grado, Universidad Distrital "
+        "Francisco José de Caldas]."
+    ),
+    "GomezGomezJoseEnrique2020.pdf": (
+        "Velasco Silva, W., & Gómez Gómez, J. E. (2020). Análisis de "
+        "deformación de la corteza en el Magdalena Medio con técnicas de "
+        "interferometría diferencial avanzada y dispersor persistente "
+        "[Proyecto de grado, Universidad Distrital Francisco José de Caldas]."
+    ),
+    "ZamudioAriasAnamaria2026.pdf": (
+        "Zamudio Arias, A. (2026). Análisis de la aplicación del filtro "
+        "Speckle Divergence a imágenes de radar obtenidas para uso y cobertura "
+        "[Monografía, Universidad Distrital Francisco José de Caldas]."
+    ),
 }
 
 # Referencias de los documentos del Asistente de Investigación (metodología,
@@ -350,7 +378,7 @@ def construir_system_prompt(nombre_asistente):
     )
 
 
-def groq_generate(prompt, api_key, nombre_asistente="Asistente Académico"):
+def groq_generate(prompt, api_key, nombre_asistente="Asistente Académico", max_tokens=1500):
     headers = {
         "Content-Type": "application/json",
         "Authorization": f"Bearer {api_key}"
@@ -367,7 +395,7 @@ def groq_generate(prompt, api_key, nombre_asistente="Asistente Académico"):
                 "content": prompt
             }
         ],
-        "max_tokens": 1500,
+        "max_tokens": max_tokens,
         "temperature": 0.1,
         "stream": False
     }
@@ -385,7 +413,7 @@ def groq_generate(prompt, api_key, nombre_asistente="Asistente Académico"):
 # Mismo modelo (gpt-oss-120b) que Groq: si Groq cae, la calidad de respuesta
 # se mantiene practicamente identica, solo cambia el proveedor de inferencia.
 # API compatible con el formato OpenAI, igual que Groq y GLM.
-def cerebras_generate(prompt, api_key, nombre_asistente="Asistente Académico"):
+def cerebras_generate(prompt, api_key, nombre_asistente="Asistente Académico", max_tokens=1500):
     headers = {
         "Content-Type": "application/json",
         "Authorization": f"Bearer {api_key}"
@@ -402,7 +430,7 @@ def cerebras_generate(prompt, api_key, nombre_asistente="Asistente Académico"):
                 "content": prompt
             }
         ],
-        "max_tokens": 1500,
+        "max_tokens": max_tokens,
         "temperature": 0.1,
         "stream": False
     }
@@ -439,7 +467,7 @@ def cerebras_generate(prompt, api_key, nombre_asistente="Asistente Académico"):
 
 
 # ── LLM Gemini via REST (fallback) ───────────────────────────────────────────
-def gemini_generate(prompt, api_key, nombre_asistente="Asistente Académico"):
+def gemini_generate(prompt, api_key, nombre_asistente="Asistente Académico", max_tokens=1500):
     url = GEMINI_URL + f"?key={api_key}"
     payload = {
         "systemInstruction": {
@@ -449,7 +477,7 @@ def gemini_generate(prompt, api_key, nombre_asistente="Asistente Académico"):
             {"role": "user", "parts": [{"text": prompt}]}
         ],
         "generationConfig": {
-            "maxOutputTokens": 1500,
+            "maxOutputTokens": max_tokens,
             "temperature": 0.2
         }
     }
@@ -477,7 +505,7 @@ GLM_URL = "https://open.bigmodel.cn/api/paas/v4/chat/completions"
 GLM_MODEL = "glm-4.5-flash"
 
 
-def glm_generate(prompt, api_key, nombre_asistente="Asistente Académico"):
+def glm_generate(prompt, api_key, nombre_asistente="Asistente Académico", max_tokens=1500):
     headers = {
         "Authorization": f"Bearer {api_key}",
         "Content-Type": "application/json"
@@ -488,7 +516,7 @@ def glm_generate(prompt, api_key, nombre_asistente="Asistente Académico"):
             {"role": "system", "content": construir_system_prompt(nombre_asistente)},
             {"role": "user", "content": prompt}
         ],
-        "max_tokens": 1500,
+        "max_tokens": max_tokens,
         "temperature": 0.2
     }
     MAX_REINTENTOS = 2
@@ -751,9 +779,10 @@ def buscar_contexto_documentos(vectorstore_local, referencias_apa, query_actual,
     # para el porque). Se prueba con query_actual y, si no hay match ahi, con
     # consulta_efectiva (cubre el caso "resume ESE trabajo" referido al turno
     # anterior, donde el nombre del autor ya no esta en el mensaje actual).
-    archivo_nombrado = detectar_documento_nombrado(query_actual, referencias_apa)
+    fuentes_indice = _fuentes_del_indice(vectorstore_local)
+    archivo_nombrado = detectar_documento_nombrado(query_actual, referencias_apa, fuentes_indice)
     if archivo_nombrado is None and consulta_efectiva != query_actual:
-        archivo_nombrado = detectar_documento_nombrado(consulta_efectiva, referencias_apa)
+        archivo_nombrado = detectar_documento_nombrado(consulta_efectiva, referencias_apa, fuentes_indice)
     if archivo_nombrado:
         contexto = buscar_contexto_por_documento(
             vectorstore_local, archivo_nombrado, consulta_efectiva, referencias_apa
@@ -831,29 +860,115 @@ def _extraer_apellidos_autores(cita_apa):
     return apellidos
 
 
-def detectar_documento_nombrado(query, referencias_apa):
-    """
-    Detecta si la consulta nombra directamente a un documento indexado por su
-    autor (ej. "hablemos del trabajo de forero zapata", "resume el de
-    valbuena gaona", "que dice el de melo cristancho"). Este tipo de
-    preguntas NO son preguntas de contenido semántico -- son una referencia
-    directa a una fuente por nombre -- así que compararlas contra los chunks
-    via similitud coseno (ver UMBRAL_SIMILITUD_COSENO) falla sistemáticamente:
-    "hablemos del trabajo de X" esta lejos, en el espacio de embeddings, de
-    un fragmento que habla de segmentacion semantica o redes convolucionales,
-    aunque el documento SI este indexado. Por eso se detecta aparte, con
-    coincidencia textual de apellidos, y se resuelve con
-    buscar_contexto_por_documento (bypass del umbral).
+# Cache {id(vectorstore): [nombres de archivo]}: evita recorrer los miles de
+# fragmentos del docstore en cada pregunta. El índice no cambia mientras el
+# proceso está vivo (solo se recarga al redesplegar), así que es seguro.
+_CACHE_FUENTES_INDICE = {}
 
-    Devuelve el nombre de archivo del mejor match (el apellido mas largo /
-    especifico que aparezca en la consulta, para evitar que un apellido corto
-    y comun capture el documento equivocado), o None si no se detecta ninguno.
+
+def _fuentes_del_indice(vectorstore_local):
+    """Nombres de archivo (sin ruta) de los documentos presentes en el índice."""
+    if vectorstore_local is None:
+        return []
+    clave = id(vectorstore_local)
+    if clave not in _CACHE_FUENTES_INDICE:
+        try:
+            _CACHE_FUENTES_INDICE[clave] = sorted({
+                os.path.basename(doc.metadata.get("source", ""))
+                for doc in vectorstore_local.docstore._dict.values()
+                if doc.metadata.get("source")
+            })
+        except Exception as e:
+            logger.warning(f"No se pudieron leer las fuentes del índice: {e}")
+            return []
+    return _CACHE_FUENTES_INDICE[clave]
+
+
+def _apellidos_desde_nombre_archivo(archivo):
+    """Respaldo para documentos indexados que todavía NO tienen cita en
+    REFERENCIAS_APA. Los PDF siguen la convención
+    ApellidoApellidoNombreNombreAño.pdf (ej. ZamudioAriasAnamaria2026.pdf),
+    así que los dos primeros bloques en CamelCase son los apellidos."""
+    base = os.path.splitext(os.path.basename(archivo))[0]
+    palabras = re.findall(r'[A-ZÁÉÍÓÚÑ][a-záéíóúñ]+', _normalizar_nombre_archivo(base))
+    if len(palabras) >= 2:
+        return [" ".join(palabras[:2])]
+    return palabras[:1]
+
+
+def _tokens_de_cita(texto_norm):
+    return re.findall(r'[a-z0-9]+', texto_norm)
+
+
+# Palabras que indican que el usuario está hablando de UN documento ("hablemos
+# del trabajo de...", "resume la tesis de...", "qué dice el de..."). Solo se
+# exige para el reconocimiento por un apellido suelto o con error de tipeo:
+# apellidos como Guerrero, Castillo o Zapata también son palabras comunes
+# (un estado de México, un castillo, un líder) y sin esta guarda podrían
+# secuestrar preguntas que no tienen nada que ver con un documento.
+_PATRON_CUE_DOCUMENTO = re.compile(
+    r'\b(trabajos?|tesis|monograf\w*|documentos?|pdf|proyectos?|autor\w*|archivos?|'
+    r'hablemos|habla\w*|resum\w*|cuent\w*|explic\w*|dice|dijo|plantea|propone|'
+    r'concluy\w*|menciona|investigacion)\b'
+)
+
+
+def detectar_documento_nombrado(query, referencias_apa, archivos_indexados=None):
+    """
+    Detecta si la consulta nombra directamente a un documento indexado (ej.
+    "hablemos del trabajo de forero zapata", "resume el de valbuena gaona").
+    Este tipo de preguntas NO son preguntas de contenido semántico -- son una
+    referencia directa a una fuente por nombre -- así que compararlas contra
+    los chunks via similitud coseno (ver UMBRAL_SIMILITUD_COSENO) falla
+    sistemáticamente: "hablemos del trabajo de X" esta lejos, en el espacio de
+    embeddings, de un fragmento que habla de segmentacion semantica, aunque el
+    documento SI este indexado. Por eso se detecta aparte, con coincidencia
+    textual, y se resuelve con buscar_contexto_por_documento (bypass del umbral).
+
+    Orden de coincidencia (se devuelve la primera que acierte):
+      0. El usuario escribió el nombre del archivo (incluso con un error de
+         tipeo, ej. 'amudioAriasAnamaria2026.pdf' por 'ZamudioArias...').
+      1. Apellido(s) completo(s) del autor tal como están en la cita APA
+         (comportamiento original): gana el apellido más largo, para que uno
+         corto y común no capture el documento equivocado.
+      2. Un solo apellido ('hablemos del trabajo de zamudio'), con tolerancia
+         a errores de tipeo -- solo si la frase habla de un documento.
+
+    archivos_indexados: nombres de archivo realmente presentes en el índice.
+    Los que no tengan cita en referencias_apa se reconocen igual, por los
+    apellidos que lleva su nombre de archivo.
+
+    Devuelve el nombre de archivo del mejor match, o None si no hay ninguno
+    (o si hay un empate entre documentos distintos).
     """
     query_norm = _normalizar_texto(query)
+    query_tokens = _tokens_de_cita(query_norm)
+
+    apellidos_por_archivo = {
+        archivo: _extraer_apellidos_autores(cita)
+        for archivo, cita in referencias_apa.items()
+    }
+    conocidos = {_normalizar_nombre_archivo(a) for a in apellidos_por_archivo}
+    for archivo in (archivos_indexados or []):
+        if _normalizar_nombre_archivo(archivo) not in conocidos:
+            apellidos_por_archivo[archivo] = _apellidos_desde_nombre_archivo(archivo)
+
+    # Paso 0: el usuario escribió el nombre del archivo (con o sin errores).
+    for archivo in apellidos_por_archivo:
+        stem = _normalizar_texto(os.path.splitext(_normalizar_nombre_archivo(archivo))[0])
+        if not stem:
+            continue
+        for tq in query_tokens:
+            if len(tq) < 10:
+                continue
+            if tq == stem or difflib.SequenceMatcher(None, tq, stem).ratio() >= 0.85:
+                return archivo
+
+    # Paso 1: apellido completo (comportamiento original).
     mejor_archivo = None
     mejor_longitud = 0
-    for archivo, cita in referencias_apa.items():
-        for apellido in _extraer_apellidos_autores(cita):
+    for archivo, apellidos in apellidos_por_archivo.items():
+        for apellido in apellidos:
             apellido_norm = _normalizar_texto(apellido)
             if not apellido_norm:
                 continue
@@ -861,7 +976,37 @@ def detectar_documento_nombrado(query, referencias_apa):
             if re.search(patron, query_norm) and len(apellido_norm) > mejor_longitud:
                 mejor_archivo = archivo
                 mejor_longitud = len(apellido_norm)
-    return mejor_archivo
+    if mejor_archivo:
+        return mejor_archivo
+
+    # Paso 2: un apellido suelto o con error de tipeo, solo si se habla de un
+    # documento (ver _PATRON_CUE_DOCUMENTO).
+    if not _PATRON_CUE_DOCUMENTO.search(query_norm):
+        return None
+
+    puntajes = {}
+    for archivo, apellidos in apellidos_por_archivo.items():
+        for apellido in apellidos:
+            for token_ap in _tokens_de_cita(_normalizar_texto(apellido)):
+                if len(token_ap) < 4:
+                    continue
+                for tq in query_tokens:
+                    if tq == token_ap:
+                        puntaje = 2.0 + len(token_ap) / 100
+                    elif len(tq) >= 6 and len(token_ap) >= 6:
+                        ratio = difflib.SequenceMatcher(None, tq, token_ap).ratio()
+                        if ratio < 0.88:
+                            continue
+                        puntaje = ratio
+                    else:
+                        continue
+                    puntajes[archivo] = max(puntajes.get(archivo, 0.0), puntaje)
+
+    if not puntajes:
+        return None
+    mejor = max(puntajes.values())
+    ganadores = [a for a, pt in puntajes.items() if pt == mejor]
+    return ganadores[0] if len(ganadores) == 1 else None
 
 
 def buscar_contexto_por_documento(vectorstore_local, archivo, consulta_para_ordenar, referencias_apa, k=5):
@@ -924,6 +1069,232 @@ def buscar_contexto_por_documento(vectorstore_local, archivo, consulta_para_orde
     except Exception as e:
         logger.warning(f"No se pudo recuperar contexto por documento nombrado '{archivo}': {e}")
         return ""
+
+
+# ── Preguntas de continuidad: "¿qué otro trabajo podría hacerse a partir de este?" ──
+# Se responden igual para CUALQUIER documento del corpus. Una pregunta así no se
+# contesta bien con la búsqueda semántica normal: lo que sirve para proponer una
+# continuación realista no es el cuerpo del trabajo sino sus apartados de cierre
+# (conclusiones, limitaciones, recomendaciones y trabajo futuro) junto con lo que
+# el trabajo hizo (alcance, datos, método). Por eso se recuperan esas secciones
+# del documento nombrado y se le pide al modelo que distinga entre lo que el
+# propio trabajo recomienda y lo que él propone como extensión.
+LINEAS_OFICIALES_GEIPER = (
+    "Procesamiento digital y análisis de imágenes; Implementación de modelos de GeoIA; "
+    "Análisis espacial; Detección de cambios en objetos y fenómenos geográficos; "
+    "Infraestructuras de datos espaciales y estandarización; Cartografía aplicada a la "
+    "gestión de recursos y ordenamiento territorial"
+)
+
+_PATRON_CONTINUIDAD = re.compile(
+    r'\bcontinuidad\b|\bcontinuacion\b|\bcontinuar\b|\bcontinuarl[oa]\b|'
+    r'\btrabajos? futuros?\b|\binvestigaciones? futuras?\b|\blineas? futuras?\b|\bestudios? futuros?\b|'
+    r'\b(siguientes?|proximos?) (pasos?|trabajos?|investigaciones?|proyectos?|etapas?)\b|'
+    r'\bque (otro|otra|mas) (trabajo|trabajos|investigacion|investigaciones|proyecto|proyectos|estudio|estudios|tesis)\b|'
+    r'\bque (mas )?se (podria|puede|deberia|debe|podrian|pueden) (hacer|investigar|estudiar|continuar|ampliar|profundizar)\b|'
+    r'\b(como|en que) (se )?(podria|puede|podriamos|puedo|podrian) (continuar|extender|ampliar|profundizar|dar continuidad)\b|'
+    r'\b(extender|ampliar|profundizar|dar continuidad a) (este|esta|el|la|ese|esa) (trabajo|tesis|investigacion|proyecto|estudio|monografia)\b|'
+    r'\bideas? de (tesis|trabajo|proyecto|investigacion|monografia)\b|'
+    r'\bque falta (por )?(investigar|estudiar|hacer)\b|\bvacios? de investigacion\b|'
+    r'\bposibles? (trabajos|tesis|proyectos|investigaciones)\b',
+    re.IGNORECASE
+)
+
+
+def es_pregunta_de_continuidad(query):
+    return bool(_PATRON_CONTINUIDAD.search(_normalizar_texto(query)))
+
+
+# Raíces (no palabras completas): el texto extraído de un PDF suele traer
+# tildes rotas ("conclusi´on"), así que se busca el comienzo de la palabra.
+_TERMINOS_CIERRE = (
+    (3.0, ("recomend", "se sugiere", "se propone", "trabajos futuros", "trabajo futuro",
+           "investigaciones futuras", "lineas futuras", "estudios futuros", "futuras investigaciones",
+           "futuros estudios", "a futuro", "sugerencias")),
+    (2.0, ("conclusi", "se concluye", "concluye")),
+    (2.0, ("limitaci", "no fue posible", "no se logro", "dificultad", "restricci")),
+    (1.0, ("futur", "se plantea", "se podria", "seria posible")),
+)
+_TERMINOS_ALCANCE = (
+    (3.0, ("objetivo general", "objetivos especificos")),
+    (1.5, ("alcance", "delimitaci", "planteamiento del problema")),
+    (1.0, ("metodolog", "area de estudio", "zona de estudio", "imagenes", "sensor", "datos")),
+)
+
+
+def _texto_para_buscar(texto):
+    """Minúsculas, sin tildes y sin los acentos sueltos que deja la extracción de PDF."""
+    return re.sub(r"[´`¨˜^]", "", _normalizar_texto(texto))
+
+
+def _puntaje_terminos(texto_norm, tabla):
+    return sum(peso for peso, raices in tabla if any(r in texto_norm for r in raices))
+
+
+def _parece_indice(texto):
+    """Un fragmento de tabla de contenido menciona 'Conclusiones' y 'Recomendaciones'
+    pero no dice nada: se detecta por los puntos guía o por muchas líneas que terminan en número."""
+    if re.search(r'(\.\s?){6,}', texto):
+        return True
+    lineas = [l for l in texto.splitlines() if l.strip()]
+    con_numero = sum(1 for l in lineas if re.search(r'\s\d{1,3}\s*$', l))
+    return len(lineas) >= 6 and con_numero >= 0.6 * len(lineas)
+
+
+_RAICES_ENCABEZADO_CIERRE = ("conclusi", "recomend", "trabajo futuro", "trabajos futuros", "limitaci",
+                             "lineas futuras", "investigaciones futuras", "estudios futuros")
+
+
+def _tiene_encabezado_de_cierre(texto):
+    """True si el fragmento trae un TÍTULO de apartado de cierre ('5. Conclusiones y
+    recomendaciones', 'Sobre los resultados y trabajo futuro'): una línea corta que
+    nombra el apartado y no termina en número (eso sería una tabla de contenido)."""
+    for linea in texto.splitlines():
+        l = linea.strip()
+        if 3 <= len(l) <= 80 and not re.search(r'\d{1,3}\s*$', l):
+            ln = _texto_para_buscar(l)
+            if any(r in ln for r in _RAICES_ENCABEZADO_CIERRE):
+                return True
+    return False
+
+
+def _parece_bibliografia(texto):
+    """Listas de referencias, enlaces o normas: mencionan todo y no concluyen nada."""
+    return texto.lower().count("http") >= 2 or len(re.findall(r'\(\d{4}[a-z]?\)', texto)) >= 4 \
+        or len(re.findall(r'\bISO(/IEC)?\s?\d{3,5}', texto)) >= 3
+
+
+def buscar_contexto_continuidad(vectorstore_local, archivo, referencias_apa, k_cierre=4, k_alcance=2):
+    """
+    Arma el contexto para proponer trabajos de continuidad sobre UN documento:
+    los k_cierre fragmentos con más señal de conclusiones / limitaciones /
+    recomendaciones (casi siempre en el último tramo del documento) y los
+    k_alcance que mejor describen lo que el trabajo hizo (objetivos, alcance,
+    datos, método). Devuelve '' si no se puede armar.
+    """
+    if vectorstore_local is None:
+        return ""
+    try:
+        archivo_norm = _normalizar_nombre_archivo(archivo)
+        id_a_indice = {d: i for i, d in vectorstore_local.index_to_docstore_id.items()}
+        candidatos = []
+        for docstore_id, doc in vectorstore_local.docstore._dict.items():
+            fuente = os.path.basename(doc.metadata.get("source", ""))
+            if _normalizar_nombre_archivo(fuente) != archivo_norm:
+                continue
+            idx = id_a_indice.get(docstore_id)
+            if idx is None:
+                continue
+            candidatos.append((doc, idx))
+        if not candidatos:
+            return ""
+
+        n_paginas = max(int(d.metadata.get("page", 0) or 0) for d, _ in candidatos) + 1
+
+        # Similitud con "cierre del trabajo" (una sola consulta de embedding). Si
+        # falla, el puntaje se apoya solo en las palabras clave y la posición.
+        sim = {}
+        try:
+            q = np.array(
+                vectorstore_local._embed_query(
+                    "conclusiones, limitaciones, recomendaciones y trabajo futuro de la investigación"
+                ), dtype="float32")
+            q = q / (np.linalg.norm(q) or 1.0)
+            for doc, idx in candidatos:
+                v = np.array(vectorstore_local.index.reconstruct(int(idx)), dtype="float32")
+                sim[idx] = float(np.dot(q, v / (np.linalg.norm(v) or 1.0)))
+        except Exception as e:
+            logger.warning(f"Continuidad: sin similitud semántica ({e}); se usan solo palabras clave.")
+
+        cierre, alcance = [], []
+        for doc, idx in candidatos:
+            pagina = int(doc.metadata.get("page", 0) or 0)
+            texto = doc.page_content
+            if _parece_indice(texto):
+                continue
+            t = _texto_para_buscar(texto)
+            pos = pagina / max(n_paginas, 1)
+            if not _parece_bibliografia(texto):
+                kw = _puntaje_terminos(t, _TERMINOS_CIERRE)
+                titulo = 4.0 if _tiene_encabezado_de_cierre(texto) else 0.0
+                p_cierre = kw + titulo + (1.0 if pos >= 0.75 else 0.0) + 3.0 * sim.get(idx, 0.0)
+                if kw > 0 or titulo > 0 or pos >= 0.75:
+                    cierre.append((p_cierre, pagina, doc))
+            p_alcance = _puntaje_terminos(t, _TERMINOS_ALCANCE)
+            if pos <= 0.35 and pagina >= 2 and p_alcance > 0:
+                alcance.append((p_alcance, pagina, doc))
+
+        def elegir(lista, k):
+            elegidos, paginas = [], set()
+            for puntaje, pagina, doc in sorted(lista, key=lambda x: -x[0]):
+                if pagina in paginas:
+                    continue
+                paginas.add(pagina)
+                elegidos.append((pagina, doc))
+                if len(elegidos) == k:
+                    break
+            return sorted(elegidos, key=lambda x: x[0])
+
+        sel_alcance = elegir(alcance, k_alcance)
+        sel_cierre = elegir(cierre, k_cierre)
+        if not sel_cierre and not sel_alcance:
+            return ""
+
+        apa = obtener_referencia_apa(referencias_apa, archivo)
+        bloques = []
+        for rol, seleccion in (("lo que el trabajo se propuso y cómo", sel_alcance),
+                               ("cierre del trabajo: conclusiones, limitaciones o recomendaciones", sel_cierre)):
+            for pagina, doc in seleccion:
+                bloques.append(
+                    f"[Referencia APA: {apa}]\n(Página {pagina + 1} del PDF — {rol})\n{doc.page_content[:900]}"
+                )
+        logger.info(
+            f"RAG continuidad: {archivo} -> {len(sel_alcance)} fragmentos de alcance y "
+            f"{len(sel_cierre)} de cierre (de {len(candidatos)}; {n_paginas} páginas)."
+        )
+        return "\n\n---\n\n".join(bloques)
+    except Exception as e:
+        logger.warning(f"No se pudo armar el contexto de continuidad para '{archivo}': {e}")
+        return ""
+
+
+def instrucciones_continuidad(referencia_apa):
+    """Instrucciones que reemplazan el estilo conversacional cuando la pregunta es de
+    continuidad. Buscan propuestas realistas para la academia, no ideas genéricas."""
+    return (
+        f"MODO CONTINUIDAD ACADÉMICA. El usuario pregunta qué trabajo podría hacerse como "
+        f"continuación de este documento: {referencia_apa.rstrip('.')}. Los fragmentos incluyen apartados "
+        f"sobre lo que el trabajo se propuso y cómo, y apartados de cierre (conclusiones, "
+        f"limitaciones o recomendaciones), cada uno con su página del PDF. "
+        f"Responde con títulos markdown (## y ###) y esta estructura:\n"
+        f"## Punto de partida: 2 a 4 viñetas con lo que el trabajo hizo (zona, datos, método) y, "
+        f"separado, 'Lo que el propio trabajo señala' (limitaciones o recomendaciones que aparezcan "
+        f"en los fragmentos, citando la página como 'pág. N del PDF'). Si los fragmentos no traen "
+        f"limitaciones ni recomendaciones, dilo en una frase y apóyate solo en lo que sí muestran.\n"
+        f"## Propuestas de continuidad: EXACTAMENTE 3 propuestas, cada una como ### con título "
+        f"tentativo, y estos campos en viñetas: Vacío que atiende (qué le faltó o limitó al trabajo base) · "
+        f"Objetivo · Qué aporta de nuevo · Datos y herramientas (solo datos abiertos y software libre, "
+        f"coherentes con lo que muestra el documento) · Modalidad de trabajo de grado posible "
+        f"(monografía, producción de artículo, investigación o pasantía) y dedicación realista "
+        f"(por ejemplo 'un semestre') · Riesgo principal.\n"
+        f"## Cuál empezaría: una recomendación breve de cuál de las tres es la más viable y por qué, "
+        f"y sugiere validarla con el director o la dirección del semillero antes de formalizarla.\n\n"
+        f"REGLAS DE REALISMO: (1) las 3 propuestas deben ser distintas en el TIPO de continuidad; "
+        f"elige entre: ampliar el área o el periodo de estudio, validar con datos de campo o de "
+        f"referencia, sumar o cambiar una fuente de datos, comparar el método con otro, automatizar "
+        f"y hacer reproducible el flujo de trabajo, integrar el resultado a un producto geoespacial "
+        f"(infraestructura de datos, geovisor, estándar de metadatos) o llevarlo a otra línea del "
+        f"semillero ({LINEAS_OFICIALES_GEIPER}); escoge las que de verdad tengan sentido para ESTE "
+        f"documento. (2) Nada que exija equipos, datos de pago, trabajo de campo costoso o permisos "
+        f"que un estudiante de pregrado no pueda conseguir. (3) Si una propuesta depende de datos "
+        f"cuya disponibilidad no puedes confirmar con los fragmentos, escribe 'hay que verificar la "
+        f"disponibilidad de…' en vez de afirmarla. (4) No inventes resultados, cifras, autores, "
+        f"títulos ni nombres de instituciones, sensores, productos o conjuntos de datos: nombra un "
+        f"sensor o dato solo si aparece en los fragmentos; si no, descríbelo en términos genéricos "
+        f"(por ejemplo 'imágenes SAR de acceso abierto'). (5) Distingue siempre entre lo que el "
+        f"trabajo recomienda y lo que tú propones como extensión. "
+        f"Termina con una pregunta breve ofreciendo desarrollar a fondo una de las tres."
+    )
 
 
 # ── Detección de preguntas sobre el semillero mismo o el sitio ──────────────
@@ -1092,7 +1463,8 @@ def buscar_contexto_web(consulta, priorizar_geiper=False):
 
 
 
-def construir_prompt_conversacional(contexto_docs, contexto_web, transcripcion, query, respuesta_corta=False):
+def construir_prompt_conversacional(contexto_docs, contexto_web, transcripcion, query, respuesta_corta=False,
+                                    modo_continuidad=False, referencia_continuidad=""):
     """
     Arma el prompt final combinando documentos (fuente principal) + web
     (complemento), con las instrucciones de cita correspondientes. Se usa
@@ -1154,6 +1526,8 @@ def construir_prompt_conversacional(contexto_docs, contexto_web, transcripcion, 
             "cercanía y brevedad: máximo 2-3 párrafos cortos. No cierres con una pregunta de "
             "seguimiento tipo plantilla — solo hazlo si se siente genuinamente natural."
         )
+    elif modo_continuidad:
+        instrucciones_extension = instrucciones_continuidad(referencia_continuidad)
     else:
         instrucciones_extension = (
             "Responde de forma conversacional y académica: párrafos fluidos, sin títulos con #, "
@@ -1288,9 +1662,32 @@ def init_services():
             "El Asistente de Investigación aún no tiene índice (normal hasta que lo generes)."
         )
 
+def verificar_referencias_del_indice(vectorstore_local, referencias_apa, nombre):
+    """Avisa en los logs de Render si hay documentos indexados SIN cita en
+    REFERENCIAS_APA. Es lo que pasó al agregar PDF nuevos sin actualizar la
+    lista: el asistente no podía citarlos y descartaba sus respuestas."""
+    if vectorstore_local is None:
+        return
+    claves = {_normalizar_nombre_archivo(k) for k in referencias_apa}
+    fuentes = _fuentes_del_indice(vectorstore_local)
+    faltantes = [f for f in fuentes if _normalizar_nombre_archivo(f) not in claves]
+    if faltantes:
+        logger.warning(
+            f"{nombre}: {len(faltantes)} documento(s) indexado(s) SIN cita en "
+            f"REFERENCIAS_APA: {faltantes}. Agrégalos en main.py; mientras tanto el "
+            f"asistente no podrá citarlos."
+        )
+    else:
+        logger.info(f"{nombre}: los {len(fuentes)} documentos indexados tienen cita APA.")
+
+
 @app.on_event("startup")
 def on_startup():
     init_services()
+    verificar_referencias_del_indice(vectorstore, REFERENCIAS_APA, "Temático")
+    verificar_referencias_del_indice(
+        vectorstore_investigacion, REFERENCIAS_APA_INVESTIGACION, "Investigación"
+    )
 
 class Turno(BaseModel):
     role: str = Field(pattern=r"^(user|assistant)$")
@@ -1489,12 +1886,39 @@ def chat(request: Request, chat_request: ChatRequest):
         #    relaciones, o alguna señal de crisis): no tiene sentido forzar
         #    una cita de una tesis de cartografia de pozos petroleros en una
         #    pregunta sobre por que alguien no consigue trabajo.
+        modo_continuidad = False
+        referencia_continuidad = ""
         if pregunta_sobre_semillero or pregunta_personal or posible_crisis:
             contexto_docs, mejor_similitud_docs = "", 0.0
         else:
-            contexto_docs, mejor_similitud_docs = buscar_contexto_documentos(
-                vectorstore_activo, referencias_activas, chat_request.query, consulta_efectiva
-            )
+            contexto_docs, mejor_similitud_docs = "", 0.0
+            # ── Continuidad: "¿qué otro trabajo podría hacerse a partir de este?" ──
+            # Solo cuando la pregunta nombra (o continúa) un documento del índice.
+            if es_pregunta_de_continuidad(chat_request.query):
+                fuentes_indice = _fuentes_del_indice(vectorstore_activo)
+                archivo_cont = detectar_documento_nombrado(
+                    chat_request.query, referencias_activas, fuentes_indice
+                )
+                if archivo_cont is None and consulta_efectiva != chat_request.query:
+                    archivo_cont = detectar_documento_nombrado(
+                        consulta_efectiva, referencias_activas, fuentes_indice
+                    )
+                if archivo_cont and _normalizar_nombre_archivo(archivo_cont) in {
+                    _normalizar_nombre_archivo(f) for f in fuentes_indice
+                }:
+                    ctx_cont = buscar_contexto_continuidad(
+                        vectorstore_activo, archivo_cont, referencias_activas
+                    )
+                    if ctx_cont:
+                        contexto_docs, mejor_similitud_docs = ctx_cont, 1.0  # fuente exacta: sin web
+                        modo_continuidad = True
+                        referencia_continuidad = _quitar_corchetes_finales(
+                            obtener_referencia_apa(referencias_activas, archivo_cont)
+                        )
+            if not modo_continuidad:
+                contexto_docs, mejor_similitud_docs = buscar_contexto_documentos(
+                    vectorstore_activo, referencias_activas, chat_request.query, consulta_efectiva
+                )
 
         # ── Búsqueda web: ya no se dispara en cada mensaje sin condición ─────
         # Se busca en la web cuando:
@@ -1542,15 +1966,19 @@ def chat(request: Request, chat_request: ChatRequest):
             contexto_web = f"{bloque_hechos}\n\n---\n\n{contexto_web}" if contexto_web else bloque_hechos
 
         user_prompt = construir_prompt_conversacional(
-            contexto_docs, contexto_web, transcripcion, chat_request.query, respuesta_corta=respuesta_corta
+            contexto_docs, contexto_web, transcripcion, chat_request.query,
+            respuesta_corta=respuesta_corta,
+            modo_continuidad=modo_continuidad, referencia_continuidad=referencia_continuidad
         )
+        # Las propuestas de continuidad son más largas que una respuesta normal.
+        max_tokens_respuesta = 3000 if modo_continuidad else 1500
 
         # ── Generar respuesta (Groq -> Cerebras -> GLM en cascada) ─────────
         respuesta = None
         if groq_token:
             try:
                 logger.info(f"Enviando a Groq (gpt-oss-120b) (modo: {chat_request.mode})")
-                respuesta = groq_generate(user_prompt, groq_token, nombre_asistente)
+                respuesta = groq_generate(user_prompt, groq_token, nombre_asistente, max_tokens=max_tokens_respuesta)
                 logger.info("Respuesta recibida de Groq.")
             except Exception as e:
                 # Antes, un HTTPException (ej. 429 de Groq saturado) se
@@ -1562,7 +1990,7 @@ def chat(request: Request, chat_request: ChatRequest):
         if respuesta is None and cerebras_token:
             try:
                 logger.info(f"Enviando a Cerebras (gpt-oss-120b) (modo: {chat_request.mode})")
-                respuesta = cerebras_generate(user_prompt, cerebras_token, nombre_asistente)
+                respuesta = cerebras_generate(user_prompt, cerebras_token, nombre_asistente, max_tokens=max_tokens_respuesta)
                 logger.info("Respuesta recibida de Cerebras.")
             except Exception as e:
                 logger.warning(f"Cerebras falló, intentando con GLM: {e}")
@@ -1571,7 +1999,7 @@ def chat(request: Request, chat_request: ChatRequest):
             if not glm_token:
                 raise HTTPException(status_code=500, detail="Servicio temporalmente no disponible.")
             logger.info(f"Enviando a GLM fallback (modo: {chat_request.mode})")
-            respuesta = glm_generate(user_prompt, glm_token, nombre_asistente)
+            respuesta = glm_generate(user_prompt, glm_token, nombre_asistente, max_tokens=max_tokens_respuesta)
             logger.info("Respuesta recibida de GLM.")
 
         # ── Verificación anti-alucinación: descarta toda la respuesta si hay ──
@@ -1583,6 +2011,25 @@ def chat(request: Request, chat_request: ChatRequest):
                 f"Respuesta descartada por citas no verificables: {citas_sospechosas} "
                 f"(modo: {chat_request.mode}, pregunta: {chat_request.query!r})"
             )
+            # Si la pregunta nombraba un documento que SÍ está en el índice, el
+            # problema no es que falte en el corpus sino que la respuesta no
+            # pudo respaldarse con una cita verificable: se dice con precisión.
+            fuentes_indice = _fuentes_del_indice(vectorstore_activo)
+            archivo_pedido = detectar_documento_nombrado(
+                chat_request.query, referencias_activas, fuentes_indice
+            )
+            if archivo_pedido and _normalizar_nombre_archivo(archivo_pedido) in {
+                _normalizar_nombre_archivo(f) for f in fuentes_indice
+            }:
+                return {
+                    "response": (
+                        "Ese documento sí está en mi corpus, pero no logré armar una "
+                        "respuesta con una referencia que pueda verificar, y prefiero "
+                        "no darte una cita dudosa. Prueba con una pregunta más concreta "
+                        "sobre su contenido (por ejemplo: su objetivo, su metodología o "
+                        "sus resultados principales)."
+                    )
+                }
             listado_docs = listar_documentos_indexados(vectorstore_activo, referencias_activas)
             sugerencia_docs = (
                 f"\n\nEstos son los documentos que sí tengo disponibles:\n\n{listado_docs}"

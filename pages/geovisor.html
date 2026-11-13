@@ -1901,7 +1901,7 @@ body.geo-side-open #geoChatPanel { left: calc(var(--rail-w) + var(--side-w) + 12
     <!-- Pie de sidebar -->
     <div class="geo-sidebar-footer">
       <i class="fa-solid fa-circle-info"></i>
-      <span id="footerCount">4 proyectos · 6 líneas de investigación</span>
+      <span id="footerCount">8 proyectos · 6 líneas de investigación</span>
     </div>
   </aside>
 
@@ -2370,6 +2370,55 @@ const PROJECTS = [
     ],
     features: []
   },
+  /* ── Trabajos agregados con la actualización del corpus (nov 2026) ──────
+     Datos tomados de las portadas y del capítulo de área de estudio de cada
+     documento. Las líneas de investigación son una asignación editorial:
+     se pueden reubicar cambiando lineaId. */
+  {
+    id: 6,
+    nombre: 'Estudio multitemporal del crecimiento urbano de uso y cobertura en la ciudad de Neiva-Huila, mediante imágenes satelitales de Landsat 5, 7 y Sentinel 1',
+    lineaId: 'cambios',
+    año: 2022,
+    sensor: 'Landsat 5 · Landsat 7 ETM+ · Sentinel-1 (SAR) · Clasificación supervisada y no supervisada',
+    escala: 'Perímetro urbano (Landsat, 30 m)',
+    crs: 'WGS 84 / UTM',
+    autor: 'Aguirre Prada, A. J.',
+    url: RIUD_URL,
+    ubicacion: 'Neiva, Huila (perímetro urbano, 2011–2021)',
+    extent: [-75.345, 2.865, -75.215, 2.995],
+    capas: [],
+    features: []
+  },
+  {
+    id: 7,
+    nombre: 'Análisis de deformación de la corteza en el Magdalena Medio con técnicas de interferometría diferencial avanzada y dispersor persistente',
+    lineaId: 'cambios',
+    año: 2020,
+    sensor: 'Sentinel-1 A/B (TOPS, SLC) · ISCE + StaMPS (dispersor persistente) · Validación con GNSS',
+    escala: 'Regional (≈3.700 km²)',
+    crs: 'MAGNA-SIRGAS / Origen Bogotá',
+    autor: 'Velasco Silva, W. & Gómez Gómez, J. E.',
+    url: RIUD_URL,
+    ubicacion: 'Valle Medio del Magdalena: Barrancabermeja y Yondó (Santander y Antioquia)',
+    extent: [-74.2758, 6.7618, -73.5624, 7.3003],
+    capas: [],
+    features: []
+  },
+  {
+    id: 8,
+    nombre: 'Análisis de la aplicación del filtro Speckle Divergence a imágenes de radar obtenidas para uso y cobertura',
+    lineaId: 'procesamiento',
+    año: 2026,
+    sensor: 'RADARSAT-1 · RADARSAT-2 · Sentinel-1 (SAR) · Filtro Speckle Divergence · Clasificación CIAF',
+    escala: 'Regional',
+    crs: 'N/A',
+    autor: 'Zamudio Arias, A.',
+    url: RIUD_URL,
+    ubicacion: 'Sabana de Bogotá: Bogotá, Cota, El Rosal, Funza, Tenjo, Madrid, Facatativá, Bojacá y Mosquera (Cundinamarca)',
+    extent: [-74.45, 4.50, -74.03, 4.97],
+    capas: [],
+    features: []
+  },
 ];
 
 /* ══════════════════════════════════════════════
@@ -2386,6 +2435,9 @@ const PROJECT_MARKERS = [
   { proyectoId: 2, lugar: 'La Mesa (Cundinamarca)',   coords: [-74.4625, 4.6303] },
   { proyectoId: 2, lugar: 'Tocancipá (Cundinamarca)', coords: [-73.9167, 4.9667] },
   { proyectoId: 5, lugar: 'Sabana Occidental de Bogotá (Cundinamarca)', coords: [-74.2640, 4.7330] },
+  { proyectoId: 6, lugar: 'Neiva (Huila)', coords: [-75.2819, 2.9273] },
+  { proyectoId: 7, lugar: 'Barrancabermeja (Santander) · Valle Medio del Magdalena', coords: [-73.8547, 7.0653] },
+  { proyectoId: 8, lugar: 'Sabana de Bogotá (Cundinamarca)', coords: [-74.1700, 4.7800] },
 ];
 
 /* ══════════════════════════════════════════════
@@ -5083,7 +5135,8 @@ window.GeoRediseno = (function () {
     '¿Cuál es el objetivo general?',
     '¿Qué metodología usó?',
     '¿Qué datos o imágenes empleó?',
-    'Resúmelo en 5 puntos'
+    'Resúmelo en 5 puntos',
+    '¿Qué trabajo podría continuar este?'
   ];
   function estado(proj) {
     if (!chats[proj.id]) chats[proj.id] = { mensajes: [], historial: [] };
