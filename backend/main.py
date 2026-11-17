@@ -277,6 +277,28 @@ REFERENCIAS_APA = {
         "Speckle Divergence a imágenes de radar obtenidas para uso y cobertura "
         "[Monografía, Universidad Distrital Francisco José de Caldas]."
     ),
+    # ── Documentos 10-12 del corpus (ya estaban en el índice FAISS pero sin
+    # cita: verificar_referencias_del_indice() los avisaba en los logs). Datos
+    # tomados de las portadas. El orden de autores sigue el de cada portada.
+    "PardoRuizCamiloAndres2021.pdf": (
+        "Pardo Ruiz, C. A. (2021). Análisis sobre obtención de información "
+        "catastral con imágenes de radar en la vereda Termales del municipio de "
+        "Vista Hermosa, Meta [Monografía, Universidad Distrital Francisco José "
+        "de Caldas]."
+    ),
+    "Pinto Casique, Luis - Perez Munoz, Johan 2026.pdf": (
+        "Pérez Muñoz, J. S., & Pinto Casique, L. E. (2026). Monitoreo de "
+        "deformaciones del terreno mediante técnicas PS-InSAR en la localidad "
+        "histórica y del Caribe Norte de Cartagena, Colombia [Proyecto de grado, "
+        "Universidad Distrital Francisco José de Caldas]."
+    ),
+    "HernandezBaronLauraVivianaGodoyUmbarilaLauraKatherine2022.pdf": (
+        "Hernández Barón, L. V., & Godoy Umbarila, L. K. (2022). Aplicación de "
+        "la metodología FFP como herramienta de actualización catastral en "
+        "suelo rural de la vereda Pantano de Carlos en el municipio de Cáqueza, "
+        "Cundinamarca [Proyecto de grado en modalidad de pasantía, Universidad "
+        "Distrital Francisco José de Caldas]."
+    ),
 }
 
 # Referencias de los documentos del Asistente de Investigación (metodología,

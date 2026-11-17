@@ -2419,6 +2419,55 @@ const PROJECTS = [
     capas: [],
     features: []
   },
+  /* ── Trabajos 9–11: PDFs que ya estaban en el índice RAG (nov 2026) ─────
+     Datos de portadas y capítulos de zona de estudio / materiales de cada
+     documento. Sistema de referencia: solo se declara cuando el documento
+     lo indica; si no, 'N/A'. Los extents son aproximados (encuadre). */
+  {
+    id: 9,
+    nombre: 'Análisis sobre obtención de información catastral con imágenes de radar en la vereda Termales del municipio de Vista Hermosa, Meta',
+    lineaId: 'procesamiento',
+    año: 2021,
+    sensor: 'SAR aerotransportado banda X (3 m) y banda P (5 m) · DEM interferométricos · Clasificación supervisada',
+    escala: 'Vereda (referencia IGAC 1:25.000)',
+    crs: 'N/A',
+    autor: 'Pardo Ruiz, C. A.',
+    url: RIUD_URL,
+    ubicacion: 'Vereda Termales, Vista Hermosa, Meta',
+    extent: [-73.95, 2.95, -73.55, 3.35],   /* misma zona de estudio que el proyecto 1 */
+    capas: [],
+    features: []
+  },
+  {
+    id: 10,
+    nombre: 'Monitoreo de deformaciones del terreno mediante técnicas PS-InSAR en la localidad histórica y del Caribe Norte de Cartagena, Colombia',
+    lineaId: 'cambios',
+    año: 2026,
+    sensor: 'Sentinel-1 A/B (IW, SLC, órbita descendente; 60 imágenes 2019–2024) · SNAP · PS-InSAR · Referencia GNSS CART00COL',
+    escala: 'Urbana (Sentinel-1 IW, ≈5 × 20 m)',
+    crs: 'N/A',
+    autor: 'Pérez Muñoz, J. S. & Pinto Casique, L. E.',
+    url: RIUD_URL,
+    ubicacion: 'Localidad Histórica y del Caribe Norte, Cartagena de Indias (Bolívar)',
+    extent: [-75.585, 10.380, -75.455, 10.505],
+    capas: [],
+    features: []
+  },
+  {
+    id: 11,
+    nombre: 'Aplicación de la metodología FFP como herramienta de actualización catastral en suelo rural de la vereda Pantano de Carlos en el municipio de Cáqueza, Cundinamarca',
+    lineaId: 'cambios',   /* asignación editorial (misma metodología FFP que el proyecto 1) */
+    año: 2022,
+    sensor: 'Levantamiento GNSS (Trimble R2) + app Collector / ArcGIS · Ortofoto · Metodología FFP',
+    escala: 'Predial (rural)',
+    crs: 'MAGNA-SIRGAS / Origen Nacional (EPSG:9377)',
+    autor: 'Hernández Barón, L. V. & Godoy Umbarila, L. K.',
+    url: RIUD_URL,
+    ubicacion: 'Vereda Pantano de Carlos, Cáqueza, Cundinamarca',
+    extent: [-73.99, 4.36, -73.90, 4.45],
+    capas: [],
+    features: []
+  },
 ];
 
 /* ══════════════════════════════════════════════
@@ -2438,6 +2487,15 @@ const PROJECT_MARKERS = [
   { proyectoId: 6, lugar: 'Neiva (Huila)', coords: [-75.2819, 2.9273] },
   { proyectoId: 7, lugar: 'Barrancabermeja (Santander) · Valle Medio del Magdalena', coords: [-73.8547, 7.0653] },
   { proyectoId: 8, lugar: 'Sabana de Bogotá (Cundinamarca)', coords: [-74.1700, 4.7800] },
+  /* Proyecto 9: misma vereda que el proyecto 1 → mismas coordenadas (el popup
+     agrupa los trabajos que comparten punto). */
+  { proyectoId: 9, lugar: 'Vereda Termales, Vista Hermosa (Meta)', coords: [-73.7625, 3.1486] },
+  /* Proyecto 10: Torre del Reloj, centro histórico de Cartagena (el área de
+     estudio se extiende al Caribe Norte; el marcador referencia el centro). */
+  { proyectoId: 10, lugar: 'Centro histórico y Caribe Norte, Cartagena (Bolívar)', coords: [-75.5490, 10.4229] },
+  /* Proyecto 11: la vereda colinda con el casco urbano de Cáqueza (al sur);
+     coordenadas del casco urbano como referencia aproximada. */
+  { proyectoId: 11, lugar: 'Vereda Pantano de Carlos, Cáqueza (Cundinamarca) · ref. casco urbano', coords: [-73.9478, 4.4053] },
 ];
 
 /* ══════════════════════════════════════════════
@@ -2716,20 +2774,34 @@ function initMap() {
     table.innerHTML = '';
 
     if (props.isProjectMarker) {
-      /* ── Popup de marcador de trabajo de grado: nombre como hipervínculo ── */
-      document.getElementById('popupTitle').textContent = props.lugar;
-      const row = document.createElement('tr');
-      const cell = document.createElement('td');
-      cell.colSpan = 2;
-      cell.innerHTML =
-        '<span style="display:inline-block;font-size:10px;font-weight:600;padding:2px 8px;border-radius:10px;margin-bottom:6px;background:' + escHtml(props.lineaColor) + '22;color:' + escHtml(props.lineaColor) + ';">' +
-          escHtml(props.lineaNombre) +
-        '</span><br>' +
-        '<a href="' + escHtml(props.url) + '" target="_blank" rel="noopener noreferrer" style="color:#1e293b;font-weight:600;font-size:13px;line-height:1.4;">' +
-          escHtml(props.nombre) +
-        '</a><br><span style="color:#64748b;font-size:11px;">' + escHtml(props.autor) + '</span>';
-      row.appendChild(cell);
-      table.appendChild(row);
+      /* ── Popup de marcador de trabajo de grado: nombre como hipervínculo.
+         Si varios trabajos comparten el punto (p. ej. dos tesis sobre la
+         misma vereda), se listan todos en vez de mostrar solo el primero. ── */
+      const marcadores = [];
+      const idsVistos = new Set();
+      unicos.forEach(function (f) {
+        if (!f.properties.isProjectMarker || idsVistos.has(f.properties.proyectoId)) return;
+        idsVistos.add(f.properties.proyectoId);
+        marcadores.push(f.properties);
+      });
+      const lugares = new Set(marcadores.map(function (m) { return m.lugar; }));
+      document.getElementById('popupTitle').textContent =
+        lugares.size === 1 ? props.lugar : marcadores.length + ' trabajos en este punto';
+      marcadores.forEach(function (mp, i) {
+        const row = document.createElement('tr');
+        const cell = document.createElement('td');
+        cell.colSpan = 2;
+        if (i > 0) cell.style.cssText = 'border-top:1px solid #e2e8f0;padding-top:8px;';
+        cell.innerHTML =
+          '<span style="display:inline-block;font-size:10px;font-weight:600;padding:2px 8px;border-radius:10px;margin-bottom:6px;background:' + escHtml(mp.lineaColor) + '22;color:' + escHtml(mp.lineaColor) + ';">' +
+            escHtml(mp.lineaNombre) +
+          '</span><br>' +
+          '<a href="' + escHtml(mp.url) + '" target="_blank" rel="noopener noreferrer" style="color:#1e293b;font-weight:600;font-size:13px;line-height:1.4;">' +
+            escHtml(mp.nombre) +
+          '</a><br><span style="color:#64748b;font-size:11px;">' + escHtml(mp.autor) + '</span>';
+        row.appendChild(cell);
+        table.appendChild(row);
+      });
     } else {
       /* Solo elementos de capas de proyecto (no marcadores) */
       const capasFeat = unicos.filter(function (f) { return !f.properties.isProjectMarker; });
