@@ -1,0 +1,61 @@
+palabra,frecuencia,grado,cluster
+hallucination mitigation,128,38,1
+knowledge graphs,90,26,1
+question answering,73,22,1
+semantic search,52,20,1
+scientific information retrieval,45,11,1
+scientific publications,44,16,1
+vector databases,42,17,1
+hybrid retrieval,29,12,1
+conversational AI,27,9,1
+scientific question answering,27,8,1
+information retrieval,26,7,1
+named entity recognition,23,7,1
+vision-language models,22,3,1
+document retrieval,21,6,1
+hallucination detection,21,6,1
+knowledge graph construction,21,10,1
+human-in-the-loop,20,7,1
+multimodal large language models,20,5,1
+GraphRAG,19,7,1
+LangChain,19,10,1
+re-ranking,19,9,1
+GPT-4o,16,3,1
+LLM-as-a-judge,16,7,1
+factual accuracy,16,6,1
+literature searching,16,4,1
+chatbots,156,39,2
+ChatGPT,94,26,2
+explainable AI,46,16,2
+clinical decision support,44,19,2
+AI chatbots,42,13,2
+algorithmic bias,40,24,2
+data privacy,39,21,2
+AI ethics,38,20,2
+research assistants,38,13,2
+GPT-4,37,19,2
+AI governance,28,13,2
+artificial intelligence in education,25,8,2
+personalized learning,25,16,2
+medical question answering,24,9,2
+natural language processing,24,10,2
+trust in AI,18,9,2
+academic integrity,17,9,2
+artificial intelligence in healthcare,17,6,2
+research ethics,17,6,2
+AI hallucination,16,6,2
+digital libraries,16,2,2
+hallucinations,88,39,3
+multi-agent systems,55,26,3
+agentic AI,37,17,3
+systematic reviews,26,7,3
+reproducibility,25,13,3
+literature review automation,24,12,3
+LLM agents,22,9,3
+human-AI collaboration,22,10,3
+explainability,21,8,3
+prompt engineering,97,27,4
+fine-tuning,30,12,4
+chain-of-thought prompting,22,6,4
+transformer models,17,7,4
+evaluation metrics,16,5,4

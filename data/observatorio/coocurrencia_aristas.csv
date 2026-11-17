@@ -1,0 +1,390 @@
+origen,destino,peso
+ChatGPT,chatbots,16
+AI ethics,chatbots,14
+hallucination mitigation,knowledge graphs,13
+algorithmic bias,data privacy,13
+hallucination mitigation,prompt engineering,13
+chatbots,prompt engineering,12
+AI ethics,ChatGPT,12
+ChatGPT,artificial intelligence in education,11
+chatbots,clinical decision support,11
+chain-of-thought prompting,prompt engineering,11
+knowledge graphs,question answering,10
+hallucination detection,hallucination mitigation,10
+fine-tuning,prompt engineering,10
+chatbots,data privacy,10
+ChatGPT,prompt engineering,9
+artificial intelligence in education,chatbots,9
+algorithmic bias,chatbots,9
+agentic AI,multi-agent systems,9
+hallucinations,prompt engineering,9
+ChatGPT,research ethics,9
+hallucination mitigation,question answering,9
+hallucination mitigation,multi-agent systems,9
+hallucination mitigation,semantic search,8
+GraphRAG,knowledge graphs,8
+ChatGPT,academic integrity,8
+knowledge graphs,semantic search,8
+semantic search,vector databases,8
+algorithmic bias,hallucinations,8
+chatbots,natural language processing,8
+explainable AI,hallucination mitigation,8
+agentic AI,hallucinations,8
+hallucination mitigation,scientific information retrieval,8
+question answering,scientific publications,8
+AI chatbots,ChatGPT,8
+AI ethics,data privacy,8
+ChatGPT,hallucinations,7
+knowledge graphs,multi-agent systems,7
+ChatGPT,artificial intelligence in healthcare,7
+ChatGPT,algorithmic bias,7
+algorithmic bias,explainable AI,7
+GPT-4,prompt engineering,7
+hallucination mitigation,hybrid retrieval,7
+chatbots,conversational AI,6
+hallucinations,knowledge graphs,6
+AI ethics,algorithmic bias,6
+scientific information retrieval,semantic search,6
+hybrid retrieval,knowledge graphs,6
+data privacy,personalized learning,6
+artificial intelligence in healthcare,chatbots,6
+explainability,hallucinations,6
+agentic AI,hallucination mitigation,6
+clinical decision support,hallucinations,6
+hallucinations,multi-agent systems,6
+hallucination mitigation,vector databases,6
+knowledge graphs,vector databases,6
+knowledge graph construction,question answering,6
+information retrieval,knowledge graphs,5
+GPT-4,clinical decision support,5
+hallucinations,question answering,5
+LangChain,semantic search,5
+chatbots,semantic search,5
+artificial intelligence in healthcare,clinical decision support,5
+explainable AI,medical question answering,5
+hallucinations,reproducibility,5
+knowledge graph construction,named entity recognition,5
+hybrid retrieval,question answering,5
+AI governance,algorithmic bias,5
+hybrid retrieval,re-ranking,5
+knowledge graphs,research assistants,5
+named entity recognition,question answering,5
+AI hallucination,ChatGPT,5
+knowledge graphs,scientific publications,5
+data privacy,explainable AI,5
+document retrieval,hallucination mitigation,5
+chatbots,explainability,5
+scientific publications,scientific question answering,5
+clinical decision support,hallucination mitigation,5
+chatbots,hallucinations,5
+chatbots,fine-tuning,5
+conversational AI,vector databases,5
+prompt engineering,question answering,5
+AI ethics,hallucinations,5
+AI ethics,artificial intelligence in education,5
+chatbots,personalized learning,5
+chatbots,question answering,5
+hallucination mitigation,human-in-the-loop,4
+academic integrity,data privacy,4
+agentic AI,algorithmic bias,4
+knowledge graphs,literature review automation,4
+literature review automation,semantic search,4
+scientific publications,semantic search,4
+prompt engineering,semantic search,4
+prompt engineering,vector databases,4
+question answering,semantic search,4
+scientific information retrieval,scientific question answering,4
+explainable AI,knowledge graphs,4
+LLM-as-a-judge,factual accuracy,4
+LLM agents,scientific publications,4
+hallucination detection,knowledge graphs,4
+research assistants,scientific information retrieval,4
+clinical decision support,medical question answering,4
+data privacy,semantic search,4
+clinical decision support,prompt engineering,4
+AI chatbots,data privacy,4
+chatbots,digital libraries,4
+chatbots,evaluation metrics,4
+fine-tuning,question answering,4
+clinical decision support,data privacy,4
+chatbots,trust in AI,4
+explainability,multi-agent systems,4
+explainable AI,multi-agent systems,4
+factual accuracy,hallucinations,4
+algorithmic bias,explainability,4
+artificial intelligence in education,data privacy,4
+artificial intelligence in education,personalized learning,4
+LLM-as-a-judge,hallucination mitigation,4
+algorithmic bias,clinical decision support,4
+agentic AI,explainable AI,4
+agentic AI,chatbots,4
+academic integrity,chatbots,4
+academic integrity,algorithmic bias,4
+LangChain,chatbots,4
+GPT-4o,chatbots,4
+AI governance,agentic AI,4
+AI governance,hallucinations,4
+hybrid retrieval,scientific information retrieval,4
+AI governance,chatbots,4
+knowledge graph construction,knowledge graphs,4
+GraphRAG,hybrid retrieval,4
+LLM agents,hallucinations,4
+literature review automation,research assistants,4
+GPT-4,data privacy,4
+GPT-4,hallucinations,4
+human-in-the-loop,multi-agent systems,4
+hallucination mitigation,multimodal large language models,4
+hallucination mitigation,hallucinations,4
+explainable AI,hallucinations,4
+explainable AI,semantic search,4
+agentic AI,explainability,4
+hallucinations,trust in AI,3
+hallucinations,scientific question answering,3
+hallucinations,scientific publications,3
+information retrieval,question answering,3
+information retrieval,knowledge graph construction,3
+knowledge graph construction,scientific publications,3
+ChatGPT,GPT-4,3
+AI hallucination,algorithmic bias,3
+literature review automation,multi-agent systems,3
+multi-agent systems,prompt engineering,3
+multimodal large language models,vision-language models,3
+multi-agent systems,systematic reviews,3
+ChatGPT,chain-of-thought prompting,3
+ChatGPT,clinical decision support,3
+ChatGPT,data privacy,3
+GPT-4,chatbots,3
+academic integrity,research assistants,3
+hallucination mitigation,medical question answering,3
+hallucination mitigation,knowledge graph construction,3
+hallucination mitigation,literature review automation,3
+hallucination mitigation,information retrieval,3
+hallucination mitigation,reproducibility,3
+hallucinations,multimodal large language models,3
+hallucination mitigation,research assistants,3
+GPT-4,algorithmic bias,3
+ChatGPT,research assistants,3
+GPT-4,personalized learning,3
+human-AI collaboration,systematic reviews,3
+human-AI collaboration,multi-agent systems,3
+GraphRAG,question answering,3
+LLM agents,hallucination mitigation,3
+chatbots,vector databases,3
+algorithmic bias,research ethics,3
+LLM agents,reproducibility,3
+LLM agents,knowledge graphs,3
+LangChain,vector databases,3
+evaluation metrics,reproducibility,3
+factual accuracy,hallucination detection,3
+factual accuracy,hallucination mitigation,3
+explainable AI,human-in-the-loop,3
+hallucination detection,hallucinations,3
+fine-tuning,hallucinations,3
+agentic AI,reproducibility,3
+LLM agents,literature review automation,3
+LangChain,prompt engineering,3
+algorithmic bias,hallucination mitigation,3
+agentic AI,research assistants,3
+agentic AI,systematic reviews,3
+chatbots,scientific information retrieval,3
+chatbots,multi-agent systems,3
+clinical decision support,fine-tuning,3
+data privacy,hallucination mitigation,3
+clinical decision support,multimodal large language models,3
+clinical decision support,knowledge graphs,3
+conversational AI,multi-agent systems,3
+evaluation metrics,prompt engineering,3
+chain-of-thought prompting,hallucinations,3
+chatbots,medical question answering,3
+chatbots,knowledge graphs,3
+chatbots,hallucination mitigation,3
+data privacy,question answering,3
+data privacy,knowledge graphs,3
+conversational AI,semantic search,3
+question answering,reproducibility,3
+personalized learning,prompt engineering,3
+natural language processing,semantic search,3
+natural language processing,question answering,3
+prompt engineering,transformer models,3
+prompt engineering,systematic reviews,3
+scientific information retrieval,vector databases,3
+re-ranking,scientific information retrieval,3
+re-ranking,vector databases,3
+AI ethics,artificial intelligence in healthcare,3
+AI ethics,natural language processing,3
+AI governance,ChatGPT,3
+AI ethics,human-AI collaboration,3
+AI ethics,AI hallucination,3
+AI ethics,AI governance,3
+AI ethics,GPT-4,3
+AI chatbots,algorithmic bias,3
+AI chatbots,GPT-4,2
+AI chatbots,academic integrity,2
+AI chatbots,artificial intelligence in education,2
+AI chatbots,chatbots,2
+AI chatbots,conversational AI,2
+AI chatbots,hallucinations,2
+AI chatbots,natural language processing,2
+AI chatbots,trust in AI,2
+AI ethics,agentic AI,2
+AI ethics,clinical decision support,2
+AI ethics,multi-agent systems,2
+AI ethics,personalized learning,2
+AI ethics,prompt engineering,2
+AI ethics,reproducibility,2
+AI ethics,research ethics,2
+AI ethics,trust in AI,2
+named entity recognition,semantic search,2
+natural language processing,research ethics,2
+natural language processing,systematic reviews,2
+natural language processing,transformer models,2
+personalized learning,semantic search,2
+personalized learning,vector databases,2
+prompt engineering,reproducibility,2
+prompt engineering,scientific publications,2
+question answering,transformer models,2
+re-ranking,research assistants,2
+re-ranking,scientific publications,2
+reproducibility,scientific publications,2
+research assistants,research ethics,2
+scientific information retrieval,trust in AI,2
+clinical decision support,human-in-the-loop,2
+clinical decision support,trust in AI,2
+clinical decision support,vector databases,2
+conversational AI,data privacy,2
+conversational AI,explainable AI,2
+conversational AI,hybrid retrieval,2
+conversational AI,personalized learning,2
+data privacy,hallucinations,2
+data privacy,prompt engineering,2
+data privacy,transformer models,2
+digital libraries,document retrieval,2
+document retrieval,hallucinations,2
+document retrieval,prompt engineering,2
+document retrieval,scientific publications,2
+document retrieval,semantic search,2
+chain-of-thought prompting,fine-tuning,2
+chatbots,hybrid retrieval,2
+chatbots,information retrieval,2
+chatbots,research assistants,2
+chatbots,scientific publications,2
+chatbots,scientific question answering,2
+chatbots,transformer models,2
+clinical decision support,explainability,2
+evaluation metrics,question answering,2
+evaluation metrics,transformer models,2
+explainability,re-ranking,2
+explainability,scientific information retrieval,2
+explainable AI,hybrid retrieval,2
+explainable AI,knowledge graph construction,2
+explainable AI,literature review automation,2
+explainable AI,vision-language models,2
+factual accuracy,re-ranking,2
+factual accuracy,trust in AI,2
+fine-tuning,hallucination mitigation,2
+fine-tuning,multi-agent systems,2
+fine-tuning,scientific publications,2
+agentic AI,hallucination detection,2
+agentic AI,human-AI collaboration,2
+agentic AI,knowledge graphs,2
+agentic AI,literature review automation,2
+algorithmic bias,chain-of-thought prompting,2
+algorithmic bias,fine-tuning,2
+algorithmic bias,medical question answering,2
+algorithmic bias,natural language processing,2
+algorithmic bias,personalized learning,2
+algorithmic bias,prompt engineering,2
+algorithmic bias,reproducibility,2
+algorithmic bias,research assistants,2
+artificial intelligence in healthcare,hallucinations,2
+LLM agents,human-AI collaboration,2
+LLM agents,multi-agent systems,2
+LLM-as-a-judge,hallucination detection,2
+LLM-as-a-judge,hallucinations,2
+LLM-as-a-judge,hybrid retrieval,2
+LLM-as-a-judge,scientific publications,2
+LLM-as-a-judge,scientific question answering,2
+LangChain,data privacy,2
+LangChain,hallucination mitigation,2
+LangChain,question answering,2
+LangChain,scientific information retrieval,2
+academic integrity,artificial intelligence in education,2
+academic integrity,hallucinations,2
+academic integrity,personalized learning,2
+hallucination mitigation,named entity recognition,2
+hallucination mitigation,personalized learning,2
+hallucination mitigation,re-ranking,2
+hallucination mitigation,scientific question answering,2
+hallucination mitigation,vision-language models,2
+hallucinations,human-AI collaboration,2
+hallucinations,hybrid retrieval,2
+hallucinations,literature review automation,2
+hallucinations,personalized learning,2
+hallucinations,re-ranking,2
+ChatGPT,systematic reviews,2
+ChatGPT,vector databases,2
+GPT-4,LangChain,2
+GPT-4,artificial intelligence in education,2
+GPT-4,artificial intelligence in healthcare,2
+GPT-4,fine-tuning,2
+GPT-4,hallucination mitigation,2
+GPT-4,medical question answering,2
+GPT-4,question answering,2
+GPT-4,vector databases,2
+GPT-4o,LangChain,2
+GPT-4o,scientific question answering,2
+GraphRAG,chain-of-thought prompting,2
+GraphRAG,explainable AI,2
+GraphRAG,medical question answering,2
+GraphRAG,multi-agent systems,2
+LLM agents,agentic AI,2
+hallucinations,research ethics,2
+hallucinations,semantic search,2
+hallucinations,systematic reviews,2
+human-AI collaboration,knowledge graphs,2
+human-AI collaboration,literature review automation,2
+human-AI collaboration,personalized learning,2
+human-in-the-loop,knowledge graphs,2
+human-in-the-loop,trust in AI,2
+human-in-the-loop,vector databases,2
+hybrid retrieval,scientific question answering,2
+information retrieval,prompt engineering,2
+information retrieval,scientific publications,2
+knowledge graph construction,multi-agent systems,2
+knowledge graph construction,multimodal large language models,2
+AI governance,GPT-4,2
+AI governance,data privacy,2
+AI governance,hallucination mitigation,2
+AI governance,multi-agent systems,2
+AI governance,prompt engineering,2
+AI governance,trust in AI,2
+AI hallucination,chatbots,2
+AI hallucination,clinical decision support,2
+ChatGPT,fine-tuning,2
+ChatGPT,hallucination mitigation,2
+ChatGPT,human-AI collaboration,2
+ChatGPT,literature review automation,2
+ChatGPT,natural language processing,2
+ChatGPT,personalized learning,2
+ChatGPT,reproducibility,2
+knowledge graph construction,semantic search,2
+knowledge graphs,medical question answering,2
+knowledge graphs,named entity recognition,2
+knowledge graphs,personalized learning,2
+knowledge graphs,prompt engineering,2
+literature review automation,transformer models,2
+literature searching,multi-agent systems,2
+literature searching,question answering,2
+literature searching,research assistants,2
+literature searching,vector databases,2
+medical question answering,reproducibility,2
+multi-agent systems,named entity recognition,2
+multi-agent systems,question answering,2
+multi-agent systems,reproducibility,2
+multi-agent systems,research assistants,2
+multi-agent systems,semantic search,2
+multi-agent systems,vector databases,2
+named entity recognition,prompt engineering,2
+AI chatbots,AI hallucination,2
+scientific publications,vector databases,2
+AI chatbots,AI governance,2

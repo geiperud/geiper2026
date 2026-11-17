@@ -272,6 +272,26 @@ nav .nav-brand:focus-visible { outline: 2px solid var(--logo-amarillo); outline-
     transition: background 0.2s;
 }
 .acerca-enlaces a:hover { background: var(--fondo-alt); color: var(--azul-oscuro); }
+/* Botón al observatorio (abre en pestaña nueva) */
+.acerca-obs {
+    display: flex; flex-wrap: wrap; align-items: center; gap: 12px 16px;
+    margin: 0 0 18px;
+    padding: 14px 16px;
+    background: var(--fondo-alt);
+    border-radius: 8px;
+}
+.acerca-obs-txt { flex: 1 1 220px; font-size: 14px; line-height: 1.5; color: #374151; }
+.acerca-obs a.acerca-obs-btn {
+    display: inline-flex; align-items: center; gap: 8px;
+    padding: 9px 16px;
+    background: var(--azul-oscuro);
+    border-radius: 6px;
+    color: #fff;
+    font-size: 14px; font-weight: 600;
+    transition: background 0.2s;
+}
+.acerca-obs a.acerca-obs-btn:hover { background: var(--azul-medio); color: #fff; }
+.acerca-obs-btn .fa-arrow-up-right-from-square { font-size: 11px; opacity: 0.85; }
 .acerca-cerrar {
     position: absolute; top: 14px; right: 14px;
     width: 36px; height: 36px;

@@ -30,6 +30,13 @@
           '<dt>Título</dt><dd>Diseño e implementación de un geoportal con asistentes inteligentes basados en modelos de lenguaje de gran escala (LLM) para el Semillero de Investigación GEIPER de la UDFJC</dd>' +
           '<dt>Año</dt><dd>2026</dd>' +
         '</dl>' +
+        '<div class="acerca-obs">' +
+          '<span class="acerca-obs-txt">Estudio bibliométrico (2020–2026) y revisión sistemática que sustentan este trabajo de grado.</span>' +
+          '<a class="acerca-obs-btn" href="' + raiz + 'pages/observatorio.html" target="_blank" rel="noopener" title="Se abre en una pestaña nueva">' +
+            '<i class="fa-solid fa-chart-column" aria-hidden="true"></i>Ver el observatorio bibliométrico' +
+            '<i class="fa-solid fa-arrow-up-right-from-square" aria-hidden="true"></i>' +
+          '</a>' +
+        '</div>' +
         '<div class="acerca-enlaces">' +
           '<a href="https://www.linkedin.com/in/laddiazb/" target="_blank" rel="noopener"><i class="fa-brands fa-linkedin" aria-hidden="true"></i>LinkedIn</a>' +
           '<a href="https://orcid.org/0009-0003-0125-5726" target="_blank" rel="noopener"><i class="fa-brands fa-orcid" aria-hidden="true"></i>ORCID</a>' +

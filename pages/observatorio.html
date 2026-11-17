@@ -1,0 +1,485 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <!-- Microsoft Clarity Analytics -->
+  <script type="text/javascript">
+    (function(c,l,a,r,i,t,y){
+        c[a]=c[a]||function(){(c[a].q=c[a].q||[]).push(arguments)};
+        t=l.createElement(r);t.async=1;t.src="https://www.clarity.ms/tag/"+i;
+        y=l.getElementsByTagName(r)[0];y.parentNode.insertBefore(t,y);
+    })(window, document, "clarity", "script", "y82ahs7psh");
+  </script>
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Observatorio bibliométrico: IA y RAG en geociencias – Semillero GEIPER</title>
+  <!-- SEO básico -->
+  <meta name="description" content="Estudio bibliométrico (2020–2026) y revisión sistemática PRISMA sobre asistentes con modelos de lenguaje y generación aumentada por recuperación aplicados a repositorios académicos, con datos abiertos descargables.">
+  <meta name="keywords" content="bibliometría, RAG, modelos de lenguaje, repositorios académicos, geociencias, revisión sistemática, PRISMA, GEIPER">
+  <meta name="author" content="Laura Dayana Díaz Beltrán - Semillero GEIPER, Universidad Distrital Francisco José de Caldas">
+  <meta name="robots" content="index, follow">
+  <link rel="canonical" href="https://geiperud.github.io/geiper2026/pages/observatorio.html">
+
+  <!-- Open Graph -->
+  <meta property="og:title" content="Observatorio bibliométrico: IA y RAG en geociencias – Semillero GEIPER">
+  <meta property="og:description" content="Estudio bibliométrico (2020–2026) y revisión sistemática PRISMA sobre asistentes con modelos de lenguaje y generación aumentada por recuperación aplicados a repositorios académicos.">
+  <meta property="og:url" content="https://geiperud.github.io/geiper2026/pages/observatorio.html">
+  <meta property="og:type" content="website">
+  <meta property="og:image" content="https://geiperud.github.io/geiper2026/assets/images/Logo_GEIPER.png">
+  <link rel="icon" href="../favicon.ico" sizes="48x48">
+  <link rel="icon" type="image/png" sizes="96x96" href="../assets/images/favicon-96.png">
+  <link rel="icon" type="image/png" sizes="192x192" href="../assets/images/favicon-192.png">
+  <link rel="apple-touch-icon" href="../assets/images/apple-touch-icon.png">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+  <link rel="stylesheet" href="../css/styles.css">
+  <link rel="stylesheet" href="../css/tipografia-dm-inter.css?v=2">
+  <link rel="stylesheet" href="../css/observatorio.css?v=1">
+<!-- GEO:jsonld START -->
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@graph": [
+    {
+      "@type": "Dataset",
+      "@id": "https://geiperud.github.io/geiper2026/pages/observatorio.html#dataset",
+      "name": "Observatorio bibliométrico GEIPER: IA y RAG en repositorios académicos (2020–2026)",
+      "description": "Datos limpios del estudio bibliométrico y de la revisión sistemática sobre asistentes con modelos de lenguaje y generación aumentada por recuperación aplicados a corpus de documentos académicos, con énfasis en geociencias y Latinoamérica.",
+      "license": "https://creativecommons.org/licenses/by/4.0/",
+      "creator": {
+        "@type": "Person",
+        "name": "Laura Dayana Díaz Beltrán",
+        "identifier": "https://orcid.org/0009-0003-0125-5726",
+        "affiliation": { "@id": "https://geiperud.github.io/geiper2026/#org" }
+      },
+      "publisher": { "@id": "https://geiperud.github.io/geiper2026/#org" },
+      "temporalCoverage": "2020/2026",
+      "isAccessibleForFree": true,
+      "distribution": [
+        { "@type": "DataDownload", "encodingFormat": "text/csv", "contentUrl": "https://geiperud.github.io/geiper2026/data/observatorio/estudios_revision_sistematica.csv", "name": "Tabla de extracción de los estudios incluidos" },
+        { "@type": "DataDownload", "encodingFormat": "text/csv", "contentUrl": "https://geiperud.github.io/geiper2026/data/observatorio/produccion_anual.csv", "name": "Producción anual por conjunto de búsqueda" },
+        { "@type": "DataDownload", "encodingFormat": "text/csv", "contentUrl": "https://geiperud.github.io/geiper2026/data/observatorio/paises.csv", "name": "Documentos por país de afiliación" },
+        { "@type": "DataDownload", "encodingFormat": "text/csv", "contentUrl": "https://geiperud.github.io/geiper2026/data/observatorio/coocurrencia_nodos.csv", "name": "Nodos de la red de coocurrencia de palabras clave" }
+      ]
+    },
+    {
+      "@type": "WebPage",
+      "@id": "https://geiperud.github.io/geiper2026/pages/observatorio.html#webpage",
+      "url": "https://geiperud.github.io/geiper2026/pages/observatorio.html",
+      "name": "Observatorio bibliométrico: IA y RAG en geociencias",
+      "description": "Estudio bibliométrico y revisión sistemática realizados por Laura Dayana Díaz Beltrán sobre asistentes LLM con RAG para repositorios académicos, como fundamento del trabajo de grado y de los asistentes de IA del portal GEIPER.",
+      "inLanguage": "es-CO",
+      "isPartOf": { "@id": "https://geiperud.github.io/geiper2026/#website" },
+      "publisher": { "@id": "https://geiperud.github.io/geiper2026/#org" },
+      "mainEntity": { "@id": "https://geiperud.github.io/geiper2026/pages/observatorio.html#dataset" },
+      "breadcrumb": { "@id": "https://geiperud.github.io/geiper2026/pages/observatorio.html#breadcrumb" }
+    },
+    {
+      "@type": "BreadcrumbList",
+      "@id": "https://geiperud.github.io/geiper2026/pages/observatorio.html#breadcrumb",
+      "itemListElement": [
+        { "@type": "ListItem", "position": 1, "name": "Inicio", "item": "https://geiperud.github.io/geiper2026/" },
+        { "@type": "ListItem", "position": 2, "name": "Observatorio bibliométrico", "item": "https://geiperud.github.io/geiper2026/pages/observatorio.html" }
+      ]
+    }
+  ]
+}
+</script>
+<!-- GEO:jsonld END -->
+</head>
+<body class="obs">
+
+<header>
+  <!-- Franja superior fija: razón del sitio y enlace a "Acerca de este proyecto" -->
+  <div class="topbar">
+    <div class="topbar-inner">
+      <p class="topbar-texto">
+        <span class="tb-razon"><strong>Geoportal GEIPER</strong><span class="tb-sep" aria-hidden="true"></span>investigación en percepción remota, SIG y GeoIA</span>
+      </p>
+      <button type="button" class="topbar-acerca" data-acerca aria-haspopup="dialog">
+        <i class="fa-solid fa-circle-info" aria-hidden="true"></i><span>Acerca<span class="tb-de"> de este proyecto</span></span>
+      </button>
+    </div>
+  </div>
+  <nav>
+    <a href="../index.html" class="nav-brand"><img src="../assets/images/Logo_GEIPER.png" alt="GEIPER" class="nav-logo-img"></a>
+    <button class="nav-hamburger" id="navHamburger" aria-label="Abrir menú" aria-expanded="false">
+      <span></span><span></span><span></span>
+    </button>
+        <div class="nav-links" id="navLinks">
+      <div class="nav-group">
+        <a href="../index.html">Inicio</a>
+        <a href="lineas.html">Investigación</a>
+        <a href="trayectoria.html">Trayectoria</a>
+      </div>
+      <span class="nav-spacer"></span>
+      <div class="nav-group">
+        <a href="integrantes.html">Integrantes</a>
+        <a href="chatbots.html">Asistentes IA</a>
+        <a href="geovisor.html">Geovisor</a>
+        <div class="nav-actions">
+          <a href="../index.html#contacto-form" class="nav-act nav-act--contacto" aria-label="Contacto" title="Contacto"><i class="fa-solid fa-envelope" aria-hidden="true"></i></a>
+        </div>
+      </div>
+    </div>
+  </nav>
+</header>
+
+<section class="page-hero">
+  <h1>Observatorio bibliométrico</h1>
+  <p>Qué se ha publicado entre 2020 y 2026 sobre asistentes con modelos de lenguaje que dialogan con repositorios académicos, y qué tan presente está este trabajo en geociencias y en Latinoamérica.</p>
+</section>
+
+<!-- ── RESUMEN ─────────────────────────────────────────── -->
+<section>
+  <div class="obs-wrap">
+    <h2>Qué muestra este estudio</h2>
+    <p class="obs-sub">Revisé la literatura publicada entre 2020 y 2026 sobre sistemas que combinan modelos de lenguaje
+      con recuperación de información (<em>retrieval-augmented generation</em>, RAG) para responder preguntas sobre documentos
+      académicos: tesis, artículos e informes. El estudio es una de las piezas que sustentan mi trabajo de grado y, con él, la
+      existencia de este portal: la decisión de incorporar las pestañas de asistentes de inteligencia artificial no parte de una
+      intuición, sino de lo que la literatura ha probado y de los vacíos que deja sin cubrir. Los datos quedan abiertos para que
+      cualquiera los verifique o los reutilice.</p>
+    <p class="obs-nota" style="margin-top:-6px">Estudio y análisis: Laura Dayana Díaz Beltrán, Ingeniería Catastral y Geodesia,
+      Universidad Distrital Francisco José de Caldas. Semillero GEIPER, grupo de investigación NIDE.</p>
+
+    <div id="obs-aviso" class="obs-nota" style="display:none;border:1px solid #D1D5DB;padding:14px;margin-bottom:18px"></div>
+
+    <div class="obs-cifras">
+      <div class="obs-cifra"><b id="c-nucleo">—</b><span>documentos en el núcleo temático (RAG o asistentes LLM sobre corpus académicos)</span></div>
+      <div class="obs-cifra"><b id="c-estudios">—</b><span>estudios analizados en detalle en la revisión sistemática</span></div>
+      <div class="obs-cifra"><b id="c-latam">—</b><span>documentos del núcleo con al menos un autor afiliado a Latinoamérica</span></div>
+      <div class="obs-cifra"><b id="c-nicho">—</b><span>documentos en el cruce de las tres áreas: RAG, corpus académico y geociencias</span></div>
+    </div>
+    <p class="obs-nota">Fuentes: OpenAlex, Scopus e IEEE Xplore. Periodo 2020–2026 (el año 2026 está incompleto; corte: 16 de noviembre de 2026).
+      De <b id="t-registros">—</b> registros recuperados quedaron <b id="t-candidatos">—</b> candidatos tras eliminar duplicados y documentos no pertinentes;
+      <b id="t-elegibles">—</b> cumplieron los criterios y <b id="t-incluidos">—</b> entraron en la síntesis por reportar métricas cuantitativas.</p>
+  </div>
+</section>
+
+<!-- ── PRODUCCIÓN Y GEOGRAFÍA ──────────────────────────── -->
+<section class="alt">
+  <div class="obs-wrap">
+    <h2>Cuánto se publica y desde dónde</h2>
+    <p class="obs-sub">La producción sobre asistentes RAG aplicados a literatura académica crece con fuerza desde 2023. El cruce con
+      geociencias sigue siendo marginal, y la participación latinoamericana es baja: Colombia aparece en
+      <b id="t-colombia">—</b> <span id="t-colombia-s">documentos</span> del núcleo.</p>
+
+    <div class="obs-grid2">
+      <div class="obs-fig">
+        <h3>Producción anual por conjunto de búsqueda</h3>
+        <div id="g-anual"></div>
+        <p class="obs-pie"><i>Nota.</i> Elaboración propia a partir de datos de OpenAlex (Priem et al., 2022), consulta del
+        16 de noviembre de 2026. El año 2026 está incompleto.</p>
+      </div>
+      <div class="obs-fig">
+        <h3>Países con más documentos en el núcleo</h3>
+        <div id="g-paises"></div>
+        <p class="obs-pie"><i>Nota.</i> Elaboración propia a partir de datos de OpenAlex (Priem et al., 2022). Se cuenta la
+        afiliación de cualquier autor; en naranja, los países latinoamericanos. El <b id="t-sinpais">—</b> de los documentos
+        del núcleo no tiene país registrado en la fuente.</p>
+      </div>
+    </div>
+
+    <div class="obs-grid2" style="margin-top:26px">
+      <div class="obs-fig">
+        <h3>Presencia latinoamericana en el núcleo</h3>
+        <div id="g-latam"></div>
+        <p class="obs-pie"><i>Nota.</i> Elaboración propia a partir de datos de OpenAlex (Priem et al., 2022). Documentos
+        con al menos un autor afiliado a cada país.</p>
+      </div>
+      <div class="obs-fig">
+        <h3>Dónde se publica</h3>
+        <div id="g-fuentes"></div>
+        <p class="obs-pie"><i>Nota.</i> Elaboración propia a partir de datos de OpenAlex (Priem et al., 2022). Fuentes de
+        publicación con más documentos en el núcleo; el <b id="t-sinfuente">—</b> de los documentos no tiene fuente registrada.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ── TENDENCIAS ──────────────────────────────────────── -->
+<section>
+  <div class="obs-wrap">
+    <h2>Hacia dónde se mueve el campo</h2>
+    <p class="obs-sub">Los términos asociados a evaluación, citación de fuentes y control de alucinaciones ganan presencia en los
+      resúmenes, señal de que el campo pasa de demostrar que la técnica funciona a comprobar cuánto se puede confiar en ella.</p>
+    <div class="obs-fig">
+      <h3>Términos de diseño y evaluación en título y resumen (porcentaje de documentos del año)</h3>
+      <div id="g-tend"></div>
+      <p class="obs-pie"><i>Nota.</i> Elaboración propia a partir de datos de OpenAlex (Priem et al., 2022), mediante
+        búsqueda por expresión regular sobre el título y el resumen de los documentos del núcleo temático.</p>
+    </div>
+    <div class="obs-fig" style="margin-top:30px">
+      <h3>Peso de cada país en el núcleo temático</h3>
+      <div id="g-mapa"></div>
+      <p class="obs-pie"><i>Nota.</i> Elaboración propia a partir de datos de OpenAlex (Priem et al., 2022). Mapa de áreas
+        (<i>treemap</i>) construido con el algoritmo <i>squarified</i> de Bruls et al. (2000): el área de cada rectángulo es
+        proporcional al número de documentos del país. Se incluyen los países con tres o más documentos; en naranja, los
+        latinoamericanos. El <b id="t-sinpais2">—</b> de los documentos del núcleo no tiene país registrado en la fuente.</p>
+    </div>
+
+    <div class="obs-fig" style="margin-top:30px">
+      <h3>Palabras clave más frecuentes en el núcleo temático</h3>
+      <div id="g-nube"></div>
+      <p class="obs-pie"><i>Nota.</i> Elaboración propia a partir de las palabras clave registradas en OpenAlex
+        (Priem et al., 2022). El tamaño de cada término es proporcional a la raíz cuadrada de su frecuencia, de modo que el
+        área —y no la altura— representa el número de documentos; el color corresponde al clúster temático detectado con el
+        algoritmo de Louvain (Blondel et al., 2008). Se excluyen los términos empleados en la búsqueda.</p>
+    </div>
+
+    <div class="obs-fig" style="margin-top:30px">
+      <h3>Red de coocurrencia de palabras clave</h3>
+      <p class="obs-nota" style="margin:0 0 10px">Arrastra un término para despejar su vecindad, pasa el cursor sobre un nodo
+        para ver con qué se conecta y pulsa un clúster de la leyenda para aislarlo.
+        <a href="../data/observatorio/coocurrencia.svg" target="_blank" rel="noopener">Ver la versión estática</a>.</p>
+      <div id="g-red"></div>
+      <p class="obs-pie"><i>Nota.</i> Elaboración propia a partir de las palabras clave de OpenAlex (Priem et al., 2022),
+        con detección de comunidades mediante el algoritmo de Louvain (Blondel et al., 2008); modularidad 0,268. La red
+        parte de la disposición calculada en el análisis, la misma de la figura del documento; el número de términos que se
+        dibujan se ajusta al ancho de la pantalla (38 en pantalla ancha, 26 en tableta y 16 en teléfono) y los enlaces mostrados
+        son los de peso ≥ 3 más el más fuerte de cada término. La versión estática, con los 38 términos, está enlazada arriba. El tamaño del nodo indica en cuántos documentos aparece el término y el
+        color, el clúster. Los nombres de los clústeres son una interpretación de los términos que cada uno reúne: el
+        algoritmo entrega las particiones, no sus etiquetas.</p>
+    </div>
+  </div>
+</section>
+
+<!-- ── REVISIÓN SISTEMÁTICA ────────────────────────────── -->
+<section class="alt">
+  <div class="obs-wrap">
+    <h2>Cómo se diseñan y evalúan estos asistentes</h2>
+    <p class="obs-sub">De los estudios analizados, <b id="t-citas">—</b> devuelven respuestas con citas a la fuente,
+      <b id="t-fidelidad">—</b> miden fidelidad o fundamentación de la respuesta y <b id="t-aluc">—</b> describen algún mecanismo
+      contra las alucinaciones. <b id="t-abierto">—</b> usan modelos de lenguaje de código abierto.</p>
+    <div class="obs-fig">
+      <h3>Componentes reportados en los estudios incluidos</h3>
+      <div id="g-comp"></div>
+      <p class="obs-pie"><i>Nota.</i> Elaboración propia a partir de la tabla de extracción de los 40 estudios incluidos,
+        construida sobre registros de OpenAlex (Priem et al., 2022), Scopus (Elsevier, 2026) e IEEE Xplore (Institute of
+        Electrical and Electronics Engineers, 2026). Un estudio puede contar en varias categorías.</p>
+    </div>
+  </div>
+</section>
+
+<!-- ── TABLA ───────────────────────────────────────────── -->
+<section>
+  <div class="obs-wrap">
+    <h2>Estudios de la revisión sistemática</h2>
+    <p class="obs-sub">Cada fila resume un estudio. Al pulsar la referencia se despliega la ficha completa: corpus, modelo, embeddings,
+      almacén, fragmentación, métricas, resultados y limitaciones.</p>
+    <div class="obs-controles">
+      <label for="f-anio">Año</label>
+      <select id="f-anio"><option value="">Todos</option></select>
+      <label for="f-pais">País</label>
+      <select id="f-pais"><option value="">Todos</option></select>
+      <label for="f-cita">Cita las fuentes</label>
+      <select id="f-cita"><option value="">Indiferente</option><option value="si">Sí</option><option value="no">No reportado</option></select>
+      <label for="f-busca" class="sr-only">Buscar</label>
+      <input type="search" id="f-busca" placeholder="Buscar por autor, técnica, corpus…">
+      <span class="obs-conteo" id="obs-conteo"></span>
+    </div>
+    <div class="obs-tabla-wrap">
+      <table class="obs-tabla" id="obs-tabla">
+        <thead>
+          <tr>
+            <th data-col="n" scope="col">N.º</th>
+            <th data-col="cita" scope="col">Estudio</th>
+            <th data-col="anio" scope="col">Año</th>
+            <th data-col="pais" scope="col">País</th>
+            <th data-col="llm" scope="col">Modelo de lenguaje</th>
+            <th data-col="base_vectorial" scope="col">Almacén</th>
+            <th data-col="cita_fuentes" scope="col">Cita fuentes</th>
+            <th data-col="calidad_total" scope="col">Calidad</th>
+          </tr>
+        </thead>
+        <tbody id="obs-tbody"></tbody>
+      </table>
+    </div>
+    <p class="obs-nota" style="margin-top:12px"><i>Nota.</i> Elaboración propia a partir de los 40 estudios incluidos,
+      identificados en OpenAlex (Priem et al., 2022), Scopus (Elsevier, 2026) e IEEE Xplore (Institute of Electrical and
+      Electronics Engineers, 2026). La calidad se evalúa con ocho ítems (objetivo, arquitectura, corpus, evaluación, comparación
+      con línea base, fidelidad o verificación, limitaciones y apertura de código o datos), cada uno con valor 0, 0,5 o 1.</p>
+  </div>
+</section>
+
+<!-- ── METODOLOGÍA Y DATOS ─────────────────────────────── -->
+<section class="alt">
+  <div class="obs-wrap">
+    <h2>Metodología y datos</h2>
+    <div class="obs-metodo">
+      <div>
+        <h3>Cómo se hizo</h3>
+        <ol>
+          <li>Búsqueda en OpenAlex, Scopus e IEEE Xplore con tres bloques combinados: tecnología (RAG, asistentes con modelos de lenguaje), corpus académico (repositorio institucional, biblioteca digital, tesis, literatura científica) y dominio geoespacial.</li>
+          <li>Limpieza: exclusión de tipos no primarios, retractados y duplicados por DOI y por título; verificación de cada registro con expresiones regulares sobre título y resumen.</li>
+          <li>Revisión sistemática según PRISMA 2020: cribado por título y resumen, evaluación de elegibilidad y extracción de datos de cada estudio.</li>
+          <li>La síntesis se limita a los estudios que reportan al menos una métrica cuantitativa con valores numéricos; los demás quedan registrados en los datos como elegibles no analizados.</li>
+        </ol>
+      </div>
+      <div>
+        <h3>Alcance y límites</h3>
+        <p class="obs-nota" style="line-height:1.7">La bibliometría se calcula sobre OpenAlex, que cubre el <b id="t-cobertura">—</b> de los registros únicos
+          recuperados en las tres bases; Scopus e IEEE Xplore se usan para completar la identificación de estudios y medir esa cobertura.
+          La clasificación por país depende de las afiliaciones registradas en la fuente, que no siempre están completas. La extracción se
+          realizó sobre título y resumen, salvo en dos estudios consultados a texto completo, de modo que la ausencia de un dato significa
+          que no se reporta en el resumen, no que el sistema carezca de él. El conjunto A∩C (geociencias) reúne <b id="t-ac">—</b> documentos
+          y solo <b id="t-catastro">—</b> mencionan catastro.</p>
+      </div>
+    </div>
+
+    <h3 style="margin-top:34px;font-size:15px;color:#111827">Datos abiertos</h3>
+    <div class="obs-descargas">
+      <a class="obs-dl" href="../data/observatorio/estudios_revision_sistematica.csv" download>
+        <b>Estudios de la revisión (CSV)</b><span>Tabla de extracción completa: corpus, modelos, métricas, resultados, limitaciones y puntajes de calidad.</span></a>
+      <a class="obs-dl" href="../data/observatorio/produccion_anual.csv" download>
+        <b>Producción anual (CSV)</b><span>Documentos por año en cada conjunto de búsqueda.</span></a>
+      <a class="obs-dl" href="../data/observatorio/paises.csv" download>
+        <b>Países (CSV)</b><span>Documentos del núcleo por país de afiliación.</span></a>
+      <a class="obs-dl" href="../data/observatorio/coocurrencia_nodos.csv" download>
+        <b>Coocurrencia: nodos (CSV)</b><span>Palabras clave con frecuencia, grado y clúster temático.</span></a>
+      <a class="obs-dl" href="../data/observatorio/coocurrencia_aristas.csv" download>
+        <b>Coocurrencia: aristas (CSV)</b><span>Pares de palabras clave con su número de coocurrencias.</span></a>
+      <a class="obs-dl" href="../data/observatorio/mas_citados.csv" download>
+        <b>Documentos más citados (CSV)</b><span>Los 25 documentos del núcleo con más citas registradas.</span></a>
+    </div>
+    <p class="obs-nota" style="margin-top:16px">Datos publicados bajo licencia Creative Commons BY 4.0. Elaborados con software libre
+      (Python, pandas, matplotlib, NetworkX) a partir de fuentes abiertas y de las bases suscritas por la Universidad Distrital.</p>
+
+    <h3 style="margin-top:34px;font-size:15px;color:#111827">Por qué este estudio está en el portal</h3>
+    <p class="obs-nota" style="line-height:1.7">Las pestañas de asistentes de inteligencia artificial de este portal no son un
+      añadido tecnológico: responden a un problema documentado. De los 40 estudios que analicé, solo tres trabajan sobre tesis o
+      bibliotecas digitales reales, uno declara soporte explícito para español y uno verifica cada cita contra el pasaje que la
+      respalda. Ese vacío es el que ocupa mi trabajo de grado, y cada decisión del diseño de los asistentes —citar la fuente en
+      cada respuesta, medir la fidelidad, trabajar con software libre— se apoya en lo que esta revisión encontró. El estudio es
+      una parte del sustento, no su totalidad: el marco normativo, la evaluación de la plataforma con usuarios y las pruebas de
+      calidad de respuesta se documentan en el propio trabajo de grado.</p>
+
+    <h3 style="margin-top:34px;font-size:15px;color:#111827">Referencias</h3>
+    <ul class="obs-refs">
+      <li>Blondel, V. D., Guillaume, J. L., Lambiotte, R. y Lefebvre, E. (2008). Fast unfolding of communities in large networks.
+        <i>Journal of Statistical Mechanics: Theory and Experiment, 2008</i>(10), P10008.
+        <a href="https://doi.org/10.1088/1742-5468/2008/10/p10008" target="_blank" rel="noopener">https://doi.org/10.1088/1742-5468/2008/10/p10008</a></li>
+      <li>Elsevier. (2026). <i>Scopus</i> [Base de datos]. <a href="https://www.scopus.com" target="_blank" rel="noopener">https://www.scopus.com</a></li>
+      <li>Institute of Electrical and Electronics Engineers. (2026). <i>IEEE Xplore Digital Library</i> [Base de datos].
+        <a href="https://ieeexplore.ieee.org" target="_blank" rel="noopener">https://ieeexplore.ieee.org</a></li>
+      <li>Lewis, P., Perez, E., Piktus, A., Petroni, F., Karpukhin, V., Goyal, N., Küttler, H., Lewis, M., Yih, W., Rocktäschel, T.,
+        Riedel, S. y Kiela, D. (2020). Retrieval-augmented generation for knowledge-intensive NLP tasks.
+        <i>Advances in Neural Information Processing Systems, 33</i>, 9459–9474.
+        <a href="https://doi.org/10.48550/arxiv.2005.11401" target="_blank" rel="noopener">https://doi.org/10.48550/arxiv.2005.11401</a></li>
+      <li>Page, M. J., McKenzie, J. E., Bossuyt, P. M., Boutron, I., Hoffmann, T. C., Mulrow, C. D., Shamseer, L., Tetzlaff, J. M.,
+        Akl, E. A., Brennan, S. E., Chou, R., Glanville, J., Grimshaw, J. M., Hróbjartsson, A., Lalu, M. M., Li, T., Loder, E. W.,
+        Mayo-Wilson, E., McDonald, S., … Moher, D. (2021). The PRISMA 2020 statement: an updated guideline for reporting systematic
+        reviews. <i>BMJ, 372</i>, n71. <a href="https://doi.org/10.1136/bmj.n71" target="_blank" rel="noopener">https://doi.org/10.1136/bmj.n71</a></li>
+      <li>Priem, J., Piwowar, H. y Orr, R. (2022). OpenAlex: A fully-open index of scholarly works, authors, venues, institutions,
+        and concepts. <i>arXiv</i>. <a href="https://doi.org/10.48550/arxiv.2205.01833" target="_blank" rel="noopener">https://doi.org/10.48550/arxiv.2205.01833</a></li>
+    </ul>
+    <p class="obs-nota">Las referencias de los 40 estudios incluidos en la revisión sistemática están en la tabla de esta página y
+      en el archivo <a href="../data/observatorio/estudios_revision_sistematica.csv" download>estudios_revision_sistematica.csv</a>,
+      con el DOI de cada uno.</p>
+
+    <h3 style="margin-top:34px;font-size:15px;color:#111827">Cómo citar esta página</h3>
+    <p class="obs-nota">Díaz Beltrán, L. D. (2026). <i>Observatorio bibliométrico: IA y RAG en geociencias</i> [Conjunto de datos y
+      análisis]. Semillero GEIPER, Universidad Distrital Francisco José de Caldas.
+      <a href="https://geiperud.github.io/geiper2026/pages/observatorio.html">https://geiperud.github.io/geiper2026/pages/observatorio.html</a></p>
+  </div>
+</section>
+
+<footer id="contacto">
+  <div class="footer-container">
+    <div class="footer-col">
+      <img src="../assets/images/Logo_GEIPER.png" alt="Logo GEIPER" class="footer-logo-img">
+    </div>
+    <div class="footer-col">
+      <h3>Ubicación</h3>
+      <p><i class="fa-solid fa-university"></i>Universidad Distrital Francisco José de Caldas</p>
+      <p><i class="fa-solid fa-building-columns"></i>Facultad de Ingeniería</p>
+      <p><i class="fa-solid fa-compass-drafting"></i>Ingeniería Catastral y Geodesia</p>
+      <p><i class="fa-solid fa-location-dot"></i>Bogotá, Colombia</p>
+    </div>
+    <div class="footer-col">
+      <h3>Contacto</h3>
+      <p><i class="fa-solid fa-envelope"></i>geiper@udistrital.edu.co</p>
+      <p><i class="fa-brands fa-instagram"></i>@semillerogeiper</p>
+    </div>
+    <div class="footer-col">
+      <h3>Encuéntranos</h3>
+      <div style="border-radius:10px;overflow:hidden;border:1px solid rgba(255,255,255,0.15);margin-top:4px;">
+        <iframe src="https://maps.google.com/maps?q=4.627800,-74.065600&z=16&output=embed"
+          width="100%" height="160"
+          style="border:0;display:block;"
+          loading="lazy"></iframe>
+      </div>
+    </div>
+  </div>
+  <div class="footer-divider"></div>
+  <div class="footer-info">
+    <span>Semillero activo desde 2007</span>
+    <span class="footer-sep">·</span>
+    <span>Grupo de investigación NIDE</span>
+    <span class="footer-sep">·</span>
+    <span>Avalado por MinCiencias · CvLAC</span>
+  </div>
+  <div class="footer-divider-bottom"></div>
+  <div class="footer-bottom">
+    <span>© 2026 Semillero de Investigación GEIPER · Desarrollado por <strong>Laura Dayana Díaz Beltrán</strong></span>
+  </div>
+</footer>
+
+<script>
+/* ── Hamburger dinámico: aparece solo cuando los links no caben ── */
+(function () {
+  const header = document.querySelector('header');
+  const btn    = document.getElementById('navHamburger');
+  const links  = document.getElementById('navLinks');
+  if (!btn || !links) return;
+
+  function checkFit() {
+    header.classList.remove('mobile-nav');
+    links.classList.remove('open');
+    btn.classList.remove('open');
+    btn.setAttribute('aria-expanded', 'false');
+
+    links.style.cssText = 'display:flex;flex-direction:row;position:static;width:auto;visibility:hidden;';
+    btn.style.display = 'none';
+
+    const navEl   = document.querySelector('nav');
+    const brandEl = navEl.querySelector('.nav-brand');
+    const gap     = 40;
+    const fits    = brandEl.offsetWidth + gap + links.scrollWidth <= navEl.offsetWidth;
+
+    links.style.cssText = '';
+    btn.style.display   = '';
+
+    if (!fits) header.classList.add('mobile-nav');
+  }
+
+  btn.addEventListener('click', function () {
+    const isOpen = links.classList.toggle('open');
+    btn.classList.toggle('open', isOpen);
+    btn.setAttribute('aria-expanded', isOpen);
+  });
+
+  links.querySelectorAll('a').forEach(function (a) {
+    a.addEventListener('click', function () {
+      links.classList.remove('open');
+      btn.classList.remove('open');
+      btn.setAttribute('aria-expanded', 'false');
+    });
+  });
+
+  document.addEventListener('click', function (e) {
+    if (!btn.contains(e.target) && !links.contains(e.target)) {
+      links.classList.remove('open');
+      btn.classList.remove('open');
+      btn.setAttribute('aria-expanded', 'false');
+    }
+  });
+
+  checkFit();
+  window.addEventListener('resize', checkFit);
+})();
+</script>
+<script src="../js/acerca-proyecto.js"></script>
+<script src="../js/observatorio.js?v=1"></script>
+</body>
+</html>
