@@ -23,6 +23,12 @@ GEIPER forma estudiantes y profesionales en procesamiento de imágenes satelital
 
 ## Ponencias recientes
 
+- Territorios que se actualizan: imágenes, IA y datos al servicio del catastro — Semana ICG 2026, edición XXX (Bogotá, Colombia)
+- Modelos de lenguaje con recuperación aumentada (RAG) como herramienta de apoyo a la investigación en SIG y percepción remota — Semana ICG 2026, edición XXX (Bogotá, Colombia)
+- Procesamiento de imágenes Sentinel SAR semiautomatizado para ortomosaicos — Semana ICG 2026, edición XXX (Bogotá, Colombia)
+- Análisis espaciotemporal y multisensor de la dinámica territorial en la Sabana Occidental de Bogotá — Semana ICG 2026, edición XXX (Bogotá, Colombia)
+- Implementación de talleres en herramientas de investigación y técnicas bibliométricas en la formulación de proyectos académicos — Semana ICG 2026, edición XXX (Bogotá, Colombia)
+- Geopolítica de la huella de carbono (1950–actualidad): análisis espacio-temporal, correlación económica y regímenes climáticos globales — Semana ICG 2026, edición XXX (Bogotá, Colombia)
 - Territorios inteligentes: Digital Twins y GeoAI para la gestión de riesgos — Semana ICG 2026, edición XXIX (Bogotá, Colombia)
 - GeoAI y la evolución del análisis geoespacial — Semana ICG 2026, edición XXIX (Bogotá, Colombia)
 - GeoAI LAB-UD: portal de recursos educativos abiertos en inteligencia artificial geoespacial — Conferencia de Geoinformación SELPER 2025 (Mérida, México)

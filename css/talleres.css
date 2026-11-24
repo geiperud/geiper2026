@@ -58,6 +58,143 @@ section.tl-bloque { padding: 80px 0 90px; }
 }
 .tl-ponentes { font-size: var(--fs-detalle); color: var(--gris); margin: -4px 0 12px; }
 
+/* ── LÍNEA DEL TIEMPO DE PONENCIAS (banda estilo geovisor) ── */
+#ponencias {
+    --tl-banda: #14213A;
+    --tl-banda-2: #22324F;
+    --tl-banda-linea: #3A4866;
+    --tl-banda-apagado: #56627A;
+    --tl-banda-texto: #C9D2E0;
+    --tl-amarillo: #E8B931;
+}
+.tl-banda {
+    background: var(--tl-banda);
+    color: #E6EBF3;
+    border-radius: 8px;
+    padding: 12px 16px;
+    margin-top: 28px;
+}
+.tl-banda-cab { display: flex; gap: 6px 16px; align-items: baseline; flex-wrap: wrap; margin-bottom: 10px; }
+.tl-banda-conteo { font-size: 15px; font-weight: 600; }
+.tl-banda-desc { font-size: var(--fs-detalle); color: #9AA7BD; }
+.tl-banda-eje { display: flex; }
+.tl-banda-eje button { font-family: inherit; cursor: pointer; }
+.tl-banda-todos {
+    align-self: center;
+    margin-right: 10px;
+    font-size: var(--fs-minimo);
+    padding: 3px 10px;
+    border-radius: 4px;
+    border: 1px solid var(--tl-banda-apagado);
+    background: transparent;
+    color: var(--tl-banda-texto);
+}
+.tl-banda-todos[aria-pressed="true"] { background: var(--tl-amarillo); border-color: var(--tl-amarillo); color: #412402; font-weight: 600; }
+.tl-banda-anio {
+    flex: 1;
+    min-width: 0;
+    border: 0;
+    border-left: 1px solid var(--tl-banda-linea);
+    background: transparent;
+    color: var(--tl-banda-texto);
+    text-align: left;
+    padding: 2px 10px;
+    font-size: var(--fs-minimo);
+    transition: background .15s;
+}
+.tl-banda-anio:hover { background: rgba(255, 255, 255, .05); }
+.tl-banda-anio[aria-pressed="true"] { background: var(--tl-banda-2); color: var(--tl-amarillo); }
+.tl-banda-marcas { display: flex; gap: 3px; height: 10px; margin-bottom: 4px; }
+.tl-banda-marcas span { width: 2px; background: var(--tl-amarillo); }
+.tl-banda-anio.is-tenue .tl-banda-marcas span { background: var(--tl-banda-apagado); }
+.tl-banda :focus-visible { outline: 2px solid var(--tl-amarillo); outline-offset: -2px; }
+
+/* Índice anual: año grande a la izquierda, lista numerada a la derecha */
+.tl-idx { margin-top: 36px; }
+.tl-idx-anio {
+    display: grid;
+    grid-template-columns: 150px minmax(0, 1fr);
+    gap: 32px;
+    padding: 28px 0;
+    border-top: 1px solid var(--azul-oscuro);
+}
+.tl-idx-anio:last-child { border-bottom: 1px solid var(--tl-linea); }
+.tl-idx-cab { display: flex; flex-direction: column; gap: 8px; position: sticky; top: 140px; align-self: start; }
+.tl-idx-num {
+    font-family: var(--tl-serif);
+    font-size: 52px;
+    line-height: .9;
+    color: var(--gris);
+    font-variant-numeric: lining-nums;
+}
+.tl-idx-anio.is-reciente .tl-idx-num { color: var(--azul-oscuro); }
+.tl-idx-total {
+    font-size: var(--fs-minimo);
+    letter-spacing: .08em;
+    text-transform: uppercase;
+    color: var(--gris);
+    font-variant-numeric: tabular-nums;
+}
+.tl-idx-lista { list-style: none; margin: 0; padding: 0; }
+.tl-idx-item + .tl-idx-item { border-top: 1px solid var(--tl-linea); }
+.tl-idx-btn {
+    display: grid;
+    grid-template-columns: 36px minmax(0, 1fr) 20px;
+    gap: 4px 12px;
+    width: 100%;
+    padding: 16px 0;
+    border: 0;
+    background: transparent;
+    text-align: left;
+    font-family: inherit;
+    color: inherit;
+    cursor: pointer;
+}
+.tl-idx-item:first-child .tl-idx-btn { padding-top: 2px; }
+.tl-idx-n {
+    font-size: var(--fs-detalle);
+    color: var(--gris);
+    font-variant-numeric: tabular-nums;
+    padding-top: 3px;
+}
+.tl-idx-cuerpo { display: flex; flex-direction: column; gap: 5px; }
+.tl-idx-titulo {
+    font-size: 17px;
+    font-weight: 600;
+    line-height: 1.4;
+    color: var(--tl-tinta);
+    transition: color .15s;
+}
+.tl-idx-ref { font-size: var(--fs-detalle); line-height: 1.5; color: var(--gris); }
+.tl-idx-agenda { font-size: var(--fs-minimo); color: var(--gris); font-variant-numeric: tabular-nums; }
+.tl-idx-agenda b { font-weight: 600; color: var(--azul-medio); letter-spacing: .04em; text-transform: uppercase; }
+.tl-idx-flecha {
+    width: 8px; height: 8px; margin-top: 7px;
+    border-right: 1.5px solid var(--gris);
+    border-bottom: 1.5px solid var(--gris);
+    transform: rotate(-45deg);
+    transition: transform .2s;
+}
+.tl-idx-btn:hover .tl-idx-titulo { color: var(--azul-medio); }
+.tl-idx-btn[aria-expanded="true"] .tl-idx-titulo { color: var(--azul-oscuro); }
+.tl-idx-btn[aria-expanded="true"] .tl-idx-flecha { transform: rotate(45deg); }
+.tl-idx-btn:focus-visible { outline: 2px solid var(--azul-claro); outline-offset: 2px; }
+#tlPanelPo { margin: 0 0 18px 48px; padding: 20px 24px; background: #F7F9FC; border: 0; border-left: 2px solid var(--azul-oscuro); border-radius: 0; }
+#tlPanelPo h3,
+#tlPanelPo .tl-panel-cab,
+#tlPanelPo .tl-ponentes { display: none; }
+#tlPanelPo .tl-vacio { margin: 0; }
+@media (max-width: 720px) {
+    .tl-idx-anio { grid-template-columns: 1fr; gap: 14px; }
+    .tl-idx-cab { position: static; flex-direction: row; align-items: baseline; gap: 14px; }
+    .tl-idx-num { font-size: 40px; }
+    #tlPanelPo { margin-left: 0; }
+}
+@media (max-width: 600px) {
+    .tl-banda-desc { display: none; }
+    .tl-banda-anio { padding: 2px 6px; }
+}
+
 /* ── LISTADO DE TALLERES (trayectoria.html) ──────── */
 section.tl-listado { padding: 80px 80px 100px; }
 

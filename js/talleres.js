@@ -422,24 +422,145 @@
           cont.innerHTML = '<p class="tl-estado-msg">Pronto publicaremos las ponencias del semillero.</p>';
           return;
         }
-        cont.innerHTML = '<div class="tl-orbita tl-ponencias" id="tlOrbPo" role="group" aria-label="Ponencias por año"></div>' +
-          '<div class="tl-panel" id="tlPanelPo" aria-live="polite"></div>';
-        var ctrl = orbita(document.getElementById('tlOrbPo'), lista, 'ponencia', function (p, i) {
-          panelPonencia(document.getElementById('tlPanelPo'), p, i, lista.length);
-        });
+        var ctrl = lineaTiempo(cont, lista);
         var m = /^#ponencia-(\d+)$/.exec(location.hash);
-        var inicial = lista.length - 1;
-        if (m && lista[+m[1] - 1]) inicial = +m[1] - 1;
-        ctrl.elegir(inicial, true);
-        if (m) setTimeout(function () { document.getElementById('ponencias').scrollIntoView({ block: 'start' }); }, 50);
+        if (m && lista[+m[1] - 1]) {
+          ctrl.abrir(+m[1] - 1);
+          setTimeout(function () { document.getElementById('ponencias').scrollIntoView({ block: 'start' }); }, 50);
+        }
       })
       .catch(function () {
         cont.innerHTML = '<p class="tl-estado-msg">No pudimos cargar las ponencias. Recarga la página para intentarlo de nuevo.</p>';
       });
   }
 
+  /* ── Línea del tiempo (banda estilo geovisor + índice anual) ──
+     `lista` viene en orden cronológico: su índice es el mismo
+     que usa el ancla #ponencia-N del generador. */
+  function hoyISO() {
+    var d = new Date();
+    return d.getFullYear() + '-' + ('0' + (d.getMonth() + 1)).slice(-2) + '-' + ('0' + d.getDate()).slice(-2);
+  }
+
+  function lineaTiempo(cont, lista) {
+    var anios = lista.map(function (p) { return p.anio; })
+      .filter(function (a, i, arr) { return arr.indexOf(a) === i; });
+    var sel = 'todos', abierta = -1, hoy = hoyISO();
+
+    cont.innerHTML =
+      '<div class="tl-banda" role="group" aria-label="Filtrar ponencias por año">' +
+        '<div class="tl-banda-cab"><span class="tl-banda-conteo" id="tlPoConteo"></span>' +
+        '<span class="tl-banda-desc">Producción del semillero por año</span></div>' +
+        '<div class="tl-banda-eje">' +
+          '<button type="button" class="tl-banda-todos" data-a="todos">Todos</button>' +
+          anios.map(function (a) {
+            var n = lista.filter(function (p) { return p.anio === a; }).length;
+            return '<button type="button" class="tl-banda-anio" data-a="' + a + '" aria-label="' + a + ': ' + n +
+              (n === 1 ? ' ponencia' : ' ponencias') + '"><span class="tl-banda-marcas">' +
+              new Array(n + 1).join('<span></span>') + '</span>' + a + '</button>';
+          }).join('') +
+        '</div>' +
+      '</div>' +
+      '<div class="tl-idx" id="tlPoGrid"></div>' +
+      '<div class="tl-panel" id="tlPanelPo" aria-live="polite" hidden></div>';
+
+    var conteo = document.getElementById('tlPoConteo');
+    var grid = document.getElementById('tlPoGrid');
+    var panel = document.getElementById('tlPanelPo');
+    var botones = cont.querySelectorAll('.tl-banda-eje button');
+
+    function filtrar(a) {
+      sel = a;
+      pintar();
+    }
+
+    function pintar() {
+      var vis = [];
+      lista.forEach(function (p, i) { if (sel === 'todos' || p.anio === sel) vis.push(i); });
+      // años y fechas más recientes primero; en un mismo día, el orden del programa
+      vis.sort(function (x, y) {
+        var fx = lista[x].fecha || '', fy = lista[y].fecha || '';
+        return (lista[y].anio - lista[x].anio) || (fx < fy ? 1 : fx > fy ? -1 : 0) || (x - y);
+      });
+      conteo.textContent = (sel === 'todos' ? 'Todos los años' : sel) + ' · ' + vis.length +
+        (vis.length === 1 ? ' ponencia' : ' ponencias');
+      botones.forEach(function (b) {
+        var a = b.dataset.a === 'todos' ? 'todos' : +b.dataset.a;
+        b.setAttribute('aria-pressed', a === sel ? 'true' : 'false');
+        b.classList.toggle('is-tenue', sel !== 'todos' && a !== sel && a !== 'todos');
+      });
+      // agrupar por año, conservando el orden de `vis`
+      var grupos = [];
+      vis.forEach(function (i) {
+        var g = grupos[grupos.length - 1];
+        if (!g || g.anio !== lista[i].anio) grupos.push(g = { anio: lista[i].anio, items: [] });
+        g.items.push(i);
+      });
+      function dos(n) { return (n < 10 ? '0' : '') + n; }
+      var MES = ['ene', 'feb', 'mar', 'abr', 'may', 'jun', 'jul', 'ago', 'sep', 'oct', 'nov', 'dic'];
+      function fechaCorta(f) {
+        var m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(f || '');
+        return m ? (+m[3]) + ' ' + MES[+m[2] - 1] + ' ' + m[1] : '';
+      }
+
+      grid.innerHTML = grupos.map(function (g, k) {
+        return '<section class="tl-idx-anio' + (k === 0 ? ' is-reciente' : '') + '" aria-label="Ponencias de ' + g.anio + '">' +
+          '<div class="tl-idx-cab"><span class="tl-idx-num">' + g.anio + '</span>' +
+          '<span class="tl-idx-total">' + dos(g.items.length) + (g.items.length === 1 ? ' ponencia' : ' ponencias') + '</span></div>' +
+          '<ol class="tl-idx-lista">' + g.items.map(function (i, n) {
+            var p = lista[i];
+            var ponentes = (p.ponentes || []).filter(Boolean).join(', ');
+            var fuente = [p.evento, [p.ciudad, p.pais].filter(Boolean).join(', ')].filter(Boolean).join(' · ');
+            var agenda = p.fecha ? [fechaCorta(p.fecha), p.hora, p.lugar, p.sala].filter(Boolean).join(' · ') : '';
+            var proxima = p.fecha && p.fecha >= hoy;
+            return '<li class="tl-idx-item" data-i="' + i + '">' +
+              '<button type="button" class="tl-idx-btn" aria-expanded="' + (i === abierta) + '" aria-controls="tlPanelPo">' +
+                '<span class="tl-idx-n">' + dos(n + 1) + '</span>' +
+                '<span class="tl-idx-cuerpo">' +
+                  '<span class="tl-idx-titulo">' + esc(p.titulo) + '</span>' +
+                  '<span class="tl-idx-ref">' + (ponentes ? esc(ponentes) + ' — ' : '') + esc(fuente) + '</span>' +
+                  (agenda ? '<span class="tl-idx-agenda">' + (proxima ? '<b>Programada</b> · ' : '') + esc(agenda) + '</span>' : '') +
+                '</span>' +
+                '<span class="tl-idx-flecha" aria-hidden="true"></span>' +
+              '</button></li>';
+          }).join('') + '</ol></section>';
+      }).join('');
+
+      grid.querySelectorAll('.tl-idx-btn').forEach(function (b) {
+        b.addEventListener('click', function () { abrir(+b.parentNode.dataset.i); });
+      });
+
+      // el detalle se despliega debajo de la ponencia elegida
+      var li = abierta >= 0 ? grid.querySelector('.tl-idx-item[data-i="' + abierta + '"]') : null;
+      if (li) {
+        li.appendChild(panel);
+        panel.hidden = false;
+        panelPonencia(panel, lista[abierta], abierta, lista.length);
+      } else {
+        cont.appendChild(panel);
+        panel.hidden = true;
+      }
+    }
+
+    function abrir(i) {
+      abierta = abierta === i ? -1 : i;
+      if (abierta >= 0 && sel !== 'todos' && lista[i].anio !== sel) sel = lista[i].anio;
+      pintar();
+    }
+
+    botones.forEach(function (b) {
+      b.addEventListener('click', function () {
+        var a = b.dataset.a === 'todos' ? 'todos' : +b.dataset.a;
+        filtrar(sel === a ? 'todos' : a);
+      });
+    });
+
+    pintar();
+    return { abrir: abrir };
+  }
+
   function panelPonencia(panel, p, i, total) {
-    var lugar = [p.ciudad, p.pais].filter(Boolean).join(', ');
+    var lugar = [p.lugar, p.sala, p.ciudad, p.pais].filter(Boolean).join(', ');
     var ponentes = (p.ponentes || []).filter(Boolean);
     panel.innerHTML =
       '<div class="tl-panel-cab"><span class="tl-etiqueta">' + esc(p.evento) + '</span>' +

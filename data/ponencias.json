@@ -71,6 +71,116 @@
       "resumen": "",
       "pdf": null,
       "fotos": []
+    },
+    {
+      "id": "2026-icg-huella-carbono",
+      "anio": 2026,
+      "fecha": "2026-11-26",
+      "hora": "9:00 a. m.",
+      "evento": "Semana ICG 2026, edición XXX",
+      "ciudad": "Bogotá",
+      "pais": "Colombia",
+      "lugar": "Aduanilla de Paiba",
+      "sala": "Auditorio Central",
+      "titulo": "Geopolítica de la huella de carbono (1950–actualidad): análisis espacio-temporal, correlación económica y regímenes climáticos globales",
+      "ponentes": [
+        "Ezequiel Savastano"
+      ],
+      "resumen": "",
+      "pdf": null,
+      "fotos": []
+    },
+    {
+      "id": "2026-icg-bibliometria",
+      "anio": 2026,
+      "fecha": "2026-11-26",
+      "hora": "9:30 a. m.",
+      "evento": "Semana ICG 2026, edición XXX",
+      "ciudad": "Bogotá",
+      "pais": "Colombia",
+      "lugar": "Aduanilla de Paiba",
+      "sala": "Auditorio Central",
+      "titulo": "Implementación de talleres en herramientas de investigación y técnicas bibliométricas en la formulación de proyectos académicos",
+      "ponentes": [
+        "Daniel Alejandro Afanador"
+      ],
+      "resumen": "",
+      "pdf": null,
+      "fotos": []
+    },
+    {
+      "id": "2026-icg-sabana-occidental",
+      "anio": 2026,
+      "fecha": "2026-11-26",
+      "hora": "10:00 a. m.",
+      "evento": "Semana ICG 2026, edición XXX",
+      "ciudad": "Bogotá",
+      "pais": "Colombia",
+      "lugar": "Aduanilla de Paiba",
+      "sala": "Auditorio Central",
+      "titulo": "Análisis espaciotemporal y multisensor de la dinámica territorial en la Sabana Occidental de Bogotá",
+      "ponentes": [
+        "Silvana Castillo",
+        "Yan Muñoz"
+      ],
+      "resumen": "",
+      "pdf": null,
+      "fotos": []
+    },
+    {
+      "id": "2026-icg-sentinel-sar",
+      "anio": 2026,
+      "fecha": "2026-11-26",
+      "hora": "10:00 a. m.",
+      "evento": "Semana ICG 2026, edición XXX",
+      "ciudad": "Bogotá",
+      "pais": "Colombia",
+      "lugar": "Aduanilla de Paiba",
+      "sala": "Auditorio de Investigadores",
+      "titulo": "Procesamiento de imágenes Sentinel SAR semiautomatizado para ortomosaicos",
+      "ponentes": [
+        "Argenis Alexandra Daza Roa"
+      ],
+      "resumen": "",
+      "pdf": null,
+      "fotos": []
+    },
+    {
+      "id": "2026-icg-rag",
+      "anio": 2026,
+      "fecha": "2026-11-26",
+      "hora": "10:20 a. m.",
+      "evento": "Semana ICG 2026, edición XXX",
+      "ciudad": "Bogotá",
+      "pais": "Colombia",
+      "lugar": "Aduanilla de Paiba",
+      "sala": "Auditorio de Investigadores",
+      "titulo": "Modelos de lenguaje con recuperación aumentada (RAG) como herramienta de apoyo a la investigación en SIG y percepción remota",
+      "ponentes": [
+        "Laura Dayana Díaz Beltrán"
+      ],
+      "resumen": "",
+      "pdf": null,
+      "fotos": []
+    },
+    {
+      "id": "2026-icg-territorios-catastro",
+      "anio": 2026,
+      "fecha": "2026-11-26",
+      "hora": "10:30 a. m.",
+      "evento": "Semana ICG 2026, edición XXX",
+      "ciudad": "Bogotá",
+      "pais": "Colombia",
+      "lugar": "Aduanilla de Paiba",
+      "sala": "Auditorio Central",
+      "titulo": "Territorios que se actualizan: imágenes, IA y datos al servicio del catastro",
+      "ponentes": [
+        "Lina Marcela Sánchez",
+        "Sebastián Forero Zapata"
+      ],
+      "resumen": "",
+      "pdf": null,
+      "fotos": []
     }
   ]
 }
