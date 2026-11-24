@@ -1901,7 +1901,7 @@ body.geo-side-open #geoChatPanel { left: calc(var(--rail-w) + var(--side-w) + 12
     <!-- Pie de sidebar -->
     <div class="geo-sidebar-footer">
       <i class="fa-solid fa-circle-info"></i>
-      <span id="footerCount">8 proyectos · 6 líneas de investigación</span>
+      <span id="footerCount">11 proyectos · 4 líneas de investigación</span>
     </div>
   </aside>
 
@@ -2246,15 +2246,13 @@ body.geo-side-open #geoChatPanel { left: calc(var(--rail-w) + var(--side-w) + 12
    ══════════════════════════════════════════════ */
 const RIUD_URL = 'https://repository.udistrital.edu.co/';
 
-/* Líneas de investigación reales de GEIPER (pages/lineas.html), cada
-   una con un color propio que se reutiliza en tarjetas y marcadores */
+/* Las 4 líneas de investigación de GEIPER (pages/lineas.html), cada una
+   con un color del logo (--gp-*) que se reutiliza en tarjetas y marcadores */
 const LINEAS = [
-  { id: 'procesamiento', nombre: 'Procesamiento digital y análisis de imágenes', color: '#2563eb' },
-  { id: 'geoia',          nombre: 'Implementación de modelos de GeoIA', color: '#7c3aed' },
-  { id: 'espacial',       nombre: 'Análisis espacial', color: '#d97706' },
-  { id: 'cambios',        nombre: 'Detección de Cambios en Objetos y Fenómenos Geográficos', color: '#1D9E75' },
-  { id: 'ide',            nombre: 'Infraestructuras de Datos Espaciales y Estandarización', color: '#be185d' },
-  { id: 'cartografia',    nombre: 'Cartografía Aplicada a la Gestión de Recursos y Ordenamiento Territorial', color: '#dc2626' },
+  { id: 'sar',      nombre: 'Radar de apertura sintética e interferometría (SAR/InSAR)', color: '#154E85' },
+  { id: 'dinamica', nombre: 'Dinámica territorial y cambios de uso y cobertura del suelo', color: '#6DB33F' },
+  { id: 'datos',    nombre: 'Datos geoespaciales, cartografía y GeoIA', color: '#2A9AD4' },
+  { id: 'catastro', nombre: 'Catastro multipropósito y administración de tierras', color: '#F08A1C' },
 ];
 
 /* ── Paleta CIAF (2.º nivel) ──────────────────
@@ -2288,7 +2286,7 @@ const PROJECTS = [
   {
     id: 1,
     nombre: 'Protección de bosques en el marco de la metodología Fit for Purpose. Caso de estudio: vereda Termales, Vista Hermosa, Meta',
-    lineaId: 'cambios',
+    lineaId: 'dinamica',
     año: 2020,
     sensor: 'Landsat (análisis multitemporal 1988–2018) · Metodología FFP',
     escala: 'Predial',
@@ -2303,7 +2301,7 @@ const PROJECTS = [
   {
     id: 2,
     nombre: 'Evaluación de redes convolucionales para la segmentación de objetos geográficos: un insumo para la cartografía básica a escala 1:2000 basado en el catálogo del IGAC',
-    lineaId: 'geoia',
+    lineaId: 'datos',
     año: 2024,
     sensor: 'UNet · DeepLabV3 · LinkNet (Transfer Learning)',
     escala: '1:2.000',
@@ -2318,7 +2316,7 @@ const PROJECTS = [
   {
     id: 3,
     nombre: 'Metodología detallada de estructuración y adecuación de cartografía para planes de manejo de perforación de pozos exploratorios, perforación de pozos de desarrollo o producción y sus líneas de flujo, en la explotación de hidrocarburos',
-    lineaId: 'cartografia',
+    lineaId: 'datos',
     año: 2015,
     sensor: 'Geodatabase (GDB) · Plan de Manejo Ambiental',
     escala: 'N/A',
@@ -2333,7 +2331,7 @@ const PROJECTS = [
   {
     id: 4,
     nombre: 'Propuesta metodológica para la estandarización e incorporación de información ráster y LiDAR a la plataforma del Sistema de Información Territorial para la Construcción y Operación—SITCO',
-    lineaId: 'ide',
+    lineaId: 'datos',
     año: 2020,
     sensor: 'LiDAR · Ortofotomosaicos · Metadatos NTC 4611',
     escala: 'N/A',
@@ -2348,7 +2346,7 @@ const PROJECTS = [
   {
     id: 5,
     nombre: 'Análisis espaciotemporal y multisensor de la dinámica territorial en la Sabana Occidental de Bogotá',
-    lineaId: 'cambios',
+    lineaId: 'dinamica',
     año: 2026,
     sensor: 'RADARSAT-1 (SAR) · Landsat 7 ETM+ · POT homologados a clasificación CIAF (1996–2016)',
     escala: 'Regional',
@@ -2377,7 +2375,7 @@ const PROJECTS = [
   {
     id: 6,
     nombre: 'Estudio multitemporal del crecimiento urbano de uso y cobertura en la ciudad de Neiva-Huila, mediante imágenes satelitales de Landsat 5, 7 y Sentinel 1',
-    lineaId: 'cambios',
+    lineaId: 'dinamica',
     año: 2022,
     sensor: 'Landsat 5 · Landsat 7 ETM+ · Sentinel-1 (SAR) · Clasificación supervisada y no supervisada',
     escala: 'Perímetro urbano (Landsat, 30 m)',
@@ -2392,7 +2390,7 @@ const PROJECTS = [
   {
     id: 7,
     nombre: 'Análisis de deformación de la corteza en el Magdalena Medio con técnicas de interferometría diferencial avanzada y dispersor persistente',
-    lineaId: 'cambios',
+    lineaId: 'sar',
     año: 2020,
     sensor: 'Sentinel-1 A/B (TOPS, SLC) · ISCE + StaMPS (dispersor persistente) · Validación con GNSS',
     escala: 'Regional (≈3.700 km²)',
@@ -2407,7 +2405,7 @@ const PROJECTS = [
   {
     id: 8,
     nombre: 'Análisis de la aplicación del filtro Speckle Divergence a imágenes de radar obtenidas para uso y cobertura',
-    lineaId: 'procesamiento',
+    lineaId: 'sar',
     año: 2026,
     sensor: 'RADARSAT-1 · RADARSAT-2 · Sentinel-1 (SAR) · Filtro Speckle Divergence · Clasificación CIAF',
     escala: 'Regional',
@@ -2426,7 +2424,7 @@ const PROJECTS = [
   {
     id: 9,
     nombre: 'Análisis sobre obtención de información catastral con imágenes de radar en la vereda Termales del municipio de Vista Hermosa, Meta',
-    lineaId: 'procesamiento',
+    lineaId: 'catastro',
     año: 2021,
     sensor: 'SAR aerotransportado banda X (3 m) y banda P (5 m) · DEM interferométricos · Clasificación supervisada',
     escala: 'Vereda (referencia IGAC 1:25.000)',
@@ -2441,7 +2439,7 @@ const PROJECTS = [
   {
     id: 10,
     nombre: 'Monitoreo de deformaciones del terreno mediante técnicas PS-InSAR en la localidad histórica y del Caribe Norte de Cartagena, Colombia',
-    lineaId: 'cambios',
+    lineaId: 'sar',
     año: 2026,
     sensor: 'Sentinel-1 A/B (IW, SLC, órbita descendente; 60 imágenes 2019–2024) · SNAP · PS-InSAR · Referencia GNSS CART00COL',
     escala: 'Urbana (Sentinel-1 IW, ≈5 × 20 m)',
@@ -2456,7 +2454,7 @@ const PROJECTS = [
   {
     id: 11,
     nombre: 'Aplicación de la metodología FFP como herramienta de actualización catastral en suelo rural de la vereda Pantano de Carlos en el municipio de Cáqueza, Cundinamarca',
-    lineaId: 'cambios',   /* asignación editorial (misma metodología FFP que el proyecto 1) */
+    lineaId: 'catastro',
     año: 2022,
     sensor: 'Levantamiento GNSS (Trimble R2) + app Collector / ArcGIS · Ortofoto · Metodología FFP',
     escala: 'Predial (rural)',

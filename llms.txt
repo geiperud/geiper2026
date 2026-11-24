@@ -6,10 +6,10 @@ GEIPER forma estudiantes y profesionales en procesamiento de imágenes satelital
 
 ## Líneas de investigación
 
-- Procesamiento digital y análisis espacial de imágenes: Procesamiento de imágenes pasivas y activas de percepción remota, y análisis avanzado de firmas espectrales para el monitoreo territorial.
-- GeoIA y detección de cambios en objetos y fenómenos geográficos: Modelos de inteligencia artificial para modelado territorial, evaluación de riesgos y detección de cambios en la superficie terrestre.
-- Infraestructuras de datos espaciales y estandarización: Estandarización e interoperabilidad de información geoespacial (ráster, LiDAR, LADM_COL) para su integración en plataformas territoriales.
-- Cartografía aplicada a la gestión de recursos y ordenamiento territorial: Estructuración de cartografía para la gestión de recursos naturales, catastro multipropósito y planificación del territorio.
+- Radar de apertura sintética e interferometría (SAR/InSAR): Procesamiento de imágenes de radar, reducción de speckle e interferometría diferencial (DInSAR, PS-InSAR) para medir deformaciones del terreno, subsidencia y su efecto sobre edificaciones e infraestructura.
+- Dinámica territorial y cambios de uso y cobertura del suelo: Análisis multitemporal y multisensor con imágenes ópticas y de radar para seguir el crecimiento urbano, la transformación del suelo y la pérdida o protección de coberturas naturales.
+- Datos geoespaciales, cartografía y GeoIA: Estructuración, estandarización e interoperabilidad de información geográfica (ráster, LiDAR, bases de datos espaciales y geovisores) y su producción automatizada con inteligencia artificial.
+- Catastro multipropósito y administración de tierras: Captura y actualización de información catastral con enfoques Fit for Purpose y sensores remotos, seguridad jurídica de la tenencia y gobernanza territorial.
 
 ## Páginas principales
 

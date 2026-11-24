@@ -1102,10 +1102,9 @@ def buscar_contexto_por_documento(vectorstore_local, archivo, consulta_para_orde
 # del documento nombrado y se le pide al modelo que distinga entre lo que el
 # propio trabajo recomienda y lo que él propone como extensión.
 LINEAS_OFICIALES_GEIPER = (
-    "Procesamiento digital y análisis de imágenes; Implementación de modelos de GeoIA; "
-    "Análisis espacial; Detección de cambios en objetos y fenómenos geográficos; "
-    "Infraestructuras de datos espaciales y estandarización; Cartografía aplicada a la "
-    "gestión de recursos y ordenamiento territorial"
+    "Radar de apertura sintética e interferometría (SAR/InSAR); Dinámica territorial "
+    "y cambios de uso y cobertura del suelo; Datos geoespaciales, cartografía y GeoIA; "
+    "Catastro multipropósito y administración de tierras"
 )
 
 _PATRON_CONTINUIDAD = re.compile(
@@ -1410,21 +1409,22 @@ HECHOS_SEMILLERO = (
     "Visión (al 2026): ser un referente nacional e internacional en investigación, "
     "impulsando iniciativas alineadas con RedCOLSI, desarrollando habilidades "
     "interdisciplinarias, liderazgo y actitudes proactivas en sus miembros.\n"
-    "Líneas de investigación oficiales:\n"
-    "  1. Procesamiento digital y análisis de imágenes — procesamiento de imágenes "
-    "pasivas y activas de percepción remota para monitoreo y análisis territorial.\n"
-    "  2. Implementación de modelos de GeoIA — aplicaciones de inteligencia "
-    "artificial para detección de cambios en la superficie terrestre.\n"
-    "  3. Análisis espacial — análisis avanzado de imágenes satelitales y firmas "
-    "espectrales.\n"
-    "  4. Detección de cambios en objetos y fenómenos geográficos — modelado "
-    "territorial, evaluación de riesgos y análisis geoespacial.\n"
-    "  5. Infraestructuras de datos espaciales y estandarización — estandarización "
-    "e interoperabilidad de información geoespacial (ráster, LiDAR, modelos de "
-    "datos como LADM_COL) para su integración en plataformas territoriales.\n"
-    "  6. Cartografía aplicada a la gestión de recursos y ordenamiento territorial "
-    "— estructuración y adecuación de cartografía para la gestión de recursos "
-    "naturales, catastro multipropósito y planificación del territorio.\n"
+    "Líneas de investigación oficiales (4):\n"
+    "  1. Radar de apertura sintética e interferometría (SAR/InSAR) — procesamiento "
+    "de imágenes de radar, reducción de speckle e interferometría diferencial "
+    "(DInSAR, PS-InSAR) para medir deformaciones del terreno, subsidencia y su "
+    "efecto sobre edificaciones e infraestructura.\n"
+    "  2. Dinámica territorial y cambios de uso y cobertura del suelo — análisis "
+    "multitemporal y multisensor con imágenes ópticas y de radar para seguir el "
+    "crecimiento urbano, la transformación del suelo y la pérdida o protección de "
+    "coberturas naturales.\n"
+    "  3. Datos geoespaciales, cartografía y GeoIA — estructuración, estandarización "
+    "e interoperabilidad de información geográfica (ráster, LiDAR, bases de datos "
+    "espaciales y geovisores) y su producción automatizada con inteligencia "
+    "artificial.\n"
+    "  4. Catastro multipropósito y administración de tierras — captura y "
+    "actualización de información catastral con enfoques Fit for Purpose y "
+    "sensores remotos, seguridad jurídica de la tenencia y gobernanza territorial.\n"
     "Contacto: geiper@udistrital.edu.co, Instagram/redes @semillerogeiper.\n"
     "La líder del semillero (mujer) es Laura Dayana Díaz Beltrán (estudiante, investigación en percepción remota).\n"
     "Profesores vinculados: José Luis Herrera Escorcia, Andrés Cárdenas Contreras, Carlos Germán Ramírez Ramos, Edilberto Suárez Torres, Héctor Javier Fuentes López, José Antonio Valero Medina, Maykol Camilo Delgado Correal, Paulo César Coronado Sánchez.\n"
@@ -2245,7 +2245,8 @@ GEOVISOR_TOOLS = [
             "name": "listar_proyectos_linea",
             "description": (
                 "Lista los trabajos de tesis/proyectos del Semillero GEIPER que pertenecen "
-                "a una línea de investigación (Percepción Remota, SIG, Geomática, etc.). "
+                "a una de sus 4 líneas de investigación (SAR/InSAR, dinámica territorial, "
+                "datos geoespaciales y GeoIA, catastro multipropósito). "
                 "Úsala cuando el usuario pregunte qué proyectos hay, cuántos, o pida "
                 "ejemplos de una línea de investigación del semillero."
             ),
