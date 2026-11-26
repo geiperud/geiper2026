@@ -22,3 +22,7 @@ backend/chroma_db/
 Thumbs.db
 .vscode/
 .claude/
+
+# Reto de las ponencias: el banco de preguntas NUNCA va al repo (es público)
+backend/reto/preguntas*.csv
+!backend/reto/preguntas_plantilla.csv

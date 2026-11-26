@@ -19,3 +19,7 @@ faiss-cpu>=1.7.0
 numpy>=1.26.0
 requests>=2.31.0
 duckduckgo-search>=6.0.0
+
+# Reto de las ponencias (pages/reto.html) — base de datos en Supabase
+psycopg[binary]>=3.2,<3.4
+psycopg-pool>=3.2,<3.4

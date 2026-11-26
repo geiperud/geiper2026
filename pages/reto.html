@@ -1,0 +1,208 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Reto de las ponencias – Semana ICG 2026 · GEIPER</title>
+  <meta name="description" content="Reto de preguntas sobre las ponencias del semillero GEIPER en la Semana de Ingeniería Catastral y Geodesia 2026.">
+  <!-- Sección temporal: no se indexa en buscadores -->
+  <meta name="robots" content="noindex, nofollow">
+  <meta name="theme-color" content="#0B2E6B">
+  <link rel="icon" href="../favicon.ico" sizes="48x48">
+  <link rel="icon" type="image/png" sizes="192x192" href="../assets/images/favicon-192.png">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Serif+Text&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../css/reto.css?v=1">
+</head>
+<body>
+
+<!-- ════════ JUGADOR (celular y computador) ════════ -->
+<div id="vistaJugador" hidden>
+  <header class="rt-cab">
+    <div class="rt-cab-in">
+      <a class="rt-marca" href="../index.html"><b>GEIPER</b><span>Semana ICG 2026</span></a>
+      <span class="rt-cab-yo" id="cabYo">Jueves 26 de noviembre · Aduanilla de Paiba</span>
+    </div>
+    <div class="rt-franja" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i></div>
+  </header>
+
+  <main class="rt-wrap">
+    <!-- Registro -->
+    <section id="secRegistro" class="rt-registro" hidden aria-labelledby="tituloRegistro">
+      <div>
+        <span class="rt-eyebrow">Aduanilla de Paiba · 9:00 a 11:00 a. m.</span>
+        <h1 class="rt-h1" id="tituloRegistro">Reto de las ponencias</h1>
+        <div class="rt-subraya"></div>
+        <p class="rt-lead">Responda sobre cada charla del semillero y compita por el podio y el sorteo del cierre.</p>
+      </div>
+      <ol class="rt-pasos">
+        <li><span class="rt-n">01</span><b>Siga el programa</b><span>Cada ponencia se enciende en la brújula cuando el moderador abre sus preguntas, al final de la charla.</span></li>
+        <li><span class="rt-n">02</span><b>Tres preguntas por ponencia</b><span>15 segundos por pregunta: 100 puntos por acierto y hasta 50 de bono por velocidad.</span></li>
+        <li><span class="rt-n">03</span><b>Cuentan sus 4 mejores</b><span>A las 10:00 hay charlas en paralelo: nadie pierde por estar en el otro auditorio.</span></li>
+      </ol>
+      <form id="formRegistro" novalidate>
+        <div style="display:flex;flex-direction:column;gap:12px">
+          <div class="rt-campo">
+            <label for="alias">Alias para el ranking</label>
+            <input id="alias" name="alias" type="text" autocomplete="nickname" minlength="3" maxlength="24" placeholder="colibri_geo" required>
+          </div>
+          <div class="rt-campo">
+            <label for="correo">Correo institucional</label>
+            <input id="correo" name="correo" type="email" autocomplete="email" inputmode="email" placeholder="usuario@udistrital.edu.co" required>
+          </div>
+          <label class="rt-check"><input id="acepto" type="checkbox"> Autorizo el uso de mi correo solo para contactarme si gano. Un registro por correo; si cambia de dispositivo, use el mismo correo y alias.</label>
+          <p class="rt-error" id="errRegistro" role="alert"></p>
+          <button class="rt-btn rt-bloque" type="submit" id="btnRegistro">Entrar al programa</button>
+        </div>
+      </form>
+    </section>
+
+    <!-- Juego -->
+    <section id="secJuego" class="rt-juego" hidden aria-label="Programa de ponencias">
+      <div class="rt-col-brujula">
+        <div>
+          <span class="rt-eyebrow">Semana ICG 2026 · Aduanilla de Paiba</span>
+          <h1 class="rt-h1">Reto de las ponencias</h1>
+          <div class="rt-subraya"></div>
+        </div>
+        <div class="rt-cifras" aria-live="polite">
+          <div><span class="rt-eyebrow">Ponencias</span><span class="rt-num" id="cifPonencias">0 / 6</span></div>
+          <div><span class="rt-eyebrow">Puntaje</span><span class="rt-num" id="cifPuntaje">0</span></div>
+          <div><span class="rt-eyebrow">Puesto</span><span class="rt-num rt-puesto" id="cifPuesto">—</span></div>
+        </div>
+        <div class="rt-brujula" id="brujula"></div>
+        <div class="rt-leyenda" aria-hidden="true">
+          <span><i class="h"></i>Respondida</span><span><i class="a"></i>Abierta</span><span><i></i>Aún no abre</span>
+        </div>
+      </div>
+
+      <div class="rt-panel" id="panel">
+        <div class="rt-detalle" aria-live="polite">
+          <span class="rt-eyebrow" id="detMeta"></span>
+          <h2 id="detTitulo"></h2>
+          <span class="rt-ponentes" id="detPonentes"></span>
+          <span class="rt-estado" id="detEstado"></span>
+        </div>
+        <div id="zonaAccion"></div>
+      </div>
+
+      <div class="rt-franja-inf">
+        <div>
+          <span class="rt-eyebrow">Ranking en vivo · se actualiza cada 15 s</span>
+          <div class="rt-top" id="topRanking" style="margin-top:8px"></div>
+        </div>
+        <div>
+          <span class="rt-eyebrow">Cómo se puntúa</span>
+          <p class="rt-reglas">3 preguntas por ponencia, 15 s cada una: 100 puntos por acierto y hasta 50 de bono por velocidad. Cuentan sus 4 mejores ponencias; desempata el menor tiempo.</p>
+        </div>
+        <div class="rt-premios">
+          <span class="rt-eyebrow" id="premiosCierre">Premios</span>
+          <span>Podio para los tres mejores puntajes.</span>
+          <span>Sorteo entre quienes respondan al menos 4 ponencias.</span>
+        </div>
+      </div>
+    </section>
+
+    <!-- Reto cerrado -->
+    <section id="secCerrado" hidden aria-labelledby="tituloCerrado" style="max-width:900px;margin:0 auto;display:flex;flex-direction:column;gap:20px">
+      <div>
+        <span class="rt-eyebrow">Ranking final</span>
+        <h1 class="rt-h1" id="tituloCerrado">El reto terminó</h1>
+        <div class="rt-subraya"></div>
+        <p class="rt-lead" id="cerradoYo"></p>
+      </div>
+      <div class="rt-podio" id="podioJugador"></div>
+      <p class="rt-aviso">Gracias por participar. Los ganadores se anuncian en el auditorio; si su correo resulta ganador del sorteo, el semillero le escribirá.</p>
+    </section>
+
+    <p class="rt-aviso" id="avisoConexion" role="status" hidden></p>
+  </main>
+</div>
+
+<!-- ════════ PANTALLA PROYECTADA (?modo=pantalla) ════════ -->
+<div id="vistaPantalla" class="rt-proy" hidden>
+  <header class="rt-cab">
+    <div class="rt-cab-in">
+      <span class="rt-marca"><b>GEIPER</b><span>Semana ICG 2026 · Aduanilla de Paiba</span></span>
+      <span class="rt-eyebrow" id="proyEstado">Ranking en vivo</span>
+    </div>
+    <div class="rt-franja" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i></div>
+  </header>
+  <div class="rt-proy-cuerpo">
+    <div class="rt-proy-tit">
+      <h1 class="rt-h1">Reto de las ponencias</h1>
+      <span class="rt-lead" style="margin:0" id="proySub">Cuentan las 4 mejores ponencias de cada participante</span>
+    </div>
+    <div class="rt-banda">
+      <div class="rt-banda-lbl">Programa<small>6 ponencias</small></div>
+      <div class="rt-banda-segs" id="proyBanda"></div>
+    </div>
+    <div class="rt-proy-grid">
+      <div>
+        <div style="display:grid;grid-template-columns:70px minmax(0,1fr) 150px;padding-bottom:6px;border-bottom:1px solid var(--azul-oscuro)">
+          <span class="rt-eyebrow">Puesto</span><span class="rt-eyebrow">Participante</span><span class="rt-eyebrow" style="text-align:right">Puntos</span>
+        </div>
+        <div class="rt-rank" id="proyRank"></div>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:14px">
+        <div class="rt-qr">
+          <div class="rt-qr-img" id="qr" aria-label="Código QR para entrar al reto" role="img"></div>
+          <div style="display:flex;flex-direction:column;gap:4px">
+            <span style="font-family:var(--rt-serif);font-size:24px;line-height:1.1;color:var(--azul-oscuro)">Escanee para jugar</span>
+            <span style="font-size:13px;line-height:1.45;color:var(--rt-gris)" id="qrUrl"></span>
+          </div>
+        </div>
+        <div style="display:flex;flex-direction:column;gap:4px;padding-bottom:14px;border-bottom:1px solid var(--rt-linea)">
+          <span class="rt-eyebrow">Cierre y premiación</span>
+          <span class="rt-num" style="font-size:38px" id="proyCierre">—</span>
+          <span style="font-size:13px;color:var(--rt-gris)" id="proyParticipantes"></span>
+        </div>
+        <div class="rt-premios" style="flex:1 1 auto">
+          <span class="rt-eyebrow">Premios</span>
+          <span>Podio para los tres mejores puntajes.</span>
+          <span>Sorteo entre quienes respondan al menos 4 ponencias.</span>
+          <span style="margin-top:auto;font-weight:400;color:#A9BCD6">@semillerogeiper</span>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ════════ MODERADOR (?modo=moderador) ════════ -->
+<div id="vistaModerador" hidden>
+  <header class="rt-cab">
+    <div class="rt-cab-in">
+      <span class="rt-marca"><b>GEIPER</b><span>Panel del moderador</span></span>
+      <span class="rt-cab-yo" id="modCifras"></span>
+    </div>
+    <div class="rt-franja" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i></div>
+  </header>
+  <main class="rt-wrap" style="display:flex;flex-direction:column;gap:18px">
+    <form id="formClave" style="max-width:420px;display:flex;flex-direction:column;gap:12px">
+      <h1 class="rt-h1">Panel del moderador</h1>
+      <div class="rt-campo"><label for="clave">Clave del moderador</label><input id="clave" type="password" autocomplete="current-password" required></div>
+      <p class="rt-error" id="errClave" role="alert"></p>
+      <button class="rt-btn" type="submit">Entrar</button>
+    </form>
+    <section id="modPanel" hidden style="display:flex;flex-direction:column;gap:18px">
+      <div>
+        <h1 class="rt-h1">Apertura de preguntas</h1>
+        <div class="rt-subraya"></div>
+        <p class="rt-lead">Abra las preguntas en los últimos minutos de cada charla. Quedan abiertas hasta el cierre, así quien estuvo en el otro auditorio también puede responder.</p>
+      </div>
+      <p class="rt-aviso" id="modEstadoReto"></p>
+      <div class="rt-mod-tabla" id="modTabla"></div>
+      <p class="rt-error" id="errMod" role="alert"></p>
+      <div style="display:flex;gap:12px;flex-wrap:wrap">
+        <button class="rt-btn rt-btn-sec" type="button" id="btnCsv">Exportar respaldo CSV</button>
+        <a class="rt-btn rt-btn-sec" href="?modo=pantalla" target="_blank" rel="noopener">Abrir la pantalla proyectada</a>
+        <button class="rt-btn rt-btn-peligro" type="button" id="btnCerrar">Cerrar el reto y mostrar el podio</button>
+      </div>
+    </section>
+  </main>
+</div>
+
+<script src="../js/reto.js?v=1"></script>
+</body>
+</html>

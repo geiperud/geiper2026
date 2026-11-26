@@ -58,6 +58,11 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+# ── Reto de las ponencias (Semana ICG 2026) — sección temporal ──
+# Router independiente: si su base de datos falla, los asistentes siguen funcionando.
+from reto.trivia import router as reto_router
+app.include_router(reto_router)
+
 FAISS_DIR = "faiss_index"
 FAISS_DIR_INVESTIGACION = "faiss_index_investigacion"
 GEMINI_MODEL = "gemini-2.5-flash"
