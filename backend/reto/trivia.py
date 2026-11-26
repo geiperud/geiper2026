@@ -75,7 +75,7 @@ def _db():
             if _pool is None:
                 url = (os.environ.get("RETO_DATABASE_URL") or "").strip()
                 if not url or ConnectionPool is None:
-                    raise HTTPException(503, "El reto no está configurado todavía.")
+                    raise HTTPException(503, "Las preguntas no están configuradas todavía.")
                 # Prueba de conexión directa: si falla, deja en los logs la causa real
                 # (contraseña, host, usuario…), que el pool por sí solo no muestra.
                 try:
@@ -83,7 +83,7 @@ def _db():
                     psycopg.connect(url, connect_timeout=8, prepare_threshold=None).close()
                 except Exception as e:  # noqa: BLE001
                     _log.error("RETO: no se pudo conectar a Supabase: %s: %s", type(e).__name__, _sin_clave(str(e), url))
-                    raise HTTPException(503, "No hay conexión con la base de datos del reto.")
+                    raise HTTPException(503, "No hay conexión con la base de datos de las preguntas.")
                 # prepare_threshold=None: necesario con el pooler de Supabase (modo transacción)
                 _pool = ConnectionPool(
                     url, min_size=1, max_size=5, open=True, timeout=10,
@@ -274,7 +274,7 @@ def pregunta(ponencia: str = Query(..., pattern=r"^0[1-6]$"), x_reto_token: str 
     p = _participante(x_reto_token)
     data = _estado_global()
     if data["cerrado"]:
-        raise HTTPException(423, "El reto está cerrado.")
+        raise HTTPException(423, "Las preguntas están cerradas.")
     pon = _q("select abierta from reto_ponencias where id = %(id)s", {"id": ponencia}, one=True)
     if not pon or not pon["abierta"]:
         raise HTTPException(423, "Las preguntas de esta ponencia todavía no están abiertas.")
@@ -332,7 +332,7 @@ def responder(body: Respuesta, x_reto_token: str = Header(None)):
     cfg = _q("select abierto, cierre_at from reto_config where id = 1", one=True)
     if _reto_cerrado(cfg):
         _invalidar_cache()
-        raise HTTPException(423, "El reto está cerrado: ya no se reciben respuestas.")
+        raise HTTPException(423, "Las preguntas están cerradas: ya no se reciben respuestas.")
     # Todo en una sentencia: solo actualiza si la pregunta fue entregada, no se ha
     # respondido y no ha vencido. Así no hay doble respuesta ni carreras.
     r = _q("""

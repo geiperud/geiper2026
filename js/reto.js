@@ -182,7 +182,7 @@
     $('cifPonencias').textContent = hechas + ' / 6';
     $('cifPuntaje').textContent = miles(d.puntaje);
     $('cifPuesto').textContent = d.podios || 0;
-    $('premiosCierre').textContent = 'Premios · cierre del reto ' + hora(d.cierre_at);
+    $('premiosCierre').textContent = 'Premios · cierre ' + hora(d.cierre_at);
     document.querySelectorAll('.rt-nodo').forEach(function (b, i) {
       var x = p[i];
       b.dataset.estado = x.estado;
@@ -418,7 +418,7 @@
         $('proyBanda').innerHTML = b;
         $('proyPodios').innerHTML = pod;
         var abiertas = d.ponencias.filter(function (p) { return p.fase === 'abierta'; }).length;
-        $('proyBandaTit').textContent = '6 ponencias · ' + (d.cerrado ? 'reto cerrado' : abiertas ? abiertas + ' con preguntas abiertas' : 'jueves 26 de noviembre');
+        $('proyBandaTit').textContent = '6 ponencias · ' + (d.cerrado ? 'preguntas cerradas' : abiertas ? abiertas + ' con preguntas abiertas' : 'jueves 26 de noviembre');
         $('proyCierre').textContent = d.cerrado ? 'Cerrado' : hora(d.cierre_at);
         $('proyEstado').textContent = d.cerrado ? 'Resultados finales' : 'Ranking en vivo';
         $('proyParticipantes').textContent = d.participantes + (d.participantes === 1 ? ' participante registrado' : ' participantes registrados');
@@ -443,8 +443,8 @@
     });
     $('btnCerrar').addEventListener('click', function () {
       var cerrar = !(M.datos && M.datos.cerrado);
-      var msg = cerrar ? '¿Cerrar el reto? Desde este momento el servidor rechaza todas las respuestas y el ranking queda como final.'
-                       : '¿Reabrir el reto? Solo hágalo si se cerró por error.';
+      var msg = cerrar ? '¿Cerrar todas las preguntas? Desde este momento el servidor rechaza todas las respuestas y los ganadores quedan como finales.'
+                       : '¿Reabrir las preguntas? Solo hágalo si se cerraron por error.';
       if (!window.confirm(msg)) return;
       accionMod('/admin/cerrar', { cerrar: cerrar });
     });
@@ -489,9 +489,9 @@
     $('errMod').textContent = '';
     $('modCifras').innerHTML = '<b>' + d.participantes + '</b> participantes · <b>' + d.respuestas + '</b> respuestas';
     $('modEstadoReto').textContent = d.cerrado
-      ? 'El reto está CERRADO: no se reciben respuestas y el ranking es final.'
-      : 'El reto está abierto. Cierre automático: ' + hora(d.cierre_at);
-    $('btnCerrar').textContent = d.cerrado ? 'Reabrir el reto (solo si fue un error)' : 'Cerrar el reto y mostrar el podio';
+      ? 'Las preguntas están CERRADAS: no se reciben respuestas y los ganadores son finales.'
+      : 'Las preguntas están habilitadas. Cierre automático: ' + hora(d.cierre_at);
+    $('btnCerrar').textContent = d.cerrado ? 'Reabrir (solo si fue un error)' : 'Cerrar todo y mostrar los ganadores';
     var h = '<div><span class="rt-eyebrow">N.º</span><span class="rt-eyebrow">Hora</span><span class="rt-eyebrow">Ponencia</span>' +
       '<span class="rt-eyebrow">Auditorio</span><span class="rt-eyebrow">Preguntas</span><span class="rt-eyebrow">Estado</span><span></span></div>';
     d.ponencias.forEach(function (p) {
