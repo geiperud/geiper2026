@@ -28,7 +28,19 @@ a { color: var(--azul-medio); }
 [hidden] { display: none !important; }
 .rt-sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
 
-/* ── Cabecera ─────────────────────────────── */
+/* ── Cabecera del sitio (styles.css) en la vista del jugador ── */
+#vistaJugador > main { padding-top: calc(var(--header-h, 128px) + 28px); }
+#secRegistro, #secJuego, #secCerrado, #modPanel { padding: 0; }   /* styles.css da 100px a toda <section> */
+.rt-topbar-der { display: flex; align-items: center; gap: 18px; height: 100%; min-width: 0; }
+.rt-yo { color: #B9C8E2; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.rt-yo b { color: #fff; font-weight: 600; }
+@media (max-width: 760px) {
+    .topbar .tb-razon { display: none; }
+    .rt-topbar-der { width: 100%; justify-content: space-between; gap: 10px; }
+    .rt-topbar-der .tb-de { display: none; }
+}
+
+/* ── Cabecera propia (pantalla proyectada y moderador) ── */
 .rt-cab { background: #fff; }
 .rt-cab-in { max-width: 1200px; margin: 0 auto; height: 60px; padding: 0 24px; display: flex; align-items: center; justify-content: space-between; gap: 12px; }
 .rt-marca { display: flex; align-items: baseline; gap: 10px; text-decoration: none; }
@@ -192,10 +204,10 @@ a { color: var(--azul-medio); }
 .rt-podios { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); grid-auto-rows: 1fr; gap: 0 28px; align-content: start; }
 .rt-podio-pon { border-top: 1px solid var(--azul-oscuro); padding: 10px 0 12px; display: flex; flex-direction: column; gap: 6px; min-width: 0; }
 .rt-podio-pon.proxima { border-top-color: var(--rt-linea); }
-.rt-podio-pon header { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; }
-.rt-podio-pon header b { font-family: var(--rt-serif); font-weight: 400; font-size: 19px; color: var(--azul-oscuro); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.rt-podio-pon .rt-pp-cab { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; }
+.rt-podio-pon .rt-pp-cab b { font-family: var(--rt-serif); font-weight: 400; font-size: 19px; color: var(--azul-oscuro); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .rt-podio-pon.proxima header b { color: #9AA6B8; }
-.rt-podio-pon header em { font-style: normal; font-size: 10px; font-weight: 600; letter-spacing: .06em; text-transform: uppercase; color: var(--rt-gris); white-space: nowrap; }
+.rt-podio-pon .rt-pp-cab em { font-style: normal; font-size: 10px; font-weight: 600; letter-spacing: .06em; text-transform: uppercase; color: var(--rt-gris); white-space: nowrap; }
 .rt-podio-pon.abierta header em { color: var(--rt-ambar); }
 .rt-podio-pon.cerrada header em { color: var(--rt-ok); }
 .rt-podio-pon ol { list-style: none; margin: 0; padding: 0; }
@@ -218,13 +230,16 @@ a { color: var(--azul-medio); }
 .rt-qr-img img, .rt-qr-img canvas { width: 120px !important; height: 120px !important; }
 
 /* ── Moderador (?modo=moderador) ──────────── */
-.rt-mod-tabla > div { display: grid; grid-template-columns: 50px 70px minmax(0, 1fr) 190px 120px 110px 170px; gap: 16px; align-items: center; min-height: 60px; border-top: 1px solid var(--rt-linea); }
+.rt-mod-tabla > div { display: grid; grid-template-columns: 50px 70px minmax(0, 1fr) 190px 100px 100px 190px; gap: 16px; align-items: center; min-height: 60px; border-top: 1px solid var(--rt-linea); }
 .rt-mod-tabla > div:first-child { min-height: 0; padding-bottom: 6px; border-top: 0; border-bottom: 1px solid var(--azul-oscuro); }
 .rt-mod-tabla .num { font-family: var(--rt-serif); font-size: 22px; color: var(--azul-claro); }
 .rt-mod-tabla .t b { display: block; font-size: 15px; } .rt-mod-tabla .t span { font-size: 13px; color: var(--rt-gris); }
 .rt-mod-tabla .falta { color: var(--rt-mal); font-weight: 600; font-size: 13px; }
 .rt-mod-tabla .top { font-size: 12px; color: var(--rt-gris); margin-top: 2px; }
-.rt-mod-tabla .top b { color: var(--azul-oscuro); font-weight: 600; }
+.rt-mod-tabla .top, .rt-mod-tabla .top b { display: inline; }
+.rt-mod-tabla .top { display: block; }
+.rt-mod-tabla .top b { color: var(--azul-oscuro); font-weight: 600; font-size: 12px; }
+.rt-mod-tabla button { white-space: nowrap; font-size: 14px; }
 @media (max-width: 1000px) {
     .rt-mod-tabla > div { grid-template-columns: 40px minmax(0, 1fr) 150px; padding: 10px 0; }
     .rt-mod-tabla > div > :nth-child(2), .rt-mod-tabla > div > :nth-child(4), .rt-mod-tabla > div > :nth-child(5), .rt-mod-tabla > div > :nth-child(6) { display: none; }

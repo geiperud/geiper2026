@@ -13,25 +13,59 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=DM+Serif+Text&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="../css/reto.css?v=3">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+  <link rel="stylesheet" href="../css/styles.css">
+  <link rel="stylesheet" href="../css/tipografia-dm-inter.css?v=2">
+  <link rel="stylesheet" href="../css/reto.css?v=6">
 </head>
 <body>
 
 <!-- ════════ JUGADOR (celular y computador) ════════ -->
 <div id="vistaJugador" hidden>
-  <header class="rt-cab">
-    <div class="rt-cab-in">
-      <a class="rt-marca" href="../index.html"><b>GEIPER</b><span>Semana ICG 2026</span></a>
-      <span class="rt-cab-yo" id="cabYo">Jueves 26 de noviembre · Aduanilla de Paiba</span>
+<header>
+  <!-- Misma cabecera del sitio; a la derecha, quién está participando -->
+  <div class="topbar">
+    <div class="topbar-inner">
+      <p class="topbar-texto">
+        <span class="tb-razon"><strong>Geoportal GEIPER</strong><span class="tb-sep" aria-hidden="true"></span>Preguntas de las ponencias · Semana ICG 2026</span>
+      </p>
+      <div class="rt-topbar-der">
+        <span class="rt-yo" id="cabYo">Jueves 26 de noviembre · Aduanilla de Paiba</span>
+        <button type="button" class="topbar-acerca" data-acerca aria-haspopup="dialog">
+          <i class="fa-solid fa-circle-info" aria-hidden="true"></i><span>Acerca<span class="tb-de"> de este proyecto</span></span>
+        </button>
+      </div>
     </div>
-    <div class="rt-franja" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i></div>
-  </header>
+  </div>
+  <nav>
+    <a href="../index.html" class="nav-brand"><img src="../assets/images/Logo_GEIPER.png" alt="GEIPER" class="nav-logo-img"></a>
+    <button class="nav-hamburger" id="navHamburger" aria-label="Abrir menú" aria-expanded="false">
+      <span></span><span></span><span></span>
+    </button>
+    <div class="nav-links" id="navLinks">
+      <div class="nav-group">
+        <a href="../index.html">Inicio</a>
+        <a href="lineas.html">Investigación</a>
+        <a href="trayectoria.html">Trayectoria</a>
+      </div>
+      <span class="nav-spacer"></span>
+      <div class="nav-group">
+        <a href="integrantes.html">Integrantes</a>
+        <a href="chatbots.html">Asistentes IA</a>
+        <a href="geovisor.html">Geovisor</a>
+        <div class="nav-actions">
+          <a href="../index.html#contacto-form" class="nav-act nav-act--contacto" aria-label="Contacto" title="Contacto"><i class="fa-solid fa-envelope" aria-hidden="true"></i></a>
+        </div>
+      </div>
+    </div>
+  </nav>
+</header>
 
   <main class="rt-wrap">
     <!-- Registro -->
     <section id="secRegistro" class="rt-registro" hidden aria-labelledby="tituloRegistro">
       <div>
-        <span class="rt-eyebrow">Aduanilla de Paiba · 9:00 a 11:00 a. m.</span>
+        <span class="rt-eyebrow">Aduanilla de Paiba · 9:00 a 11:30 a. m.</span>
         <h1 class="rt-h1" id="tituloRegistro">Preguntas de las ponencias</h1>
         <div class="rt-subraya"></div>
         <p class="rt-lead">Responda sobre cada charla del semillero: cada ponencia tiene 3 ganadores, que se llevan premios personalizados de GEIPER.</p>
@@ -122,13 +156,13 @@
 
 <!-- ════════ PANTALLA PROYECTADA (?modo=pantalla) ════════ -->
 <div id="vistaPantalla" class="rt-proy" hidden>
-  <header class="rt-cab">
+  <div class="rt-cab">
     <div class="rt-cab-in">
       <span class="rt-marca"><b>GEIPER</b><span>Semana ICG 2026 · Aduanilla de Paiba</span></span>
       <span class="rt-eyebrow" id="proyEstado">Ranking en vivo</span>
     </div>
     <div class="rt-franja" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i></div>
-  </header>
+  </div>
   <div class="rt-proy-cuerpo">
     <div class="rt-proy-tit">
       <h1 class="rt-h1">Preguntas de las ponencias</h1>
@@ -166,13 +200,13 @@
 
 <!-- ════════ MODERADOR (?modo=moderador) ════════ -->
 <div id="vistaModerador" hidden>
-  <header class="rt-cab">
+  <div class="rt-cab">
     <div class="rt-cab-in">
       <span class="rt-marca"><b>GEIPER</b><span>Panel del moderador</span></span>
       <span class="rt-cab-yo" id="modCifras"></span>
     </div>
     <div class="rt-franja" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i></div>
-  </header>
+  </div>
   <main class="rt-wrap" style="display:flex;flex-direction:column;gap:18px">
     <form id="formClave" style="max-width:420px;display:flex;flex-direction:column;gap:12px">
       <h1 class="rt-h1">Panel del moderador</h1>
@@ -184,7 +218,7 @@
       <div>
         <h1 class="rt-h1">Apertura de preguntas</h1>
         <div class="rt-subraya"></div>
-        <p class="rt-lead">Abra las preguntas en los últimos minutos de cada charla. Quedan abiertas hasta el cierre, así quien estuvo en el otro auditorio también puede responder.</p>
+        <p class="rt-lead">Abra las preguntas en los últimos minutos de cada charla. Cuando quiera anunciar a sus 3 ganadores, presione «Cerrar y anunciar»: desde ese momento esa ponencia no recibe más respuestas.</p>
       </div>
       <p class="rt-aviso" id="modEstadoReto"></p>
       <div class="rt-mod-tabla" id="modTabla"></div>
@@ -198,6 +232,25 @@
   </main>
 </div>
 
-<script src="../js/reto.js?v=4"></script>
+<script src="../js/acerca-proyecto.js"></script>
+<script src="../js/reto.js?v=6"></script>
+<script>
+/* Menú hamburguesa: igual que en las demás páginas del sitio */
+(function () {
+  var header = document.querySelector('header'), btn = document.getElementById('navHamburger'), links = document.getElementById('navLinks');
+  if (!header || !btn || !links) return;
+  function checkFit() {
+    header.classList.remove('mobile-nav'); links.classList.remove('open'); btn.classList.remove('open'); btn.setAttribute('aria-expanded', 'false');
+    links.style.cssText = 'display:flex;flex-direction:row;position:static;width:auto;visibility:hidden;'; btn.style.display = 'none';
+    var navEl = document.querySelector('nav'), brandEl = navEl.querySelector('.nav-brand');
+    var fits = brandEl.offsetWidth + 40 + links.scrollWidth <= navEl.offsetWidth;
+    links.style.cssText = ''; btn.style.display = '';
+    if (!fits) header.classList.add('mobile-nav');
+  }
+  btn.addEventListener('click', function () { var o = links.classList.toggle('open'); btn.classList.toggle('open', o); btn.setAttribute('aria-expanded', o); });
+  document.addEventListener('click', function (e) { if (!btn.contains(e.target) && !links.contains(e.target)) { links.classList.remove('open'); btn.classList.remove('open'); btn.setAttribute('aria-expanded', 'false'); } });
+  checkFit(); window.addEventListener('resize', checkFit);
+})();
+</script>
 </body>
 </html>

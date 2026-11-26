@@ -411,8 +411,8 @@
           var filas = (p.top || []).map(function (r) {
             return '<li><span class="n">' + r.puesto + '</span><span class="a">' + esc(r.alias) + '</span><span class="s">' + miles(r.puntos) + '</span></li>';
           }).join('');
-          pod += '<section class="rt-podio-pon ' + f + '"><header><b>' + esc(p.id) + ' · ' + esc(corto(p)) + '</b><em>' +
-            (f === 'cerrada' ? 'Ganadores' : f === 'abierta' ? 'En vivo' : esc(p.hora)) + '</em></header>' +
+          pod += '<section class="rt-podio-pon ' + f + '"><div class="rt-pp-cab"><b>' + esc(p.id) + ' · ' + esc(corto(p)) + '</b><em>' +
+            (f === 'cerrada' ? 'Ganadores' : f === 'abierta' ? 'En vivo' : esc(p.hora)) + '</em></div>' +
             (filas ? '<ol>' + filas + '</ol>' : '<p class="vacio">' + (f === 'proxima' ? 'Aún no abre' : 'Esperando respuestas…') + '</p>') + '</section>';
         });
         $('proyBanda').innerHTML = b;
