@@ -24,6 +24,7 @@ Decisiones:
 import csv
 import hmac
 import io
+import logging
 import os
 import re
 import threading
@@ -53,6 +54,15 @@ CORREO_RE = re.compile(r"^[a-z0-9._%+-]+@udistrital\.edu\.co$")
 
 _pool = None
 _pool_lock = threading.Lock()
+_log = logging.getLogger("reto")
+
+
+def _sin_clave(texto, url):
+    """Quita la contraseña de cualquier mensaje antes de escribirlo en los logs."""
+    m = re.match(r"^[a-z]+://[^:/@]+:([^@]*)@", url)
+    if m and m.group(1):
+        texto = texto.replace(m.group(1), "****")
+    return texto
 
 
 def _db():
@@ -62,9 +72,17 @@ def _db():
     if _pool is None:
         with _pool_lock:
             if _pool is None:
-                url = os.environ.get("RETO_DATABASE_URL")
+                url = (os.environ.get("RETO_DATABASE_URL") or "").strip()
                 if not url or ConnectionPool is None:
                     raise HTTPException(503, "El reto no está configurado todavía.")
+                # Prueba de conexión directa: si falla, deja en los logs la causa real
+                # (contraseña, host, usuario…), que el pool por sí solo no muestra.
+                try:
+                    import psycopg
+                    psycopg.connect(url, connect_timeout=8, prepare_threshold=None).close()
+                except Exception as e:  # noqa: BLE001
+                    _log.error("RETO: no se pudo conectar a Supabase: %s: %s", type(e).__name__, _sin_clave(str(e), url))
+                    raise HTTPException(503, "No hay conexión con la base de datos del reto.")
                 # prepare_threshold=None: necesario con el pooler de Supabase (modo transacción)
                 _pool = ConnectionPool(
                     url, min_size=1, max_size=5, open=True, timeout=10,

@@ -417,7 +417,8 @@
     try { M.clave = sessionStorage.getItem('geiper_reto_admin'); } catch (e) {}
     $('formClave').addEventListener('submit', function (ev) {
       ev.preventDefault();
-      M.clave = $('clave').value;
+      M.clave = $('clave').value.trim();
+      $('errClave').textContent = 'Conectando…';
       cargarMod(true);
     });
     $('btnCerrar').addEventListener('click', function () {
@@ -448,7 +449,12 @@
         try { sessionStorage.removeItem('geiper_reto_admin'); } catch (x) {}
         $('formClave').hidden = false; $('modPanel').hidden = true;
         if (manual) $('errClave').textContent = e.message;
-      } else { $('errMod').textContent = 'Sin conexión con el servidor. Reintentando…'; }
+      } else {
+        // Si aún no se ha entrado, el mensaje va debajo del botón (el panel está oculto)
+        var msg = e.status ? 'Error del servidor (' + e.status + '): ' + e.message
+                           : 'Sin conexión con el servidor. Si Render estaba dormido, espere un minuto y vuelva a intentar.';
+        if ($('modPanel').hidden) $('errClave').textContent = msg; else $('errMod').textContent = msg;
+      }
     });
   }
 
