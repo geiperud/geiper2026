@@ -17,7 +17,7 @@ create table if not exists reto_config (
     cerrado_at   timestamptz
 );
 insert into reto_config (id, abierto, cierre_at)
-values (1, true, '2026-11-26 11:00:00-05')      -- [HORA DE CIERRE] — ajústela aquí
+values (1, true, '2026-11-26 11:30:00-05')      -- cierre general (la última charla termina a las 11:00)
 on conflict (id) do nothing;
 
 create table if not exists reto_ponencias (
@@ -91,7 +91,7 @@ with por_ponencia as (
            sum(puntos)                                   as pts,
            coalesce(sum(tiempo_ms), 0)                   as t_ms,
            count(*) filter (where respondida_at is not null
-                            or mostrada_at < now() - interval '18 seconds') as cerradas
+                            or mostrada_at < now() - interval '28 seconds') as cerradas
     from reto_respuestas
     group by participante_id, ponencia_id
 ), mejores as (

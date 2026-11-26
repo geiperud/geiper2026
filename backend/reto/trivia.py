@@ -43,11 +43,12 @@ except ImportError:  # pragma: no cover
 
 router = APIRouter(prefix="/reto", tags=["reto"])
 
-TIEMPO_LIMITE_S = 15          # lo que ve el participante
+TIEMPO_LIMITE_S = 25          # lo que ve el participante
 GRACIA_S = 3                  # latencia de red tolerada en el servidor
 PUNTOS_ACIERTO = 100
 BONO_MAX = 50
 RANKING_TTL = 10              # segundos de caché del ranking/estado
+GANADORES_POR_PONENCIA = 3
 TOP_PUBLICO = 10
 ALIAS_RE = re.compile(r"^[A-Za-z0-9ÁÉÍÓÚáéíóúÑñ_.\- ]{3,24}$")
 CORREO_RE = re.compile(r"^[a-z0-9._%+-]+@udistrital\.edu\.co$")
@@ -117,7 +118,24 @@ def _estado_global():
         if _cache["data"] is not None and time.monotonic() - _cache["t"] < RANKING_TTL:
             return _cache["data"]
         cfg = _q("select abierto, cierre_at, cerrado_at from reto_config where id = 1", one=True)
-        pon = _q("select id, hora, sala, titulo, ponentes, abierta from reto_ponencias order by id")
+        pon = _q("""select id, hora, sala, titulo, ponentes, abierta,
+                           case when abierta then 'abierta'
+                                when abierta_at is not null then 'cerrada'
+                                else 'proxima' end as fase
+                    from reto_ponencias order by id""")
+        # Ranking de cada ponencia: más puntos en sus 3 preguntas; desempata el menor tiempo
+        # y, después, quien se registró primero.
+        rp = _q("""select r.ponencia_id, p.id as participante_id, p.alias,
+                          sum(r.puntos) as puntos, coalesce(sum(r.tiempo_ms), 0) as tiempo_ms
+                   from reto_respuestas r join reto_participantes p on p.id = r.participante_id
+                   group by r.ponencia_id, p.id, p.alias, p.registrado_at
+                   having sum(r.puntos) > 0
+                   order by r.ponencia_id, puntos desc, tiempo_ms asc, p.registrado_at asc""")
+        por_ponencia = {}
+        for f in rp:
+            lst = por_ponencia.setdefault(f["ponencia_id"], [])
+            lst.append({"participante_id": f["participante_id"], "alias": f["alias"],
+                        "puntos": f["puntos"], "tiempo_ms": f["tiempo_ms"], "puesto": len(lst) + 1})
         rk = _q("""select participante_id, alias, puntaje, tiempo_ms, ponencias_completas
                    from reto_ranking
                    order by puntaje desc, tiempo_ms asc, registrado_at asc""")
@@ -126,6 +144,7 @@ def _estado_global():
             "cerrado": cerrado,
             "cierre_at": cfg["cierre_at"].isoformat() if cfg and cfg["cierre_at"] else None,
             "ponencias": [dict(p) for p in pon],
+            "por_ponencia": por_ponencia,
             "ranking": [dict(r, puesto=i + 1) for i, r in enumerate(rk)],
             "participantes": len(rk),
         }
@@ -160,6 +179,11 @@ def _mi_progreso(pid):
         if f["respondida_at"] is not None or f["vencida"]:
             d["respondidas"] += 1
     return prog
+
+
+def _top_ponencia(data, pid, n=GANADORES_POR_PONENCIA):
+    return [{"puesto": r["puesto"], "alias": r["alias"], "puntos": r["puntos"]}
+            for r in data["por_ponencia"].get(pid, [])[:n]]
 
 
 def _publico_ranking(data, top=TOP_PUBLICO):
@@ -212,6 +236,7 @@ def estado(x_reto_token: str = Header(None)):
     prog = _mi_progreso(p["id"])
     yo = next((r for r in data["ranking"] if r["participante_id"] == p["id"]), None)
     ponencias = []
+    podios = 0
     for x in data["ponencias"]:
         mp = prog.get(x["id"], {"puntos": 0, "respondidas": 0})
         if mp["respondidas"] >= 3:
@@ -220,8 +245,15 @@ def estado(x_reto_token: str = Header(None)):
             est = "abierta"
         else:
             est = "bloqueada"
-        ponencias.append({**{k: x[k] for k in ("id", "hora", "sala", "titulo", "ponentes")},
-                          "estado": est, "puntos": mp["puntos"], "respondidas": mp["respondidas"]})
+        lista = data["por_ponencia"].get(x["id"], [])
+        mio = next((r for r in lista if r["participante_id"] == p["id"]), None)
+        final = x["fase"] == "cerrada" or data["cerrado"]
+        gano = bool(final and mio and mio["puesto"] <= GANADORES_POR_PONENCIA)
+        podios += 1 if gano else 0
+        ponencias.append({**{k: x[k] for k in ("id", "hora", "sala", "titulo", "ponentes", "fase")},
+                          "estado": est, "puntos": mp["puntos"], "respondidas": mp["respondidas"],
+                          "mi_puesto": mio["puesto"] if mio else None, "gano": gano, "final": final,
+                          "top": _top_ponencia(data, x["id"])})
     return {
         "alias": p["alias"],
         "cerrado": data["cerrado"],
@@ -230,7 +262,7 @@ def estado(x_reto_token: str = Header(None)):
         "puntaje": yo["puntaje"] if yo else 0,
         "puesto": yo["puesto"] if yo and yo["puntaje"] > 0 else None,
         "completas": yo["ponencias_completas"] if yo else 0,
-        "top": _publico_ranking(data, 3),
+        "podios": podios,
         "actualizado_cada_s": 15,
     }
 
@@ -353,8 +385,8 @@ def publico():
         "cerrado": data["cerrado"],
         "cierre_at": data["cierre_at"],
         "participantes": data["participantes"],
-        "ponencias": [{k: x[k] for k in ("id", "hora", "titulo", "abierta")} for x in data["ponencias"]],
-        "ranking": _publico_ranking(data),
+        "ponencias": [{**{k: x[k] for k in ("id", "hora", "titulo", "abierta", "fase")},
+                       "top": _top_ponencia(data, x["id"])} for x in data["ponencias"]],
     }
 
 
@@ -396,8 +428,8 @@ def admin_estado(x_reto_admin: str = Header(None)):
         "cierre_at": data["cierre_at"],
         "participantes": data["participantes"],
         "respuestas": resp["n"],
-        "ponencias": [{**x, "preguntas_cargadas": cargadas.get(x["id"], 0)} for x in data["ponencias"]],
-        "ranking": _publico_ranking(data, 10),
+        "ponencias": [{**x, "preguntas_cargadas": cargadas.get(x["id"], 0),
+                       "top": _top_ponencia(data, x["id"])} for x in data["ponencias"]],
     }
 
 
@@ -420,17 +452,25 @@ def admin_cerrar(body: Cierre, x_reto_admin: str = Header(None)):
 
 @router.get("/admin/csv")
 def admin_csv(x_reto_admin: str = Header(None)):
-    """Respaldo para exportar al cierre: ranking completo con correos."""
+    """Respaldo para exportar al cierre: ranking de cada ponencia con correos.
+    Los 3 primeros de cada ponencia quedan marcados como ganadores."""
     _admin(x_reto_admin)
-    filas = _q("""select r.alias, p.correo, r.puntaje, r.ponencias_completas, r.tiempo_ms, p.registrado_at
-                  from reto_ranking r join reto_participantes p on p.id = r.participante_id
-                  order by r.puntaje desc, r.tiempo_ms asc, p.registrado_at asc""")
+    filas = _q("""select r.ponencia_id, p.alias, p.correo,
+                         sum(r.puntos) as puntos, coalesce(sum(r.tiempo_ms), 0) as tiempo_ms,
+                         count(*) filter (where r.acierto) as aciertos
+                  from reto_respuestas r join reto_participantes p on p.id = r.participante_id
+                  group by r.ponencia_id, p.id, p.alias, p.correo, p.registrado_at
+                  order by r.ponencia_id, puntos desc, tiempo_ms asc, p.registrado_at asc""")
     buf = io.StringIO()
     w = csv.writer(buf)
-    w.writerow(["puesto", "alias", "correo", "puntaje", "ponencias_completas", "tiempo_ms", "registrado_at",
-                "habilitado_sorteo"])
-    for i, f in enumerate(filas, 1):
-        w.writerow([i, f["alias"], f["correo"], f["puntaje"], f["ponencias_completas"], f["tiempo_ms"],
-                    f["registrado_at"].isoformat(), "sí" if f["ponencias_completas"] >= 4 else "no"])
+    w.writerow(["ponencia", "puesto", "ganador", "alias", "correo", "puntos", "aciertos", "tiempo_ms"])
+    puesto, actual = 0, None
+    for f in filas:
+        if f["ponencia_id"] != actual:
+            actual, puesto = f["ponencia_id"], 0
+        puesto += 1
+        ganador = "sí" if puesto <= GANADORES_POR_PONENCIA and f["puntos"] > 0 else ""
+        w.writerow([f["ponencia_id"], puesto, ganador, f["alias"], f["correo"], f["puntos"],
+                    f["aciertos"], f["tiempo_ms"]])
     return Response(buf.getvalue().encode("utf-8-sig"), media_type="text/csv",
-                    headers={"Content-Disposition": "attachment; filename=reto_ponencias_resultados.csv"})
+                    headers={"Content-Disposition": "attachment; filename=reto_ponencias_ganadores.csv"})

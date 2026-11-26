@@ -1,7 +1,7 @@
 /* ============================================
    GEIPER · Reto de las ponencias (pages/reto.html)
    - Jugador (celular y computador): registro, brújula,
-     preguntas con 15 s, resultado y podio al cierre.
+     preguntas con 25 s, resultado y ganadores por ponencia.
    - ?modo=pantalla   → pantalla proyectada (ranking + QR)
    - ?modo=moderador  → abrir preguntas y cerrar el reto
    Todo lo decide el backend (backend/reto/trivia.py):
@@ -17,6 +17,10 @@
   var MODO = params.get('modo') || 'jugador';
   var POLL_JUGADOR = 15000, POLL_PANTALLA = 10000, POLL_MOD = 10000;
   var CLAVE_TOKEN = 'geiper_reto_token';
+  // Títulos cortos para la banda y los podios (los completos se ven en el detalle)
+  var CORTO = { '01': 'Huella de carbono', '02': 'Bibliometría', '03': 'Sabana Occidental',
+                '04': 'Ortomosaico SAR', '05': 'RAG en SIG', '06': 'Territorios y catastro' };
+  function corto(p) { return CORTO[p.id] || p.titulo; }
 
   function $(id) { return document.getElementById(id); }
   function esc(v) {
@@ -177,8 +181,8 @@
     var hechas = p.filter(function (x) { return x.estado === 'hecha'; }).length;
     $('cifPonencias').textContent = hechas + ' / 6';
     $('cifPuntaje').textContent = miles(d.puntaje);
-    $('cifPuesto').textContent = d.puesto ? d.puesto + '.º' : '—';
-    $('premiosCierre').textContent = 'Premios · ' + hora(d.cierre_at);
+    $('cifPuesto').textContent = d.podios || 0;
+    $('premiosCierre').textContent = 'Premios · cierre del reto ' + hora(d.cierre_at);
     document.querySelectorAll('.rt-nodo').forEach(function (b, i) {
       var x = p[i];
       b.dataset.estado = x.estado;
@@ -192,9 +196,16 @@
     $('detTitulo').textContent = sel.titulo;
     $('detPonentes').textContent = sel.ponentes;
     var et = ESTADO_TXT[sel.estado];
-    $('detEstado').textContent = sel.estado === 'hecha' ? 'Respondida · ' + miles(sel.puntos) + ' puntos'
-      : sel.estado === 'bloqueada' ? 'Se abre al final de la charla de las ' + sel.hora : et[0];
-    $('detEstado').style.color = et[1];
+    var txt = et[0], color = et[1];
+    if (sel.estado === 'hecha') {
+      txt = 'Respondida · ' + miles(sel.puntos) + ' puntos';
+      if (sel.gano) { txt = 'Ganador · puesto ' + sel.mi_puesto + ' · ' + miles(sel.puntos) + ' puntos'; color = '#8A6A0A'; }
+      else if (sel.mi_puesto) txt += sel.final ? ' · puesto final ' + sel.mi_puesto : ' · va en el puesto ' + sel.mi_puesto;
+    } else if (sel.estado === 'bloqueada') {
+      txt = sel.fase === 'cerrada' ? 'Preguntas cerradas' : 'Se abre al final de la charla de las ' + sel.hora;
+    }
+    $('detEstado').textContent = txt;
+    $('detEstado').style.color = color;
     if (J.fase === 'detalle') pintarAccion(sel);
     pintarTop(d);
   }
@@ -210,19 +221,22 @@
       z.innerHTML = '<button class="rt-btn rt-btn-sec rt-bloque" type="button" id="btnResumen">Ver mis respuestas de esta ponencia</button>';
       $('btnResumen').addEventListener('click', function () { verResumen(sel.id); });
     } else {
-      z.innerHTML = '<p class="rt-aviso">Las preguntas se abren en los últimos minutos de la charla. Esta pantalla se actualiza sola.</p>';
+      z.innerHTML = sel.fase === 'cerrada'
+        ? '<p class="rt-aviso">Las preguntas de esta ponencia ya se cerraron. Abajo están sus ganadores.</p>'
+        : '<p class="rt-aviso">Las preguntas se abren en los últimos minutos de la charla. Esta pantalla se actualiza sola.</p>';
     }
   }
 
   function pintarTop(d) {
-    var h = '';
-    (d.top || []).forEach(function (r) {
+    var sel = d.ponencias[J.sel], top = sel.top || [], h = '';
+    $('topTitulo').textContent = 'Top 3 · ponencia ' + sel.id + ' · ' + (sel.final ? 'ganadores' : 'en vivo, se actualiza cada 15 s');
+    top.forEach(function (r) {
       h += '<div><span class="rt-num">' + r.puesto + '.º</span><span class="alias">' + esc(r.alias) +
-        '</span><span class="rt-num" style="font-size:18px">' + miles(r.puntaje) + '</span></div>';
+        '</span><span class="rt-num" style="font-size:18px">' + miles(r.puntos) + '</span></div>';
     });
-    for (var k = (d.top || []).length; k < 3; k++) h += '<div><span class="rt-num">' + (k + 1) + '.º</span><span class="alias" style="color:#9AA6B8">—</span><span></span></div>';
-    h += '<div class="yo"><span class="rt-num">' + (d.puesto ? d.puesto + '.º' : '—') + '</span><span class="alias">' + esc(d.alias) +
-      ' (usted)</span><span class="rt-num" style="font-size:18px">' + miles(d.puntaje) + '</span></div>';
+    for (var k = top.length; k < 3; k++) h += '<div><span class="rt-num">' + (k + 1) + '.º</span><span class="alias" style="color:#9AA6B8">—</span><span></span></div>';
+    h += '<div class="yo"><span class="rt-num">' + (sel.mi_puesto ? sel.mi_puesto + '.º' : '—') + '</span><span class="alias">' + esc(d.alias) +
+      ' (usted)</span><span class="rt-num" style="font-size:18px">' + miles(sel.puntos) + '</span></div>';
     $('topRanking').innerHTML = h;
   }
 
@@ -348,7 +362,7 @@
           '<div class="rt-caja-cab"><span class="rt-eyebrow">Ponencia ' + esc(pid) + ' completada</span>' +
           '<span class="rt-num" style="font-size:34px">' + miles(r.total) + '</span></div>' +
           '<div class="rt-tabla">' + filas + '</div>' +
-          '<p style="margin:0;font-size:13px;line-height:1.5;color:#5F6673">Al cierre cuentan sus 4 mejores ponencias. Con 4 ponencias completas entra al sorteo.</p>' +
+          '<p style="margin:0;font-size:13px;line-height:1.5;color:#5F6673">Los 3 mejores puntajes de esta ponencia ganan; desempata el menor tiempo. Se anuncian al cerrar sus preguntas.</p>' +
           '<button class="rt-btn" type="button" id="btnVolver">Volver a la brújula</button>' +
         '</div>';
       $('btnVolver').addEventListener('click', function () { J.fase = 'detalle'; J.preg = null; cargarEstado(false); });
@@ -360,13 +374,16 @@
     clearInterval(J.reloj);
     mostrar('secCerrado');
     var h = '';
-    (d.top || []).forEach(function (r) {
-      h += '<div><span class="rt-num">' + r.puesto + '.º</span><span class="alias">' + esc(r.alias) + '</span><span class="rt-num" style="font-size:24px">' + miles(r.puntaje) + ' pts</span></div>';
+    d.ponencias.forEach(function (p) {
+      var g = (p.top || []).map(function (r) { return r.puesto + '. ' + esc(r.alias); }).join(' · ') || 'Sin ganadores';
+      h += '<div><span class="rt-num" style="font-size:28px">' + esc(p.id) + '</span><span class="alias" style="font-size:16px">' + esc(corto(p)) +
+        '</span><span style="font-size:13px;color:#5F6673">' + g + '</span></div>';
     });
-    $('podioJugador').innerHTML = h || '<div><span class="alias">Sin participantes con puntaje</span></div>';
-    $('cerradoYo').textContent = d.puesto
-      ? 'Usted terminó en el puesto ' + d.puesto + ' con ' + miles(d.puntaje) + ' puntos y ' + d.completas + (d.completas === 1 ? ' ponencia completa' : ' ponencias completas') + (d.completas >= 4 ? ': participa en el sorteo.' : '.')
-      : 'Gracias por participar.';
+    $('podioJugador').innerHTML = h;
+    var mios = d.ponencias.filter(function (p) { return p.gano; });
+    $('cerradoYo').textContent = mios.length
+      ? '¡Felicitaciones! Quedó entre los 3 primeros en: ' + mios.map(function (p) { return corto(p) + ' (puesto ' + p.mi_puesto + ')'; }).join(', ') + '.'
+      : 'Sumó ' + miles(d.puntaje) + ' puntos en total. Gracias por participar.';
   }
 
   /* ════════════════════════════════════════════
@@ -385,23 +402,26 @@
     document.head.appendChild(s);
     function cargar() {
       api('/publico').then(function (d) {
-        var b = '';
+        var FASE = { abierta: 'Preguntas abiertas', cerrada: 'Ganadores', proxima: 'Próxima' };
+        var b = '', pod = '';
         d.ponencias.forEach(function (p) {
-          var cls = p.abierta && !d.cerrado ? 'abierta' : '';
-          b += '<div class="' + cls + '"><div class="m"><i></i><i></i><i></i></div><span>' + esc(p.id) + ' · ' + esc(p.hora) +
-            '</span><b>' + esc(p.titulo) + '</b><em>' + (cls ? 'Preguntas abiertas' : (d.cerrado ? 'Cerrada' : 'Próxima')) + '</em></div>';
+          var f = d.cerrado && p.fase === 'abierta' ? 'cerrada' : p.fase;
+          b += '<div class="' + f + '"><div class="m"><i></i><i></i><i></i></div><span>' + esc(p.id) + ' · ' + esc(p.hora) +
+            '</span><b>' + esc(corto(p)) + '</b><em>' + FASE[f] + '</em></div>';
+          var filas = (p.top || []).map(function (r) {
+            return '<li><span class="n">' + r.puesto + '</span><span class="a">' + esc(r.alias) + '</span><span class="s">' + miles(r.puntos) + '</span></li>';
+          }).join('');
+          pod += '<section class="rt-podio-pon ' + f + '"><header><b>' + esc(p.id) + ' · ' + esc(corto(p)) + '</b><em>' +
+            (f === 'cerrada' ? 'Ganadores' : f === 'abierta' ? 'En vivo' : esc(p.hora)) + '</em></header>' +
+            (filas ? '<ol>' + filas + '</ol>' : '<p class="vacio">' + (f === 'proxima' ? 'Aún no abre' : 'Esperando respuestas…') + '</p>') + '</section>';
         });
         $('proyBanda').innerHTML = b;
-        var r = '';
-        d.ranking.forEach(function (x) {
-          r += '<div class="' + (x.puesto <= 3 ? 'podio' : '') + '"><span class="p">' + x.puesto + '</span><span class="a">' + esc(x.alias) +
-            '</span><span class="s">' + miles(x.puntaje) + '</span></div>';
-        });
-        $('proyRank').innerHTML = r || '<div><span class="p"></span><span class="a" style="color:#9AA6B8">Esperando las primeras respuestas…</span><span></span></div>';
+        $('proyPodios').innerHTML = pod;
+        var abiertas = d.ponencias.filter(function (p) { return p.fase === 'abierta'; }).length;
+        $('proyBandaTit').textContent = '6 ponencias · ' + (d.cerrado ? 'reto cerrado' : abiertas ? abiertas + ' con preguntas abiertas' : 'jueves 26 de noviembre');
         $('proyCierre').textContent = d.cerrado ? 'Cerrado' : hora(d.cierre_at);
-        $('proyEstado').textContent = d.cerrado ? 'Ranking final' : 'Ranking en vivo';
-        $('proySub').textContent = d.cerrado ? 'Podio final · gracias por participar' : 'Cuentan las 4 mejores ponencias de cada participante';
-        $('proyParticipantes').textContent = d.participantes + ' participantes registrados';
+        $('proyEstado').textContent = d.cerrado ? 'Resultados finales' : 'Ranking en vivo';
+        $('proyParticipantes').textContent = d.participantes + (d.participantes === 1 ? ' participante registrado' : ' participantes registrados');
       }).catch(function () { $('proyEstado').textContent = 'Reconectando…'; });
     }
     cargar();
@@ -476,13 +496,17 @@
       '<span class="rt-eyebrow">Auditorio</span><span class="rt-eyebrow">Preguntas</span><span class="rt-eyebrow">Estado</span><span></span></div>';
     d.ponencias.forEach(function (p) {
       var listas = p.preguntas_cargadas >= 3;
+      var top = (p.top || []).map(function (r) { return '<b>' + r.puesto + '.</b> ' + esc(r.alias) + ' (' + r.puntos + ')'; }).join(' · ');
+      var est = p.abierta ? ['Abierta', '#8A6A0A'] : p.fase === 'cerrada' ? ['Cerrada', '#1B7F4B'] : ['Sin abrir', '#5F6673'];
+      var boton = p.abierta ? 'Cerrar y anunciar' : p.fase === 'cerrada' ? 'Reabrir' : 'Abrir preguntas';
       h += '<div><span class="num">' + esc(p.id) + '</span><span>' + esc(p.hora) + '</span>' +
-        '<span class="t"><b>' + esc(p.titulo) + '</b><span>' + esc(p.ponentes) + '</span></span>' +
+        '<span class="t"><b>' + esc(p.titulo) + '</b><span>' + esc(p.ponentes) + '</span>' +
+        (top ? '<div class="top">' + (p.fase === 'cerrada' ? 'Ganadores: ' : 'Va ganando: ') + top + '</div>' : '') + '</span>' +
         '<span style="font-size:14px;color:#5F6673">' + esc(p.sala) + '</span>' +
         '<span class="' + (listas ? '' : 'falta') + '">' + p.preguntas_cargadas + ' / 3</span>' +
-        '<span class="rt-estado" style="color:' + (p.abierta ? '#8A6A0A' : '#5F6673') + '">' + (p.abierta ? 'Abierta' : 'Sin abrir') + '</span>' +
+        '<span class="rt-estado" style="color:' + est[1] + '">' + est[0] + '</span>' +
         '<button type="button" class="rt-btn ' + (p.abierta ? 'rt-btn-sec' : '') + '" style="min-height:42px" data-id="' + esc(p.id) + '" data-abrir="' + (!p.abierta) + '"' +
-        (listas || p.abierta ? '' : ' disabled title="Faltan preguntas por cargar en Supabase"') + '>' + (p.abierta ? 'Cerrar preguntas' : 'Abrir preguntas') + '</button></div>';
+        (listas || p.abierta ? '' : ' disabled title="Faltan preguntas por cargar en Supabase"') + '>' + boton + '</button></div>';
     });
     $('modTabla').innerHTML = h;
     $('modTabla').querySelectorAll('button[data-id]').forEach(function (b) {

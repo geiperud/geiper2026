@@ -13,7 +13,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=DM+Serif+Text&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="../css/reto.css?v=1">
+  <link rel="stylesheet" href="../css/reto.css?v=2">
 </head>
 <body>
 
@@ -34,12 +34,12 @@
         <span class="rt-eyebrow">Aduanilla de Paiba · 9:00 a 11:00 a. m.</span>
         <h1 class="rt-h1" id="tituloRegistro">Reto de las ponencias</h1>
         <div class="rt-subraya"></div>
-        <p class="rt-lead">Responda sobre cada charla del semillero y compita por el podio y el sorteo del cierre.</p>
+        <p class="rt-lead">Responda sobre cada charla del semillero: cada ponencia tiene 3 ganadores.</p>
       </div>
       <ol class="rt-pasos">
         <li><span class="rt-n">01</span><b>Siga el programa</b><span>Cada ponencia se enciende en la brújula cuando el moderador abre sus preguntas, al final de la charla.</span></li>
-        <li><span class="rt-n">02</span><b>Tres preguntas por ponencia</b><span>15 segundos por pregunta: 100 puntos por acierto y hasta 50 de bono por velocidad.</span></li>
-        <li><span class="rt-n">03</span><b>Cuentan sus 4 mejores</b><span>A las 10:00 hay charlas en paralelo: nadie pierde por estar en el otro auditorio.</span></li>
+        <li><span class="rt-n">02</span><b>Tres preguntas por ponencia</b><span>25 segundos por pregunta: 100 puntos por acierto y hasta 50 de bono por velocidad.</span></li>
+        <li><span class="rt-n">03</span><b>3 ganadores por ponencia</b><span>Los mejores puntajes de cada charla; desempata la rapidez. Se anuncian al cerrar sus preguntas.</span></li>
       </ol>
       <form id="formRegistro" novalidate>
         <div style="display:flex;flex-direction:column;gap:12px">
@@ -69,7 +69,7 @@
         <div class="rt-cifras" aria-live="polite">
           <div><span class="rt-eyebrow">Ponencias</span><span class="rt-num" id="cifPonencias">0 / 6</span></div>
           <div><span class="rt-eyebrow">Puntaje</span><span class="rt-num" id="cifPuntaje">0</span></div>
-          <div><span class="rt-eyebrow">Puesto</span><span class="rt-num rt-puesto" id="cifPuesto">—</span></div>
+          <div><span class="rt-eyebrow">Podios</span><span class="rt-num rt-puesto" id="cifPuesto">0</span></div>
         </div>
         <div class="rt-brujula" id="brujula"></div>
         <div class="rt-leyenda" aria-hidden="true">
@@ -89,17 +89,17 @@
 
       <div class="rt-franja-inf">
         <div>
-          <span class="rt-eyebrow">Ranking en vivo · se actualiza cada 15 s</span>
+          <span class="rt-eyebrow" id="topTitulo">Top 3 de la ponencia · se actualiza cada 15 s</span>
           <div class="rt-top" id="topRanking" style="margin-top:8px"></div>
         </div>
         <div>
           <span class="rt-eyebrow">Cómo se puntúa</span>
-          <p class="rt-reglas">3 preguntas por ponencia, 15 s cada una: 100 puntos por acierto y hasta 50 de bono por velocidad. Cuentan sus 4 mejores ponencias; desempata el menor tiempo.</p>
+          <p class="rt-reglas">3 preguntas por ponencia, 25 s cada una: 100 puntos por acierto y hasta 50 de bono por velocidad. Desempata el menor tiempo.</p>
         </div>
         <div class="rt-premios">
           <span class="rt-eyebrow" id="premiosCierre">Premios</span>
-          <span>Podio para los tres mejores puntajes.</span>
-          <span>Sorteo entre quienes respondan al menos 4 ponencias.</span>
+          <span>3 ganadores por ponencia: los mejores puntajes de cada charla.</span>
+          <span style="font-weight:400;color:#C9D6EA">Se anuncian en el auditorio al cerrar sus preguntas.</span>
         </div>
       </div>
     </section>
@@ -107,13 +107,13 @@
     <!-- Reto cerrado -->
     <section id="secCerrado" hidden aria-labelledby="tituloCerrado" style="max-width:900px;margin:0 auto;display:flex;flex-direction:column;gap:20px">
       <div>
-        <span class="rt-eyebrow">Ranking final</span>
+        <span class="rt-eyebrow">Resultados finales</span>
         <h1 class="rt-h1" id="tituloCerrado">El reto terminó</h1>
         <div class="rt-subraya"></div>
         <p class="rt-lead" id="cerradoYo"></p>
       </div>
       <div class="rt-podio" id="podioJugador"></div>
-      <p class="rt-aviso">Gracias por participar. Los ganadores se anuncian en el auditorio; si su correo resulta ganador del sorteo, el semillero le escribirá.</p>
+      <p class="rt-aviso">Gracias por participar. Si quedó entre los 3 primeros de alguna ponencia, el semillero le escribirá a su correo institucional.</p>
     </section>
 
     <p class="rt-aviso" id="avisoConexion" role="status" hidden></p>
@@ -132,36 +132,31 @@
   <div class="rt-proy-cuerpo">
     <div class="rt-proy-tit">
       <h1 class="rt-h1">Reto de las ponencias</h1>
-      <span class="rt-lead" style="margin:0" id="proySub">Cuentan las 4 mejores ponencias de cada participante</span>
+      <span class="rt-lead" style="margin:0" id="proySub">3 ganadores por ponencia · 25 segundos por pregunta</span>
     </div>
     <div class="rt-banda">
-      <div class="rt-banda-lbl">Programa<small>6 ponencias</small></div>
+      <div class="rt-banda-cab"><b id="proyBandaTit">6 ponencias · jueves 26 de noviembre</b><span>Programa del semillero en la Semana ICG</span></div>
       <div class="rt-banda-segs" id="proyBanda"></div>
     </div>
     <div class="rt-proy-grid">
-      <div>
-        <div style="display:grid;grid-template-columns:70px minmax(0,1fr) 150px;padding-bottom:6px;border-bottom:1px solid var(--azul-oscuro)">
-          <span class="rt-eyebrow">Puesto</span><span class="rt-eyebrow">Participante</span><span class="rt-eyebrow" style="text-align:right">Puntos</span>
-        </div>
-        <div class="rt-rank" id="proyRank"></div>
-      </div>
+      <div class="rt-podios" id="proyPodios"></div>
       <div style="display:flex;flex-direction:column;gap:14px">
         <div class="rt-qr">
           <div class="rt-qr-img" id="qr" aria-label="Código QR para entrar al reto" role="img"></div>
           <div style="display:flex;flex-direction:column;gap:4px">
             <span style="font-family:var(--rt-serif);font-size:24px;line-height:1.1;color:var(--azul-oscuro)">Escanee para jugar</span>
-            <span style="font-size:13px;line-height:1.45;color:var(--rt-gris)" id="qrUrl"></span>
+            <span style="font-size:13px;line-height:1.45;color:var(--rt-gris);word-break:break-all" id="qrUrl"></span>
           </div>
         </div>
         <div style="display:flex;flex-direction:column;gap:4px;padding-bottom:14px;border-bottom:1px solid var(--rt-linea)">
-          <span class="rt-eyebrow">Cierre y premiación</span>
+          <span class="rt-eyebrow">Cierre del reto</span>
           <span class="rt-num" style="font-size:38px" id="proyCierre">—</span>
           <span style="font-size:13px;color:var(--rt-gris)" id="proyParticipantes"></span>
         </div>
         <div class="rt-premios" style="flex:1 1 auto">
           <span class="rt-eyebrow">Premios</span>
-          <span>Podio para los tres mejores puntajes.</span>
-          <span>Sorteo entre quienes respondan al menos 4 ponencias.</span>
+          <span>3 ganadores por ponencia: los mejores puntajes de cada charla.</span>
+          <span style="font-weight:400;color:#C9D6EA">Desempata el menor tiempo de respuesta.</span>
           <span style="margin-top:auto;font-weight:400;color:#A9BCD6">@semillerogeiper</span>
         </div>
       </div>
@@ -203,6 +198,6 @@
   </main>
 </div>
 
-<script src="../js/reto.js?v=2"></script>
+<script src="../js/reto.js?v=3"></script>
 </body>
 </html>
